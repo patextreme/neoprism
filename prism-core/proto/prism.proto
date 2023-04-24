@@ -1,0 +1,193 @@
+syntax = "proto3";
+
+package proto;
+
+/**
+ * Represent a block that holds operations.
+ */
+ message AtalaBlock {
+  reserved 1; // Represents the version of the block. Deprecated
+  repeated SignedAtalaOperation operations = 2; // A signed operation, necessary to post anything on the blockchain.
+}
+
+/**
+ * Wraps an AtalaBlock and its metadata.
+ */
+message AtalaObject {
+  reserved 1, 2, 3; 
+  reserved "block_hash";
+  reserved "block_operation_count"; // Number of operations in the block.
+  reserved "block_byte_length"; // Byte length of the block.
+  
+  AtalaBlock block_content = 4; // The block content.
+}
+
+// Every key has a single purpose:
+enum KeyUsage {
+    // UNKNOWN_KEY is an invalid value - Protobuf uses 0 if no value is provided and we want the user to explicitly choose the usage.
+    UNKNOWN_KEY = 0;
+    MASTER_KEY = 1;
+    ISSUING_KEY = 2;
+    KEY_AGREEMENT_KEY = 3;
+    AUTHENTICATION_KEY = 4;
+    REVOCATION_KEY = 5;
+    CAPABILITY_INVOCATION_KEY = 6;
+    CAPABILITY_DELEGATION_KEY = 7;
+}
+
+/**
+ * Holds the necessary data to recover an Elliptic Curve (EC)'s public key.
+ */
+message ECKeyData {
+    string curve = 1; // The curve name, like secp256k1.
+    bytes x = 2; // The x coordinate, represented as bytes.
+    bytes y = 3; // The y coordinate, represented as bytes.
+}
+
+/**
+ * Holds the compressed representation of data needed to recover Elliptic Curve (EC)'s public key.
+ */
+message CompressedECKeyData {
+    string curve = 1; // The curve name, like secp256k1.
+    bytes data = 2; // compressed Elliptic Curve (EC) public key data.
+}
+
+/**
+ * Represents a public key with metadata, necessary for a DID document.
+ */
+message PublicKey {
+    reserved 3, 4, 5, 6;
+    string id = 1; // The key identifier within the DID Document.
+    KeyUsage usage = 2; // The key's purpose.
+
+    // The key's representation.
+    oneof key_data {
+        ECKeyData ec_key_data = 8; // The Elliptic Curve (EC) key.
+        CompressedECKeyData compressed_ec_key_data =  9; // Compressed Elliptic Curve (EC) key.
+    };
+}
+
+
+// The operation to create a public DID.
+message CreateDIDOperation {
+    DIDCreationData did_data = 1; // DIDCreationData with public keys and services
+
+    // The data necessary to create a DID.
+    message DIDCreationData {
+        reserved 1; // Removed DID id field which is empty on creation
+        repeated PublicKey public_keys = 2; // The keys that belong to this DID Document.
+        repeated Service services = 3; // The list of services that belong to this DID Document.
+    }
+}
+
+// The necessary data to add a key to a DID.
+message AddKeyAction {
+    PublicKey key = 1; // The key to include.
+}
+
+// The necessary data to remove a key from a DID.
+message RemoveKeyAction {
+    string keyId = 1; // the key id to remove
+}
+
+message AddServiceAction {
+    Service service = 1;
+}
+
+message RemoveServiceAction {
+    string serviceId = 1;
+}
+
+message UpdateServiceAction {
+    string serviceId = 1; // scoped to the did, unique per did
+    string type = 2; // new type if provided
+    string service_endpoints = 3;
+}
+
+message PatchContextAction {
+    repeated string context = 1; // The list of strings to use by resolvers during resolution when producing a JSON-LD output
+}
+
+// The potential details that can be updated in a DID.
+message UpdateDIDAction {
+
+    // The action to perform.
+    oneof action {
+        AddKeyAction add_key = 1; // Used to add a new key to the DID.
+        RemoveKeyAction remove_key = 2; // Used to remove a key from the DID.
+        AddServiceAction add_service = 3; // Used to add a new service to a DID,
+        RemoveServiceAction remove_service = 4; // Used to remove an existing service from a DID,
+        UpdateServiceAction update_service = 5; // Used to Update a list of service endpoints of a given service on a given DID.
+        PatchContextAction patch_context = 6; // Used to Update a list of `@context` strings used during resolution for a given DID.
+    }
+}
+
+// Specifies the necessary data to update a public DID.
+message UpdateDIDOperation {
+    bytes previous_operation_hash = 1; // The hash of the operation that issued the DID.
+    string id = 2; // @exclude TODO: To be redefined after we start using this operation.
+    repeated UpdateDIDAction actions = 3; // The actual updates to perform on the DID.
+}
+
+// Specifies the protocol version update
+message ProtocolVersionUpdateOperation {
+    string proposer_did = 1; // The DID suffix that proposes the protocol update.
+    ProtocolVersionInfo version = 2; // Information of the new version
+}
+
+
+message ProtocolVersion {
+    // Represent the major version
+    int32 major_version = 1;
+    // Represent the minor version
+    int32 minor_version = 2;
+}
+
+message ProtocolVersionInfo {
+    reserved 2, 3;
+    string version_name = 1; // (optional) name of the version
+    int32 effective_since = 4; // Cardano block number that tells since which block the update is enforced
+
+    // New major and minor version to be announced,
+    // If major value changes, the node MUST stop issuing and reading operations, and upgrade before `effective_since` because the new protocol version.
+    // If minor value changes, the node can opt to not update. All events _published_ by this node would be also
+    // understood by other nodes with the same major version. However, there may be new events that this node won't _read_
+    ProtocolVersion protocol_version = 5;
+}
+
+message DeactivateDIDOperation {
+    bytes previous_operation_hash = 1; // The hash of the operation that issued the DID.
+    string id = 2; // DID Suffix of the DID to be deactivated
+}
+
+// The possible operations affecting the blockchain.
+message AtalaOperation {
+   reserved 3, 4; // fields used by an extension of the protocol. Not relevant for the DID method 
+   // The actual operation.
+    oneof operation {
+        // Used to create a public DID.
+        CreateDIDOperation create_did = 1;
+
+        // Used to update an existing public DID.
+        UpdateDIDOperation update_did = 2;
+
+        // Used to announce new protocol update
+        ProtocolVersionUpdateOperation protocol_version_update = 5;
+
+        // Used to deactivate DID
+        DeactivateDIDOperation deactivate_did = 6;
+    };
+}
+
+// A signed operation, necessary to post anything on the blockchain.
+message SignedAtalaOperation {
+    string signed_with = 1; // The key ID used to sign the operation, it must belong to the DID that signs the operation.
+    bytes signature = 2; // The actual signature.
+    AtalaOperation operation = 3; // The operation that was signed.
+}
+
+message Service {
+    string id = 1;
+    string type = 2;
+    string service_endpoint = 3;
+}
