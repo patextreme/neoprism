@@ -26,15 +26,37 @@ macro_rules! bytes_repr {
     };
 }
 
-bytes_repr!(HexStr);
-bytes_repr!(Base64Str);
-bytes_repr!(Base64StrNoPad);
-bytes_repr!(Base64UrlStr);
-bytes_repr!(Base64UrlStrNoPad);
+macro_rules! bytes_repr_b64 {
+    ($id:ident, $engine:expr) => {
+        bytes_repr!($id);
 
-impl TryFrom<&str> for HexStr {
+        impl TryFrom<String> for $id {
+            type Error = base64::DecodeError;
+            fn try_from(s: String) -> Result<Self, Self::Error> {
+                let engine = $engine;
+                let decoded = engine.decode(s.as_bytes())?;
+                Ok(Self(decoded.into()))
+            }
+        }
+
+        impl From<$id> for String {
+            fn from(s: $id) -> Self {
+                let engine = $engine;
+                engine.encode(s.0)
+            }
+        }
+    };
+}
+
+bytes_repr!(HexStr);
+bytes_repr_b64!(Base64Str, engine::general_purpose::STANDARD);
+bytes_repr_b64!(Base64StrNoPad, engine::general_purpose::STANDARD_NO_PAD);
+bytes_repr_b64!(Base64UrlStr, engine::general_purpose::URL_SAFE);
+bytes_repr_b64!(Base64UrlStrNoPad, engine::general_purpose::URL_SAFE_NO_PAD);
+
+impl TryFrom<String> for HexStr {
     type Error = hex::FromHexError;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
+    fn try_from(s: String) -> Result<Self, Self::Error> {
         let bytes = hex::decode(s)?;
         Ok(Self(Bytes::from(bytes)))
     }
@@ -43,69 +65,5 @@ impl TryFrom<&str> for HexStr {
 impl From<HexStr> for String {
     fn from(s: HexStr) -> Self {
         hex::encode(s.0)
-    }
-}
-
-impl TryFrom<&str> for Base64Str {
-    type Error = base64::DecodeError;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let engine = engine::general_purpose::STANDARD;
-        let decoded = engine.decode(s.as_bytes())?;
-        Ok(Self(decoded.into()))
-    }
-}
-
-impl From<Base64Str> for String {
-    fn from(s: Base64Str) -> Self {
-        let engine = engine::general_purpose::STANDARD;
-        engine.encode(s.0)
-    }
-}
-
-impl TryFrom<&str> for Base64StrNoPad {
-    type Error = base64::DecodeError;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let engine = engine::general_purpose::STANDARD_NO_PAD;
-        let decoded = engine.decode(s.as_bytes())?;
-        Ok(Self(decoded.into()))
-    }
-}
-
-impl From<Base64StrNoPad> for String {
-    fn from(s: Base64StrNoPad) -> Self {
-        let engine = engine::general_purpose::STANDARD_NO_PAD;
-        engine.encode(s.0)
-    }
-}
-
-impl TryFrom<&str> for Base64UrlStr {
-    type Error = base64::DecodeError;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let engine = engine::general_purpose::URL_SAFE;
-        let decoded = engine.decode(s.as_bytes())?;
-        Ok(Self(decoded.into()))
-    }
-}
-
-impl From<Base64UrlStr> for String {
-    fn from(s: Base64UrlStr) -> Self {
-        let engine = engine::general_purpose::URL_SAFE;
-        engine.encode(s.0)
-    }
-}
-
-impl TryFrom<&str> for Base64UrlStrNoPad {
-    type Error = base64::DecodeError;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let engine = engine::general_purpose::URL_SAFE_NO_PAD;
-        let decoded = engine.decode(s.as_bytes())?;
-        Ok(Self(decoded.into()))
-    }
-}
-
-impl From<Base64UrlStrNoPad> for String {
-    fn from(s: Base64UrlStrNoPad) -> Self {
-        let engine = engine::general_purpose::URL_SAFE_NO_PAD;
-        engine.encode(s.0)
     }
 }

@@ -1,28 +1,31 @@
 use prism_core::{
-    dlt::{DltSink, DltSource, InMemoryDlt},
-    proto::AtalaBlock,
+    dlt::{cardano::OuraFileSource, DltSource},
+    proto::AtalaOperation,
+    store::OperationStore,
 };
-use std::time::Duration;
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
 
-    let dlt = InMemoryDlt::new(Duration::from_secs(1));
-    let (source, sink) = dlt.split();
+    let mut store = OperationStore::in_memory();
 
-    tokio::spawn(async move {
-        let mut sink = sink;
-        loop {
-            tokio::time::sleep(Duration::from_secs(1)).await;
-            let atala_object = AtalaBlock { operations: vec![] };
-            sink.send(atala_object);
-        }
-    });
-
+    let source = OuraFileSource::new("./mainnet");
     let mut rx = source.receiver();
-    loop {
-        let atala_object = rx.recv().await.unwrap();
-        log::info!("{:?}", atala_object);
+    while let Some(published_atala_object) = rx.recv().await {
+        let block = published_atala_object.atala_object.block_content;
+        let dlt_timestamp = published_atala_object.dlt_timestamp;
+        let signed_operations = block.map(|i| i.operations).unwrap_or_default();
+        let operations: Vec<AtalaOperation> = signed_operations
+            .into_iter()
+            .flat_map(|i| i.operation)
+            .collect();
+
+        for operation in operations.into_iter() {
+            store
+                .insert(operation, dlt_timestamp.clone())
+                .await
+                .unwrap();
+        }
     }
 }

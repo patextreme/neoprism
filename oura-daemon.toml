@@ -1,0 +1,21 @@
+[source]
+type = "N2N"
+address = ["Tcp", "relays-new.cardano-mainnet.iohk.io:3001"]
+magic = "mainnet"
+min_depth = 112
+
+[[filters]]
+type = "Selection"
+
+[filters.check]
+predicate = "metadata_label_equals"
+argument = "21325"
+
+[sink]
+type = "Logs"
+output_path = "./mainnet"
+output_format = "JSONL"
+
+[cursor]
+type = "File"
+path = "./cursor"
