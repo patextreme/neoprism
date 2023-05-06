@@ -5,7 +5,8 @@ use crate::{
         self,
         operation::{
             CreateOperationParsingError, DeactivateOperationParsingError, ParsedPublicKey,
-            ParsedService, PublicKeyId, ServiceId, UpdateOperationParsingError,
+            ParsedService, ParsedServiceEndpoint, ParsedServiceType, PublicKeyId, ServiceId,
+            UpdateOperationParsingError,
         },
         CanonicalPrismDid, DidState,
     },
@@ -26,6 +27,8 @@ pub struct ProtocolParameter {
     pub max_services: usize,
     pub max_public_keys: usize,
     pub max_id_size: usize,
+    pub max_type_size: usize,
+    pub max_service_endpoint_size: usize,
 }
 
 impl Default for ProtocolParameter {
@@ -34,6 +37,8 @@ impl Default for ProtocolParameter {
             max_services: 50,
             max_public_keys: 50,
             max_id_size: 50,
+            max_type_size: 100,
+            max_service_endpoint_size: 300,
         }
     }
 }
@@ -88,8 +93,12 @@ impl<T> Revocable<T> {
         self.inner
     }
 
-    fn item(&self) -> &T {
+    fn get(&self) -> &T {
         &self.inner
+    }
+
+    fn get_mut(&mut self) -> &mut T {
+        &mut self.inner
     }
 }
 
@@ -193,6 +202,40 @@ impl DidStateMut {
         service.revoke(revoke_at);
         Ok(())
     }
+
+    fn update_service_type(
+        &mut self,
+        id: &ServiceId,
+        new_type: ParsedServiceType,
+    ) -> Result<(), String> {
+        let Some(service) = self.services.get_mut(id) else {
+            Err(format!("Service with id {:?} does not exist", id))?
+        };
+
+        if service.is_revoked() {
+            Err(format!("Service with id {:?} is revoked", id))?
+        }
+
+        service.get_mut().r#type = new_type;
+        Ok(())
+    }
+
+    fn update_service_endpoint(
+        &mut self,
+        id: &ServiceId,
+        new_endpoint: ParsedServiceEndpoint,
+    ) -> Result<(), String> {
+        let Some(service) = self.services.get_mut(id) else {
+            Err(format!("Service with id {:?} does not exist", id))?
+        };
+
+        if service.is_revoked() {
+            Err(format!("Service with id {:?} is revoked", id))?
+        }
+
+        service.get_mut().service_endpoints = new_endpoint;
+        Ok(())
+    }
 }
 
 struct DidStateOps {
@@ -286,12 +329,14 @@ impl DidStateOps {
             .state
             .public_keys
             .into_iter()
+            .filter(|(_, i)| !i.is_revoked())
             .map(|(_, i)| i.into_item())
             .collect();
         let services: Vec<ParsedService> = self
             .state
             .services
             .into_iter()
+            .filter(|(_, i)| !i.is_revoked())
             .map(|(_, i)| i.into_item())
             .collect();
         DidState {

@@ -34,5 +34,5 @@ async fn main() {
     .unwrap();
     let ops = store.get_by_did(&did).await.unwrap().unwrap();
     let did_data = resolve(ops);
-    println!("{:?}", did_data);
+    println!("{:#?}", did_data);
 }

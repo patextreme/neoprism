@@ -120,6 +120,10 @@ pub enum UpdateOperationParsingError {
     PublicKeyParsingError(#[from] PublicKeyParsingError),
     #[error("Unable to parse service in update action: {0}")]
     ServiceParsingError(#[from] ServiceParsingError),
+    #[error("Unable to parse service_type in update action: {0}")]
+    ServiceTypeParsingError(String),
+    #[error("Unable to parse service_endpoint in update action: {0}")]
+    ServiceEndpointParsingError(String),
     #[error("Empty update action")]
     EmptyUpdateAction,
 }
@@ -170,8 +174,8 @@ pub enum ParsedUpdateOperationAction {
     RemoveService(ServiceId),
     UpdateService {
         id: ServiceId,
-        r#type: Option<String>,
-        service_endpoints: Option<String>,
+        r#type: Option<ParsedServiceType>,
+        service_endpoints: Option<ParsedServiceEndpoint>,
     },
     PatchContext(Vec<String>),
 }
@@ -230,9 +234,23 @@ impl ParsedUpdateOperationAction {
                             "Service id cannot be parsed".to_string(),
                         )
                     })?;
-                let service_type = Some(update_service.r#type.clone()).filter(|i| !i.is_empty());
-                let service_endpoints =
-                    Some(update_service.service_endpoints.clone()).filter(|i| !i.is_empty());
+                let service_type =
+                    match Some(update_service.r#type.clone()).filter(|i| !i.is_empty()) {
+                        Some(s) => Some(
+                            ParsedServiceType::parse(&s, param)
+                                .map_err(UpdateOperationParsingError::ServiceTypeParsingError)?,
+                        ),
+                        None => None,
+                    };
+                let service_endpoints = match Some(update_service.service_endpoints.clone())
+                    .filter(|i| !i.is_empty())
+                {
+                    Some(s) => Some(
+                        ParsedServiceEndpoint::parse(&s, param)
+                            .map_err(UpdateOperationParsingError::ServiceEndpointParsingError)?,
+                    ),
+                    None => None,
+                };
                 Self::UpdateService {
                     id: service_id,
                     r#type: service_type,
@@ -434,13 +452,17 @@ impl ParsedKeyUsage {
 pub enum ServiceParsingError {
     #[error("Invalid service id: {0}")]
     InvalidServiceId(String),
+    #[error("Invalid service_type: {0}")]
+    InvalidServiceType(String),
+    #[error("Invalid service_endpoint: {0}")]
+    InvalidServiceEndpoint(String),
 }
 
 #[derive(Debug, Clone)]
 pub struct ParsedService {
     pub id: ServiceId,
-    pub r#type: String,            // TODO: parse this
-    pub service_endpoints: String, // TODO: parse this
+    pub r#type: ParsedServiceType,
+    pub service_endpoints: ParsedServiceEndpoint,
 }
 
 impl ParsedService {
@@ -450,13 +472,131 @@ impl ParsedService {
     ) -> Result<Self, ServiceParsingError> {
         let id = ServiceId::parse(&service.id, param.max_id_size)
             .map_err(ServiceParsingError::InvalidServiceId)?;
-        let r#type = service.r#type.clone();
-        let service_endpoints = service.service_endpoint.clone();
+        let r#type = ParsedServiceType::parse(&service.r#type, param)
+            .map_err(ServiceParsingError::InvalidServiceType)?;
+        let service_endpoints = ParsedServiceEndpoint::parse(&service.service_endpoint, param)
+            .map_err(ServiceParsingError::InvalidServiceEndpoint)?;
 
         Ok(Self {
             id,
             r#type,
             service_endpoints,
         })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ParsedServiceType {
+    Single(String),
+    Multiple(Vec<String>),
+}
+
+impl ParsedServiceType {
+    pub fn parse(service_type: &str, param: &ProtocolParameter) -> Result<Self, String> {
+        if service_type.len() > param.max_type_size {
+            Err(format!(
+                "Service type must not exceed {} bytes. Got {} bytes",
+                param.max_type_size,
+                service_type.len()
+            ))?
+        }
+
+        // try parse as json list of strings
+        let parsed: Result<Vec<String>, _> = serde_json::from_str(service_type);
+        if let Ok(list) = parsed {
+            if list.is_empty() {
+                Err("Service type must not be empty".to_owned())?
+            }
+
+            for i in &list {
+                Self::validate_type_value(i)?;
+            }
+
+            return Ok(Self::Multiple(list));
+        }
+
+        // try parse as single string
+        Self::validate_type_value(service_type)?;
+        Ok(Self::Single(service_type.to_owned()))
+    }
+
+    fn validate_type_value(value: &str) -> Result<(), String> {
+        if value.is_empty() {
+            Err("Service type must not be empty".to_owned())?
+        }
+
+        if value.starts_with(char::is_whitespace) || value.ends_with(char::is_whitespace) {
+            Err(format!(
+                "Service type must not start or end with whitespace. Got '{}'",
+                value
+            ))?
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ParsedServiceEndpoint {
+    Single(ServiceEndpointValue),
+    Multiple(Vec<ServiceEndpointValue>),
+}
+
+impl ParsedServiceEndpoint {
+    pub fn parse(service_endpoint: &str, param: &ProtocolParameter) -> Result<Self, String> {
+        if service_endpoint.len() > param.max_service_endpoint_size {
+            Err(format!(
+                "Service endpoint must not exceed {} bytes. Got {} bytes",
+                param.max_service_endpoint_size,
+                service_endpoint.len()
+            ))?
+        }
+
+        // try parsing as json object
+        let parsed_map: Result<serde_json::Map<String, serde_json::Value>, _> =
+            serde_json::from_str(service_endpoint);
+        if let Ok(json) = parsed_map {
+            return Ok(Self::Single(ServiceEndpointValue::Json(json)));
+        }
+
+        // try parsing as json array
+        let parsed_array: Result<Vec<serde_json::Value>, _> =
+            serde_json::from_str(service_endpoint);
+        if let Ok(list) = parsed_array {
+            if list.is_empty() {
+                Err("Service endpoint must not be empty array".to_owned())?
+            }
+
+            let mut endpoints = Vec::with_capacity(list.len());
+            for i in list {
+                endpoints.push(ServiceEndpointValue::parse(i)?);
+            }
+
+            return Ok(Self::Multiple(endpoints));
+        }
+
+        // try parse as single string
+        Ok(Self::Single(ServiceEndpointValue::URI(
+            service_endpoint.to_owned(),
+        )))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ServiceEndpointValue {
+    URI(String), // TODO: validate value is a valid normalized URI
+    Json(serde_json::Map<String, serde_json::Value>),
+}
+
+impl ServiceEndpointValue {
+    pub fn parse(value: serde_json::Value) -> Result<Self, String> {
+        match value {
+            serde_json::Value::String(s) => Ok(Self::URI(s)),
+            serde_json::Value::Object(map) => Ok(Self::Json(map)),
+            _ => Err(format!(
+                "Service endpoint must be either a URI or a JSON object. Got '{}'",
+                value
+            )),
+        }
     }
 }

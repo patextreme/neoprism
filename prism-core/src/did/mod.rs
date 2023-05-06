@@ -19,12 +19,12 @@ pub enum PrismDidAny {
     LongForm(LongFormPrismDid),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct CanonicalPrismDid {
     pub suffix: Sha256Digest,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct LongFormPrismDid {
     pub suffix: Sha256Digest,
     pub encoded_state: Base64UrlStrNoPad,
@@ -79,6 +79,18 @@ impl PrismDid for LongFormPrismDid {
 impl From<LongFormPrismDid> for CanonicalPrismDid {
     fn from(did: LongFormPrismDid) -> Self {
         Self { suffix: did.suffix }
+    }
+}
+
+impl std::fmt::Debug for CanonicalPrismDid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}
+
+impl std::fmt::Debug for LongFormPrismDid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }
 

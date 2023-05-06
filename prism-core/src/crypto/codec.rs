@@ -3,7 +3,7 @@ use bytes::Bytes;
 
 macro_rules! bytes_repr {
     ($id:ident) => {
-        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $id(Bytes);
 
         impl $id {
@@ -62,6 +62,12 @@ macro_rules! bytes_repr_b64 {
                 engine.encode(&s.0)
             }
         }
+
+        impl std::fmt::Debug for $id {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "bas64'{}'", self.to_string())
+            }
+        }
     };
 }
 
@@ -88,5 +94,11 @@ impl From<HexStr> for String {
 impl From<&HexStr> for String {
     fn from(s: &HexStr) -> Self {
         hex::encode(&s.0)
+    }
+}
+
+impl std::fmt::Debug for HexStr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "0x{}", self.to_string())
     }
 }

@@ -123,7 +123,6 @@ impl DltSink for InMemoryDltSink {
     fn send(&mut self, atala_object: AtalaObject) {
         let owned_delay = self.delay;
         let owned_tx = self.tx.clone();
-        let owned_slot = self.slot;
         tokio::spawn(async move {
             tokio::time::sleep(owned_delay).await;
             let block_timestamp = BlockTimestamp {

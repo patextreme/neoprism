@@ -35,7 +35,7 @@ impl OperationProcessor for V1Processor {
             Err(ProcessError::InvalidSignature("signed_with is invalid (key not found)".to_string()))?
         };
 
-        match &pk.item().data {
+        match &pk.get().data {
             ParsedPublicKeyData::Master { data } => {
                 let signature = signed_operation.signature.as_slice();
                 let message = signed_operation
@@ -143,8 +143,8 @@ impl OperationProcessor for V1Processor {
 
     fn protocol_version_update(
         &self,
-        operation: ProtocolVersionUpdateOperation,
-        timestamp: OperationTimestamp,
+        _: ProtocolVersionUpdateOperation,
+        _: OperationTimestamp,
     ) -> Result<OperationProcessorAny, ProcessError> {
         // TODO: add support for protocol version update
         Ok(self.clone().into())
@@ -161,12 +161,11 @@ trait Validator<Op> {
 struct CreateDidValidator;
 struct UpdateDidValidator;
 struct DeactivateDidValidator;
-struct ProtocolVersionUpdateValidator;
 
 impl Validator<CreateDidOperation> for CreateDidValidator {
     fn validate_candidate_state(
-        param: &ProtocolParameter,
-        state: &DidStateMut,
+        _: &ProtocolParameter,
+        _: &DidStateMut,
     ) -> Result<(), ProcessError> {
         Ok(())
     }
@@ -181,7 +180,7 @@ impl Validator<UpdateDidOperation> for UpdateDidValidator {
         if !state
             .public_keys
             .iter()
-            .any(|(_, pk)| pk.item().usage() == ParsedKeyUsage::MasterKey)
+            .any(|(_, pk)| pk.get().usage() == ParsedKeyUsage::MasterKey)
         {
             Err(ProcessError::DidStateConflict(
                 "At least one master key must exist after update".to_string(),
@@ -208,8 +207,8 @@ impl Validator<UpdateDidOperation> for UpdateDidValidator {
 
 impl Validator<DeactivateDidOperation> for DeactivateDidValidator {
     fn validate_candidate_state(
-        param: &ProtocolParameter,
-        state: &DidStateMut,
+        _: &ProtocolParameter,
+        _: &DidStateMut,
     ) -> Result<(), ProcessError> {
         Ok(())
     }
@@ -232,7 +231,12 @@ fn apply_update_action(
             r#type,
             service_endpoints,
         } => {
-            // TODO: suppport update service
+            if let Some(t) = r#type {
+                state.update_service_type(&id, t)?;
+            }
+            if let Some(ep) = service_endpoints {
+                state.update_service_endpoint(&id, ep)?;
+            }
         }
         ParsedUpdateOperationAction::PatchContext(ctx) => {
             state.with_context(ctx);

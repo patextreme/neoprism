@@ -1,8 +1,17 @@
 use bytes::Bytes;
 use ring::digest;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+use super::codec::HexStr;
+
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Sha256Digest([u8; 32]);
+
+impl std::fmt::Debug for Sha256Digest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let bytes = Bytes::copy_from_slice(&self.0);
+        HexStr::from(bytes).fmt(f)
+    }
+}
 
 impl Sha256Digest {
     pub fn as_bytes(&self) -> &[u8] {
