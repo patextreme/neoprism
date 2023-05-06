@@ -4,8 +4,8 @@ use super::{
 use crate::{
     crypto::{ec::SignatureVerifier, hash::sha256},
     did::operation::{
-        ParsedCreateOperation, ParsedKeyUsage, ParsedPublicKeyData, ParsedUpdateOperation,
-        ParsedUpdateOperationAction, PublicKeyId,
+        ParsedCreateOperation, ParsedDeactivateOperation, ParsedKeyUsage, ParsedPublicKeyData,
+        ParsedUpdateOperation, ParsedUpdateOperationAction, PublicKeyId,
     },
     dlt::OperationTimestamp,
     proto::{
@@ -115,7 +115,30 @@ impl OperationProcessor for V1Processor {
         operation: DeactivateDidOperation,
         timestamp: OperationTimestamp,
     ) -> Result<DidStateMut, ProcessError> {
-        todo!()
+        let parsed_operation = ParsedDeactivateOperation::parse(&operation)?;
+
+        if parsed_operation.prev_operation_hash != *state.last_operation_hash {
+            Err(ProcessError::DidStateConflict(
+                "prev_operation_hash is invalid".to_string(),
+            ))?
+        }
+
+        // clone and mutate candidate state
+        let mut candidate_state = state.clone();
+        candidate_state.with_last_operation_hash(sha256(operation.encode_to_bytes()?));
+        for (id, _) in &state.public_keys {
+            candidate_state
+                .revoke_public_key(id, &timestamp)
+                .map_err(ProcessError::DidStateConflict)?;
+        }
+        for (id, _) in &state.services {
+            candidate_state
+                .revoke_service(id, &timestamp)
+                .map_err(ProcessError::DidStateConflict)?;
+        }
+
+        DeactivateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
+        Ok(candidate_state)
     }
 
     fn protocol_version_update(
@@ -123,7 +146,8 @@ impl OperationProcessor for V1Processor {
         operation: ProtocolVersionUpdateOperation,
         timestamp: OperationTimestamp,
     ) -> Result<OperationProcessorAny, ProcessError> {
-        todo!()
+        // TODO: add support for protocol version update
+        Ok(self.clone().into())
     }
 }
 
@@ -182,6 +206,15 @@ impl Validator<UpdateDidOperation> for UpdateDidValidator {
     }
 }
 
+impl Validator<DeactivateDidOperation> for DeactivateDidValidator {
+    fn validate_candidate_state(
+        param: &ProtocolParameter,
+        state: &DidStateMut,
+    ) -> Result<(), ProcessError> {
+        Ok(())
+    }
+}
+
 fn apply_update_action(
     state: &mut DidStateMut,
     action: ParsedUpdateOperationAction,
@@ -198,8 +231,12 @@ fn apply_update_action(
             id,
             r#type,
             service_endpoints,
-        } => todo!(),
-        ParsedUpdateOperationAction::PatchContext(_) => todo!(),
+        } => {
+            // TODO: suppport update service
+        }
+        ParsedUpdateOperationAction::PatchContext(ctx) => {
+            state.with_context(ctx);
+        }
     }
 
     Ok(())

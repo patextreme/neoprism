@@ -4,8 +4,8 @@ use crate::{
     did::{
         self,
         operation::{
-            CreateOperationParsingError, ParsedPublicKey, ParsedService, PublicKeyId, ServiceId,
-            UpdateOperationParsingError,
+            CreateOperationParsingError, DeactivateOperationParsingError, ParsedPublicKey,
+            ParsedService, PublicKeyId, ServiceId, UpdateOperationParsingError,
         },
         CanonicalPrismDid, DidState,
     },
@@ -54,6 +54,8 @@ pub enum ProcessError {
     CreateOperationParseError(#[from] CreateOperationParsingError),
     #[error("Update operation cannot be parsed: {0}")]
     UpdateOperationParseError(#[from] UpdateOperationParsingError),
+    #[error("Deactivate operation cannot be parsed: {0}")]
+    DeactivateOperationParseError(#[from] DeactivateOperationParsingError),
     #[error("Invalid signature: {0}")]
     InvalidSignature(String),
 }

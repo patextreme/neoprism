@@ -5,8 +5,8 @@ use crate::{
         hash::Sha256Digest,
     },
     proto::{
-        update_did_action::Action, CreateDidOperation, KeyUsage, PublicKey, Service,
-        UpdateDidAction, UpdateDidOperation,
+        update_did_action::Action, CreateDidOperation, DeactivateDidOperation, KeyUsage, PublicKey,
+        Service, UpdateDidAction, UpdateDidOperation,
     },
     protocol::ProtocolParameter,
     util::{is_slice_unique, is_uri_fragment},
@@ -112,6 +112,8 @@ impl ParsedCreateOperation {
 pub enum UpdateOperationParsingError {
     #[error("Invalid did id: {0}")]
     InvalidDidId(#[from] DidParsingError),
+    #[error("Invalid previous operation hash: {0}")]
+    InvalidPreviousOperationHash(String),
     #[error("Update action is malformed: {0}")]
     MalformedUpdateAction(String),
     #[error("Unable to parse public_key in update action: {0}")]
@@ -140,12 +142,8 @@ impl ParsedUpdateOperation {
 
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Bytes::copy_from_slice(&operation.previous_operation_hash);
-        let prev_operation_hash = Sha256Digest::from_bytes(prev_operation_hash).map_err(|e| {
-            UpdateOperationParsingError::MalformedUpdateAction(format!(
-                "Invalid prev_operation_hash ({})",
-                e
-            ))
-        })?;
+        let prev_operation_hash = Sha256Digest::from_bytes(prev_operation_hash)
+            .map_err(UpdateOperationParsingError::InvalidPreviousOperationHash)?;
 
         let actions = operation
             .actions
@@ -245,6 +243,36 @@ impl ParsedUpdateOperationAction {
         };
 
         Ok(Some(action))
+    }
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum DeactivateOperationParsingError {
+    #[error("Invalid did id: {0}")]
+    InvalidDidId(#[from] DidParsingError),
+    #[error("Invalid previous operation hash: {0}")]
+    InvalidPreviousOperationHash(String),
+}
+
+#[derive(Debug, Clone)]
+pub struct ParsedDeactivateOperation {
+    pub id: CanonicalPrismDid,
+    pub prev_operation_hash: Sha256Digest,
+}
+
+impl ParsedDeactivateOperation {
+    pub fn parse(
+        operation: &DeactivateDidOperation,
+    ) -> Result<Self, DeactivateOperationParsingError> {
+        let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
+        let prev_operation_hash = Bytes::copy_from_slice(&operation.previous_operation_hash);
+        let prev_operation_hash = Sha256Digest::from_bytes(prev_operation_hash)
+            .map_err(DeactivateOperationParsingError::InvalidPreviousOperationHash)?;
+
+        Ok(Self {
+            id,
+            prev_operation_hash,
+        })
     }
 }
 
