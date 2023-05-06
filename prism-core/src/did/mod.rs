@@ -1,14 +1,18 @@
-use bytes::Bytes;
-
+use self::operation::{ParsedPublicKey, ParsedService};
 use crate::{
     crypto::{
         codec::{Base64UrlStrNoPad, HexStr},
         hash::{self, Sha256Digest},
     },
-    proto::{atala_operation::Operation, AtalaOperation, PublicKey, Service},
+    proto::{atala_operation::Operation, AtalaOperation},
     util::MessageExt,
 };
+use bytes::Bytes;
+use enum_dispatch::enum_dispatch;
 
+pub mod operation;
+
+#[enum_dispatch(PrismDid)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PrismDidAny {
     Canonical(CanonicalPrismDid),
@@ -26,6 +30,7 @@ pub struct LongFormPrismDid {
     pub encoded_state: Base64UrlStrNoPad,
 }
 
+#[enum_dispatch]
 pub trait PrismDid {
     fn suffix(&self) -> &Sha256Digest;
 
@@ -37,9 +42,7 @@ pub trait PrismDid {
         HexStr::from(Bytes::from(self.suffix().as_bytes().to_owned()))
     }
 
-    fn to_string(&self) -> String {
-        format!("did:{}:{}", self.method(), String::from(self.suffix_hex()))
-    }
+    fn to_string(&self) -> String;
 
     fn to_canonical(&self) -> CanonicalPrismDid {
         CanonicalPrismDid {
@@ -48,18 +51,13 @@ pub trait PrismDid {
     }
 }
 
-impl PrismDid for PrismDidAny {
-    fn suffix(&self) -> &Sha256Digest {
-        match self {
-            PrismDidAny::Canonical(did) => &did.suffix,
-            PrismDidAny::LongForm(did) => &did.suffix,
-        }
-    }
-}
-
 impl PrismDid for CanonicalPrismDid {
     fn suffix(&self) -> &Sha256Digest {
         &self.suffix
+    }
+
+    fn to_string(&self) -> String {
+        format!("did:{}:{}", self.method(), self.suffix_hex().to_string())
     }
 }
 
@@ -67,17 +65,14 @@ impl PrismDid for LongFormPrismDid {
     fn suffix(&self) -> &Sha256Digest {
         &self.suffix
     }
-}
 
-impl From<CanonicalPrismDid> for PrismDidAny {
-    fn from(did: CanonicalPrismDid) -> Self {
-        PrismDidAny::Canonical(did)
-    }
-}
-
-impl From<LongFormPrismDid> for PrismDidAny {
-    fn from(did: LongFormPrismDid) -> Self {
-        PrismDidAny::LongForm(did)
+    fn to_string(&self) -> String {
+        format!(
+            "did:{}:{}:{}",
+            self.method(),
+            self.suffix_hex().to_string(),
+            self.encoded_state.to_string()
+        )
     }
 }
 
@@ -88,7 +83,7 @@ impl From<LongFormPrismDid> for CanonicalPrismDid {
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-pub enum ParseError {
+pub enum DidParsingError {
     #[error("Invalid operation type: {0}")]
     InvalidOperationType(String),
     #[error("Operation does not exist")]
@@ -102,24 +97,25 @@ pub enum ParseError {
 }
 
 impl CanonicalPrismDid {
-    pub fn from_operation(operation: AtalaOperation) -> Result<Self, ParseError> {
+    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, DidParsingError> {
         Ok(LongFormPrismDid::from_operation(operation)?.into())
     }
 
-    pub fn from_suffix_str(suffix: &str) -> Result<Self, ParseError> {
+    pub fn from_suffix_str(suffix: &str) -> Result<Self, DidParsingError> {
         let suffix = HexStr::try_from(suffix.to_string())?;
         Self::from_suffix(suffix)
     }
 
-    pub fn from_suffix(suffix: HexStr) -> Result<Self, ParseError> {
+    pub fn from_suffix(suffix: HexStr) -> Result<Self, DidParsingError> {
         let bytes: Bytes = suffix.into();
-        let suffix = Sha256Digest::from_bytes(bytes).map_err(ParseError::InvalidSuffixLength)?;
+        let suffix =
+            Sha256Digest::from_bytes(bytes).map_err(DidParsingError::InvalidSuffixLength)?;
         Ok(Self { suffix })
     }
 }
 
 impl LongFormPrismDid {
-    pub fn from_operation(operation: AtalaOperation) -> Result<Self, ParseError> {
+    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, DidParsingError> {
         match operation.operation {
             Some(Operation::CreateDid(_)) => {
                 let bytes = operation.encode_to_bytes()?;
@@ -130,8 +126,8 @@ impl LongFormPrismDid {
                     encoded_state,
                 })
             }
-            None => Err(ParseError::OperationMissing),
-            Some(_) => Err(ParseError::InvalidOperationType(
+            None => Err(DidParsingError::OperationMissing),
+            Some(_) => Err(DidParsingError::InvalidOperationType(
                 "operation type must be CreateDid when deriving a DID".into(),
             )),
         }
@@ -143,6 +139,6 @@ pub struct DidState {
     pub did: CanonicalPrismDid,
     pub context: Vec<String>,
     pub last_operation_hash: Sha256Digest,
-    pub public_keys: Vec<PublicKey>,
-    pub services: Vec<Service>,
+    pub public_keys: Vec<ParsedPublicKey>,
+    pub services: Vec<ParsedService>,
 }

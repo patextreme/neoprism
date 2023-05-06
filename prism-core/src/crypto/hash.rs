@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use sha2::{Digest, Sha256};
+use ring::digest;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Sha256Digest([u8; 32]);
@@ -11,6 +11,8 @@ impl Sha256Digest {
 
     /// Convert bytes to the digest.
     /// This only validate and wrap the raw bytes, it does not hash.
+    ///
+    /// # Example
     ///
     /// ```
     /// use prism_core::crypto::hash::Sha256Digest;
@@ -37,11 +39,11 @@ impl From<Sha256Digest> for Bytes {
     }
 }
 
-pub fn sha256<B: Into<Bytes>>(bytes: B) -> Sha256Digest {
-    let bytes: Bytes = bytes.into();
-    let bytes: Vec<u8> = bytes.into();
-    let mut hasher = Sha256::new();
-    hasher.update(bytes);
-    let digest = hasher.finalize().into();
+pub fn sha256<B: AsRef<[u8]>>(bytes: B) -> Sha256Digest {
+    let digest = digest::digest(&digest::SHA256, bytes.as_ref());
+    let digest: [u8; 32] = digest
+        .as_ref()
+        .try_into()
+        .expect("The digest must have length of 32 bytes");
     Sha256Digest(digest)
 }

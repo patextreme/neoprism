@@ -6,6 +6,16 @@ macro_rules! bytes_repr {
         #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $id(Bytes);
 
+        impl $id {
+            pub fn as_bytes(&self) -> &[u8] {
+                &self.0
+            }
+
+            pub fn to_string(&self) -> String {
+                String::from(self)
+            }
+        }
+
         impl From<Bytes> for $id {
             fn from(bytes: Bytes) -> Self {
                 Self(bytes)
@@ -45,6 +55,13 @@ macro_rules! bytes_repr_b64 {
                 engine.encode(s.0)
             }
         }
+
+        impl From<&$id> for String {
+            fn from(s: &$id) -> Self {
+                let engine = $engine;
+                engine.encode(&s.0)
+            }
+        }
     };
 }
 
@@ -65,5 +82,11 @@ impl TryFrom<String> for HexStr {
 impl From<HexStr> for String {
     fn from(s: HexStr) -> Self {
         hex::encode(s.0)
+    }
+}
+
+impl From<&HexStr> for String {
+    fn from(s: &HexStr) -> Self {
+        hex::encode(&s.0)
     }
 }

@@ -1,6 +1,7 @@
 use prism_core::{
+    did::CanonicalPrismDid,
     dlt::{cardano::OuraFileSource, DltSource},
-    proto::AtalaOperation,
+    protocol::resolver::resolve,
     store::OperationStore,
 };
 
@@ -14,18 +15,24 @@ async fn main() {
     let mut rx = source.receiver();
     while let Some(published_atala_object) = rx.recv().await {
         let block = published_atala_object.atala_object.block_content;
-        let dlt_timestamp = published_atala_object.dlt_timestamp;
+        let block_timestamp = published_atala_object.block_timestamp;
         let signed_operations = block.map(|i| i.operations).unwrap_or_default();
-        let operations: Vec<AtalaOperation> = signed_operations
-            .into_iter()
-            .flat_map(|i| i.operation)
-            .collect();
-
-        for operation in operations.into_iter() {
-            store
-                .insert(operation, dlt_timestamp.clone())
-                .await
-                .unwrap();
+        for (idx, signed_operation) in signed_operations.into_iter().enumerate() {
+            let _ = store
+                .insert(
+                    signed_operation,
+                    block_timestamp.clone().into_operation_ts(idx),
+                )
+                .await;
         }
     }
+
+    // test resolution
+    let did = CanonicalPrismDid::from_suffix_str(
+        "70f163eb8ec772ee53a25de55a5e0b4c04f346406b459427a469a9b8509e3ec4",
+    )
+    .unwrap();
+    let ops = store.get_by_did(&did).await.unwrap().unwrap();
+    let did_data = resolve(ops);
+    println!("{:?}", did_data);
 }

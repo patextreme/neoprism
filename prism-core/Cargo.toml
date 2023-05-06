@@ -6,18 +6,28 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# general
 base64 = "0.21"
 bytes = "1"
 chrono = "0.4"
+enum_dispatch = "0.3"
 hex = "0.4"
+im-rc = "15"
+lazy_static = "1"
 log = "0.4"
 prost = "0.11"
 prost-types = "0.11"
+regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.10"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
+# crypto
+curve25519-dalek = "3"
+ed25519-dalek = "1"
+ring = "0.16"
+secp256k1 = "0.27"
+x25519-dalek = "1"
 
 [build-dependencies]
 prost-build = "0.11"

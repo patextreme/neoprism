@@ -6,30 +6,69 @@ use tokio::sync::mpsc::{self, Receiver, Sender};
 pub mod cardano;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DltTimestamp {
-    pub timestamp: DateTime<Utc>,
-    pub tx_idx: u32,
+pub struct BlockTimestamp {
+    /// Cardano block timestamp
+    pub cbt: DateTime<Utc>,
+    /// AtalaBlock seqeuence number
+    ///
+    /// This is used to order AtalaBlock within the same Cardano block
+    pub absn: u32,
 }
 
-impl PartialOrd for DltTimestamp {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OperationTimestamp {
+    /// AtalaBlock timestamp
+    pub block_timestamp: BlockTimestamp,
+    /// Operation sequence number
+    ///
+    /// This is used to order AtalaOperation within the same AtalaBlock
+    pub osn: usize,
+}
+
+impl BlockTimestamp {
+    pub fn into_operation_ts(self, atala_block_idx: usize) -> OperationTimestamp {
+        OperationTimestamp {
+            block_timestamp: self,
+            osn: atala_block_idx,
+        }
+    }
+}
+
+impl PartialOrd for BlockTimestamp {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let tuple_self = (self.timestamp, self.tx_idx);
-        let tuple_other = (other.timestamp, other.tx_idx);
+        let tuple_self = (self.cbt, self.absn);
+        let tuple_other = (other.cbt, other.absn);
         tuple_self.partial_cmp(&tuple_other)
     }
 }
 
-impl Ord for DltTimestamp {
+impl Ord for BlockTimestamp {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let tuple_self = (self.timestamp, self.tx_idx);
-        let tuple_other = (other.timestamp, other.tx_idx);
+        let tuple_self = (self.cbt, self.absn);
+        let tuple_other = (other.cbt, other.absn);
+        tuple_self.cmp(&tuple_other)
+    }
+}
+
+impl PartialOrd for OperationTimestamp {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        let tuple_self = (&self.block_timestamp, self.osn);
+        let tuple_other = (&other.block_timestamp, other.osn);
+        tuple_self.partial_cmp(&tuple_other)
+    }
+}
+
+impl Ord for OperationTimestamp {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let tuple_self = (&self.block_timestamp, self.osn);
+        let tuple_other = (&other.block_timestamp, other.osn);
         tuple_self.cmp(&tuple_other)
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct PublishedAtalaObject {
-    pub dlt_timestamp: DltTimestamp,
+    pub block_timestamp: BlockTimestamp,
     pub atala_object: AtalaObject,
 }
 
@@ -54,6 +93,7 @@ pub struct InMemoryDltSource {
 pub struct InMemoryDltSink {
     delay: tokio::time::Duration,
     tx: Sender<PublishedAtalaObject>,
+    slot: u64,
 }
 
 impl InMemoryDlt {
@@ -67,6 +107,7 @@ impl InMemoryDlt {
         let sink = InMemoryDltSink {
             delay: self.delay,
             tx: self.tx,
+            slot: 0,
         };
         (source, sink)
     }
@@ -82,14 +123,15 @@ impl DltSink for InMemoryDltSink {
     fn send(&mut self, atala_object: AtalaObject) {
         let owned_delay = self.delay;
         let owned_tx = self.tx.clone();
+        let owned_slot = self.slot;
         tokio::spawn(async move {
             tokio::time::sleep(owned_delay).await;
-            let dlt_timestamp = DltTimestamp {
-                timestamp: Utc::now(),
-                tx_idx: 0,
+            let block_timestamp = BlockTimestamp {
+                cbt: Utc::now(),
+                absn: 0,
             };
             let published_atala_object = PublishedAtalaObject {
-                dlt_timestamp,
+                block_timestamp,
                 atala_object,
             };
             let send_result = owned_tx.send(published_atala_object).await;
@@ -97,5 +139,6 @@ impl DltSink for InMemoryDltSink {
                 log::error!("Error sending AtalaObject to InMemoryDlt: {}", e);
             }
         });
+        self.slot += 1;
     }
 }

@@ -1,8 +1,7 @@
-use tokio::sync::mpsc::{self, Receiver};
-
 use super::{DltSource, PublishedAtalaObject};
 use crate::dlt::cardano::model::MetadataEvent;
 use std::path::{Path, PathBuf};
+use tokio::sync::mpsc::{self, Receiver};
 
 pub struct OuraFileSource {
     path: PathBuf,
@@ -42,6 +41,7 @@ impl DltSource for OuraFileSource {
             for atala_object in atala_objects {
                 if let Err(e) = tx.send(atala_object).await {
                     log::error!("Error sending AtalaObject from OuraFileSource: {}", e);
+                    break;
                 }
             }
         });
@@ -52,7 +52,7 @@ impl DltSource for OuraFileSource {
 
 mod model {
     use crate::{
-        dlt::{DltTimestamp, PublishedAtalaObject},
+        dlt::{BlockTimestamp, PublishedAtalaObject},
         proto::AtalaObject,
     };
     use bytes::BytesMut;
@@ -125,12 +125,12 @@ mod model {
                 .ok_or_else(|| {
                 ConversionError::ProtoDecodeError(prost::DecodeError::new("timestamp is not valid"))
             })?;
-            let dlt_timestamp = DltTimestamp {
-                timestamp,
-                tx_idx: value.context.tx_idx,
+            let block_timestamp = BlockTimestamp {
+                cbt: timestamp,
+                absn: value.context.tx_idx,
             };
             let published_atala_object = PublishedAtalaObject {
-                dlt_timestamp,
+                block_timestamp,
                 atala_object,
             };
             Ok(published_atala_object)
