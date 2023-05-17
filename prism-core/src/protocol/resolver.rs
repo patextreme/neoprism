@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 
 type OperationList = VecDeque<(OperationTimestamp, SignedAtalaOperation)>;
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ResolutionError {
     #[error("The DID is not found")]
     DidNotFound,
@@ -13,7 +13,7 @@ pub enum ResolutionError {
 pub fn resolve(
     mut operations: Vec<(OperationTimestamp, SignedAtalaOperation)>,
 ) -> Result<DidState, ResolutionError> {
-    operations.sort_by_key(|i| i.0.clone());
+    operations.sort_by(|(t_a, _), (t_b, _)| t_a.cmp(t_b));
     let operations: OperationList = OperationList::from(operations);
 
     let (mut state_ops, mut remaining) = init_state_ops(operations)?;

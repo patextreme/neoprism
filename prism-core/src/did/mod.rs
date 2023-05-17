@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use self::operation::{ParsedPublicKey, ParsedService};
 use crate::{
     crypto::{
@@ -42,8 +44,6 @@ pub trait PrismDid {
         HexStr::from(Bytes::from(self.suffix().as_bytes().to_owned()))
     }
 
-    fn to_string(&self) -> String;
-
     fn to_canonical(&self) -> CanonicalPrismDid {
         CanonicalPrismDid {
             suffix: self.suffix().clone(),
@@ -55,24 +55,11 @@ impl PrismDid for CanonicalPrismDid {
     fn suffix(&self) -> &Sha256Digest {
         &self.suffix
     }
-
-    fn to_string(&self) -> String {
-        format!("did:{}:{}", self.method(), self.suffix_hex().to_string())
-    }
 }
 
 impl PrismDid for LongFormPrismDid {
     fn suffix(&self) -> &Sha256Digest {
         &self.suffix
-    }
-
-    fn to_string(&self) -> String {
-        format!(
-            "did:{}:{}:{}",
-            self.method(),
-            self.suffix_hex().to_string(),
-            self.encoded_state.to_string()
-        )
     }
 }
 
@@ -82,15 +69,42 @@ impl From<LongFormPrismDid> for CanonicalPrismDid {
     }
 }
 
+impl std::fmt::Display for PrismDidAny {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PrismDidAny::Canonical(did) => did.fmt(f),
+            PrismDidAny::LongForm(did) => did.fmt(f),
+        }
+    }
+}
+
+impl std::fmt::Display for CanonicalPrismDid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "did:{}:{}", self.method(), self.suffix_hex())
+    }
+}
+
+impl std::fmt::Display for LongFormPrismDid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "did:{}:{}:{}",
+            self.method(),
+            self.suffix_hex(),
+            self.encoded_state
+        )
+    }
+}
+
 impl std::fmt::Debug for CanonicalPrismDid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self)
     }
 }
 
 impl std::fmt::Debug for LongFormPrismDid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self)
     }
 }
 
@@ -114,7 +128,7 @@ impl CanonicalPrismDid {
     }
 
     pub fn from_suffix_str(suffix: &str) -> Result<Self, DidParsingError> {
-        let suffix = HexStr::try_from(suffix.to_string())?;
+        let suffix = HexStr::from_str(suffix)?;
         Self::from_suffix(suffix)
     }
 
@@ -146,7 +160,7 @@ impl LongFormPrismDid {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DidState {
     pub did: CanonicalPrismDid,
     pub context: Vec<String>,

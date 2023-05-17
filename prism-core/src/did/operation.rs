@@ -366,7 +366,7 @@ pub enum PublicKeyParsingError {
     InvalidMasterKeyType(PublicKeyId),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedPublicKey {
     pub id: PublicKeyId,
     pub data: ParsedPublicKeyData,
@@ -411,7 +411,7 @@ impl ParsedPublicKey {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParsedPublicKeyData {
     Master {
         data: Secp256k1PublicKey,
@@ -458,7 +458,7 @@ pub enum ServiceParsingError {
     InvalidServiceEndpoint(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedService {
     pub id: ServiceId,
     pub r#type: ParsedServiceType,
@@ -485,7 +485,7 @@ impl ParsedService {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParsedServiceType {
     Single(String),
     Multiple(Vec<String>),
@@ -536,7 +536,7 @@ impl ParsedServiceType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParsedServiceEndpoint {
     Single(ServiceEndpointValue),
     Multiple(Vec<ServiceEndpointValue>),
@@ -582,7 +582,7 @@ impl ParsedServiceEndpoint {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceEndpointValue {
     URI(String), // TODO: validate value is a valid normalized URI
     Json(serde_json::Map<String, serde_json::Value>),

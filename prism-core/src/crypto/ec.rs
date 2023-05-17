@@ -9,14 +9,14 @@ pub trait ECPublicKey {
     fn curve_name(&self) -> &'static str;
 }
 
-pub trait SignatureVerifier {
+pub trait DsaPublicKey {
     fn verify<Msg, Sig>(&self, message: Msg, signature: Sig) -> Result<(), String>
     where
         Msg: AsRef<[u8]>,
         Sig: AsRef<[u8]>;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[enum_dispatch(ECPublicKey)]
 pub enum ECPublicKeyAny {
     Secp256k1(Secp256k1PublicKey),
@@ -42,7 +42,7 @@ impl ECPublicKeyAny {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Secp256k1PublicKey(secp256k1::PublicKey);
 
 impl Secp256k1PublicKey {
@@ -63,6 +63,12 @@ impl Secp256k1PublicKey {
         let pk = secp256k1::PublicKey::from_slice(&data).map_err(|e| e.to_string())?;
         Ok(Self(pk))
     }
+
+    pub fn random() -> Self {
+        let secp = secp256k1::Secp256k1::new();
+        let (_, pk) = secp.generate_keypair(&mut rand::thread_rng());
+        Self(pk)
+    }
 }
 
 impl ECPublicKey for Secp256k1PublicKey {
@@ -71,7 +77,7 @@ impl ECPublicKey for Secp256k1PublicKey {
     }
 }
 
-impl SignatureVerifier for Secp256k1PublicKey {
+impl DsaPublicKey for Secp256k1PublicKey {
     fn verify<Msg, Sig>(&self, message: Msg, signature: Sig) -> Result<(), String>
     where
         Msg: AsRef<[u8]>,
@@ -88,7 +94,7 @@ impl SignatureVerifier for Secp256k1PublicKey {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ed25519PublicKey(ed25519_dalek::PublicKey);
 
 impl Ed25519PublicKey {
@@ -112,7 +118,7 @@ impl ECPublicKey for Ed25519PublicKey {
     }
 }
 
-impl SignatureVerifier for Ed25519PublicKey {
+impl DsaPublicKey for Ed25519PublicKey {
     fn verify<Msg, Sig>(&self, message: Msg, signature: Sig) -> Result<(), String>
     where
         Msg: AsRef<[u8]>,
@@ -126,7 +132,7 @@ impl SignatureVerifier for Ed25519PublicKey {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct X25519PublicKey(x25519_dalek::PublicKey);
 
 impl X25519PublicKey {

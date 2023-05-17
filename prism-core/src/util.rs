@@ -2,7 +2,7 @@ use bytes::{Bytes, BytesMut};
 use lazy_static::lazy_static;
 use prost::Message;
 use regex::Regex;
-use std::{collections::HashSet, rc::Rc};
+use std::collections::HashSet;
 
 lazy_static! {
     static ref URI_FRAGMENT_RE: Regex =
@@ -18,21 +18,6 @@ impl<T: Message> MessageExt for T {
         let mut buf = BytesMut::with_capacity(self.encoded_len());
         self.encode(&mut buf)?;
         Ok(buf.freeze())
-    }
-}
-
-pub(crate) trait VecExt<T> {
-    fn map_rc(self) -> Vec<Rc<T>>
-    where
-        T: 'static;
-}
-
-impl<T> VecExt<T> for Vec<T> {
-    fn map_rc(self) -> Vec<Rc<T>>
-    where
-        T: 'static,
-    {
-        self.into_iter().map(Rc::new).collect()
     }
 }
 

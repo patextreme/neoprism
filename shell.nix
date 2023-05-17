@@ -1,32 +1,37 @@
-{ pkgs ? (import ./nix/input.nix).pkgs }:
+{ ... }:
 
 let
   rootDir = toString ./.;
-  input = import ./nix/input.nix;
-  oura = pkgs.rustPlatform.buildRustPackage rec {
-    name = "oura";
-    src = pkgs.fetchgit {
-      url = "https://github.com/txpipe/oura.git";
-      rev = "v1.8.1";
-      sha256 = "HSVVrhwPPUeAHiIx/16r86pKQtCsNIQSVcTH92cLdNE=";
-    };
-    cargoHash = "sha256-a+j40vo/xzHx64pRdmN8gIDhXCi5xgrbWp9Bx15EXbU=";
-    buildNoDefaultFeatures = true;
-    buildFeatures = [ "logs" ];
-  };
+  inherit (import ./nix/input.nix) pkgs oura rust;
   scripts = rec {
     build = pkgs.writeShellScriptBin "build" ''
-      ${input.rust}/bin/cargo fmt
-      ${input.rust}/bin/cargo build
+      ${rust}/bin/cargo fmt
+      ${rust}/bin/cargo build
     '';
 
     clean = pkgs.writeShellScriptBin "clean" ''
-      ${input.rust}/bin/cargo clean
+      ${rust}/bin/cargo clean
+    '';
+
+    testCoverage = pkgs.writeShellScriptBin "testCoverage" ''
+      ${clean}/bin/clean
+
+      export CARGO_INCREMENTAL=0
+      export RUSTFLAGS="-C instrument-coverage"
+      export LLVM_PROFILE_FILE='${rootDir}/target/profraw/cargo-test-%p-%m.profraw'
+
+      mkdir -p ${rootDir}/target/coverage/html
+      mkdir -p ${rootDir}/target/profraw
+
+      ${rust}/bin/cargo build
+      ${rust}/bin/cargo test
+
+      ${pkgs.grcov}/bin/grcov . --binary-path ${rootDir}/target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o ${rootDir}/target/coverage/html
     '';
   };
 in pkgs.mkShell {
   packages = with pkgs;
-    [ git which input.rust protobuf oura ] ++ (builtins.attrValues scripts);
+    [ git which rust protobuf oura ] ++ (builtins.attrValues scripts);
   shellHook = "";
 
   # envs

@@ -1,5 +1,5 @@
 use crate::{
-    did::{self, CanonicalPrismDid, PrismDid},
+    did::{self, CanonicalPrismDid},
     dlt::OperationTimestamp,
     proto::{atala_operation::Operation, AtalaOperation, SignedAtalaOperation},
 };
@@ -39,7 +39,7 @@ impl OperationStore {
         log::info!(
             "Inserted {} operation for {}",
             op_type.unwrap_or("None"),
-            did.to_string()
+            did
         );
         Ok(did)
     }

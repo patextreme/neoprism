@@ -2,7 +2,7 @@ use super::{
     DidStateMut, OperationProcessor, OperationProcessorAny, ProcessError, ProtocolParameter,
 };
 use crate::{
-    crypto::{ec::SignatureVerifier, hash::sha256},
+    crypto::{ec::DsaPublicKey, hash::sha256},
     did::operation::{
         ParsedCreateOperation, ParsedDeactivateOperation, ParsedKeyUsage, ParsedPublicKeyData,
         ParsedUpdateOperation, ParsedUpdateOperationAction, PublicKeyId,

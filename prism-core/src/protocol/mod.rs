@@ -22,6 +22,10 @@ use std::rc::Rc;
 pub mod resolver;
 mod v1;
 
+#[cfg(test)]
+#[path = "protocol_tests.rs"]
+mod tests;
+
 #[derive(Debug, Clone)]
 pub struct ProtocolParameter {
     pub max_services: usize,
@@ -236,6 +240,35 @@ impl DidStateMut {
         service.get_mut().service_endpoints = new_endpoint;
         Ok(())
     }
+
+    fn finalize(self) -> DidState {
+        let did: CanonicalPrismDid = (*self.did).clone();
+        let context: Vec<String> = self
+            .context
+            .iter()
+            .map(|s| s.as_str().to_string())
+            .collect();
+        let last_operation_hash: Sha256Digest = (*self.last_operation_hash).clone();
+        let public_keys: Vec<ParsedPublicKey> = self
+            .public_keys
+            .into_iter()
+            .filter(|(_, i)| !i.is_revoked())
+            .map(|(_, i)| i.into_item())
+            .collect();
+        let services: Vec<ParsedService> = self
+            .services
+            .into_iter()
+            .filter(|(_, i)| !i.is_revoked())
+            .map(|(_, i)| i.into_item())
+            .collect();
+        DidState {
+            did,
+            context,
+            last_operation_hash,
+            public_keys,
+            services,
+        }
+    }
 }
 
 struct DidStateOps {
@@ -317,35 +350,7 @@ impl DidStateOps {
     }
 
     fn finalize(self) -> DidState {
-        let did: CanonicalPrismDid = (*self.state.did).clone();
-        let context: Vec<String> = self
-            .state
-            .context
-            .iter()
-            .map(|s| s.as_str().to_string())
-            .collect();
-        let last_operation_hash: Sha256Digest = (*self.state.last_operation_hash).clone();
-        let public_keys: Vec<ParsedPublicKey> = self
-            .state
-            .public_keys
-            .into_iter()
-            .filter(|(_, i)| !i.is_revoked())
-            .map(|(_, i)| i.into_item())
-            .collect();
-        let services: Vec<ParsedService> = self
-            .state
-            .services
-            .into_iter()
-            .filter(|(_, i)| !i.is_revoked())
-            .map(|(_, i)| i.into_item())
-            .collect();
-        DidState {
-            did,
-            context,
-            last_operation_hash,
-            public_keys,
-            services,
-        }
+        self.state.finalize()
     }
 }
 
