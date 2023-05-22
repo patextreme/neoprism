@@ -16,6 +16,8 @@ pub fn resolve(
     operations.sort_by(|(t_a, _), (t_b, _)| t_a.cmp(t_b));
     let operations: OperationList = OperationList::from(operations);
 
+    log::debug!("resolving DID data from {} operations", operations.len());
+
     let (mut state_ops, mut remaining) = init_state_ops(operations)?;
     while let Some((timestamp, operation)) = remaining.pop_front() {
         state_ops = state_ops.process(operation, timestamp);

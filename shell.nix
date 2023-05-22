@@ -23,17 +23,19 @@ let
       mkdir -p ${rootDir}/target/coverage/html
       mkdir -p ${rootDir}/target/profraw
 
-      ${rust}/bin/cargo build
-      ${rust}/bin/cargo test
+      ${rust}/bin/cargo build --all-features
+      ${rust}/bin/cargo test --all-features
 
       ${pkgs.grcov}/bin/grcov . --binary-path ${rootDir}/target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o ${rootDir}/target/coverage/html
     '';
   };
 in pkgs.mkShell {
   packages = with pkgs;
-    [ git which rust protobuf oura ] ++ (builtins.attrValues scripts);
+    [ git which rust protobuf oura surrealdb rust-analyzer ]
+    ++ (builtins.attrValues scripts);
   shellHook = "";
 
   # envs
-  RUST_LOG = "info";
+  RUST_LOG = "debug";
+  RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
 }

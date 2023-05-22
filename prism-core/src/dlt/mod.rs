@@ -1,11 +1,12 @@
 use crate::proto::AtalaObject;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 #[cfg(feature = "cardano")]
 pub mod cardano;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BlockTimestamp {
     /// Cardano block timestamp
     pub cbt: DateTime<Utc>,
@@ -15,7 +16,7 @@ pub struct BlockTimestamp {
     pub absn: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OperationTimestamp {
     /// AtalaBlock timestamp
     pub block_timestamp: BlockTimestamp,

@@ -2,17 +2,20 @@ use prism_core::{
     did::CanonicalPrismDid,
     dlt::{cardano::OuraFileSource, DltSource},
     protocol::resolver::resolve,
-    store::OperationStore,
+    store::{surreal::SurrealOperationStore, OperationStore},
 };
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
-
-    let mut store = OperationStore::in_memory();
+    let mut store =
+        SurrealOperationStore::ws_root("localhost:8000", "test", "test", "root", "root")
+            .await
+            .unwrap();
 
     let source = OuraFileSource::new("./mainnet");
     let mut rx = source.receiver();
+
     while let Some(published_atala_object) = rx.recv().await {
         let block = published_atala_object.atala_object.block_content;
         let block_timestamp = published_atala_object.block_timestamp;
@@ -32,7 +35,7 @@ async fn main() {
         "70f163eb8ec772ee53a25de55a5e0b4c04f346406b459427a469a9b8509e3ec4",
     )
     .unwrap();
-    let ops = store.get_by_did(&did).await.unwrap().unwrap();
+    let ops = store.get_by_did(&did).await.unwrap();
     let did_data = resolve(ops);
     println!("{:#?}", did_data);
 }

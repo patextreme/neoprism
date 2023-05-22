@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 # general
+async-trait = "0.1"
 base64 = "0.21"
 bytes = "1"
 chrono = "0.4"
@@ -29,10 +30,13 @@ ed25519-dalek = "1"
 ring = "0.16"
 secp256k1 = { version = "0.27", features = ["rand"] }
 x25519-dalek = "1"
+# surrealdb
+surrealdb = { version = "1.0.0-beta.9+20230402", optional = true, features = ["protocol-ws"] }
 
 [build-dependencies]
 prost-build = "0.11"
 
 [features]
-default = ["cardano"]
+default = ["cardano", "surrealdb"]
 cardano = []
+surrealdb = ["dep:surrealdb"]

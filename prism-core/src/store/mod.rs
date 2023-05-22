@@ -5,74 +5,58 @@ use crate::{
 };
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, thiserror::Error)]
-pub enum OperationStoreError {
-    #[error("Unable to parse Did from operation: {0}")]
-    DidParseError(#[from] did::DidParsingError),
-    #[error("Operation is empty")]
-    EmptyOperation,
-}
+#[cfg(feature = "surrealdb")]
+pub mod surreal;
 
-pub enum OperationStore {
-    InMemory(InMemoryOperationStore),
-}
-
-impl OperationStore {
-    pub fn in_memory() -> Self {
-        Self::InMemory(InMemoryOperationStore::new())
-    }
-
-    pub async fn insert(
-        &mut self,
-        signed_operation: SignedAtalaOperation,
-        timestamp: OperationTimestamp,
-    ) -> Result<CanonicalPrismDid, OperationStoreError> {
-        let Some(operation) = &signed_operation.operation else {
-            Err(OperationStoreError::EmptyOperation)?
-        };
-
-        let did = extract_insert_key(operation)?;
-        let op_type = extract_operation_type_name(operation);
-        match self {
-            Self::InMemory(store) => store.insert(did.clone(), signed_operation, timestamp)?,
-        }
-        log::info!(
-            "Inserted {} operation for {}",
-            op_type.unwrap_or("None"),
-            did
-        );
-        Ok(did)
-    }
-
-    pub async fn get_by_did(
-        &mut self,
-        did: &CanonicalPrismDid,
-    ) -> Result<Option<Vec<(OperationTimestamp, SignedAtalaOperation)>>, OperationStoreError> {
-        match self {
-            Self::InMemory(store) => store.get_by_did(did),
-        }
-    }
-}
-
-fn extract_insert_key(
+fn get_did_from_operation(
     atala_operation: &AtalaOperation,
 ) -> Result<CanonicalPrismDid, OperationStoreError> {
     match &atala_operation.operation {
         Some(Operation::CreateDid(_)) => Ok(CanonicalPrismDid::from_operation(atala_operation)?),
         Some(Operation::UpdateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::DeactivateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
-        Some(Operation::ProtocolVersionUpdate(_)) => todo!("add support for protocol update"),
+        Some(Operation::ProtocolVersionUpdate(op)) => {
+            Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?)
+        }
         None => Err(OperationStoreError::EmptyOperation),
     }
 }
 
-fn extract_operation_type_name(operation: &AtalaOperation) -> Option<&'static str> {
-    operation.operation.as_ref().map(|o| match o {
-        Operation::CreateDid(_) => "CreateDid",
-        Operation::UpdateDid(_) => "UpdateDid",
-        Operation::ProtocolVersionUpdate(_) => "ProtocolVersionUpdate",
-        Operation::DeactivateDid(_) => "DeactivateDid",
-    })
+fn get_did_from_signed_operation(
+    signed_operation: &SignedAtalaOperation,
+) -> Result<CanonicalPrismDid, OperationStoreError> {
+    match &signed_operation.operation {
+        Some(operation) => get_did_from_operation(operation),
+        None => Err(OperationStoreError::EmptyOperation),
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum OperationStoreError {
+    #[error("Unable to parse Did from operation: {0}")]
+    DidParseError(#[from] did::DidParsingError),
+    #[error("Operation is empty")]
+    EmptyOperation,
+    #[error("Operation cannot be encoded to bytes: {0}")]
+    OperationEncodeError(#[from] prost::EncodeError),
+    #[error("Operation canno be decoded from bytes: {0}")]
+    OperationDecodeError(#[from] prost::DecodeError),
+    #[error("Storage mechanism error: {0}")]
+    StorageBackendError(Box<dyn std::error::Error>),
+}
+
+#[async_trait::async_trait]
+pub trait OperationStore {
+    async fn get_by_did(
+        &mut self,
+        did: &CanonicalPrismDid,
+    ) -> Result<Vec<(OperationTimestamp, SignedAtalaOperation)>, OperationStoreError>;
+
+    async fn insert(
+        &mut self,
+        signed_operation: SignedAtalaOperation,
+        timestamp: OperationTimestamp,
+    ) -> Result<(), OperationStoreError>;
 }
 
 #[derive(Debug, Clone, Default)]
@@ -80,17 +64,14 @@ pub struct InMemoryOperationStore {
     operations: HashMap<CanonicalPrismDid, Vec<(OperationTimestamp, SignedAtalaOperation)>>,
 }
 
-impl InMemoryOperationStore {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    fn insert(
+#[async_trait::async_trait]
+impl OperationStore for InMemoryOperationStore {
+    async fn insert(
         &mut self,
-        did: CanonicalPrismDid,
         signed_operation: SignedAtalaOperation,
         timestamp: OperationTimestamp,
     ) -> Result<(), OperationStoreError> {
+        let did = get_did_from_signed_operation(&signed_operation)?;
         self.operations
             .entry(did)
             .or_insert_with(Vec::new)
@@ -98,10 +79,10 @@ impl InMemoryOperationStore {
         Ok(())
     }
 
-    fn get_by_did(
+    async fn get_by_did(
         &mut self,
         did: &CanonicalPrismDid,
-    ) -> Result<Option<Vec<(OperationTimestamp, SignedAtalaOperation)>>, OperationStoreError> {
-        Ok(self.operations.get(did).cloned())
+    ) -> Result<Vec<(OperationTimestamp, SignedAtalaOperation)>, OperationStoreError> {
+        Ok(self.operations.get(did).cloned().unwrap_or_default())
     }
 }

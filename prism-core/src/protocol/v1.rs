@@ -147,6 +147,7 @@ impl OperationProcessor for V1Processor {
         _: OperationTimestamp,
     ) -> Result<OperationProcessorAny, ProcessError> {
         // TODO: add support for protocol version update
+        log::warn!("Protocol version update is not yet supported");
         Ok(self.clone().into())
     }
 }
