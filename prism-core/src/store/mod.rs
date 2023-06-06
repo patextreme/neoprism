@@ -72,10 +72,21 @@ impl OperationStore for InMemoryOperationStore {
         timestamp: OperationTimestamp,
     ) -> Result<(), OperationStoreError> {
         let did = get_did_from_signed_operation(&signed_operation)?;
+        let did_str = did.to_string();
         self.operations
             .entry(did)
             .or_insert_with(Vec::new)
             .push((timestamp, signed_operation));
+
+        let did_count = self.operations.len();
+        let ops_count = self.operations.values().map(|v| v.len()).sum::<usize>();
+        log::info!(
+            "Operation of {} inserted. Store contains {} DIDs and {} operations.",
+            did_str,
+            did_count,
+            ops_count
+        );
+
         Ok(())
     }
 
@@ -83,6 +94,13 @@ impl OperationStore for InMemoryOperationStore {
         &mut self,
         did: &CanonicalPrismDid,
     ) -> Result<Vec<(OperationTimestamp, SignedAtalaOperation)>, OperationStoreError> {
-        Ok(self.operations.get(did).cloned().unwrap_or_default())
+        let result = self.operations.get(did).cloned();
+
+        log::info!(
+            "Read operation successfully. Got {} operations",
+            result.as_ref().map(|i| i.len()).unwrap_or_default()
+        );
+
+        Ok(result.unwrap_or_default())
     }
 }

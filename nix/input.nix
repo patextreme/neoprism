@@ -12,7 +12,7 @@ in rec {
     rustc = rust;
   };
 
-  oura = pkgs.rustPlatform.buildRustPackage rec {
+  oura = pkgs.rustPlatform.buildRustPackage {
     name = "oura";
     src = pkgs.fetchgit {
       url = "https://github.com/txpipe/oura.git";

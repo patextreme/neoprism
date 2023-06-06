@@ -36,6 +36,6 @@ in pkgs.mkShell {
   shellHook = "";
 
   # envs
-  RUST_LOG = "debug";
+  RUST_LOG = "oura=error,info";
   RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
 }

@@ -1,20 +1,27 @@
 use prism_core::{
     did::CanonicalPrismDid,
-    dlt::{cardano::OuraFileSource, DltSource},
+    dlt::{
+        cardano::{NetworkIdentifier, OuraN2NSource},
+        DltSource,
+    },
     protocol::resolver::resolve,
-    store::{surreal::SurrealOperationStore, OperationStore},
+    store::{InMemoryOperationStore, OperationStore},
 };
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    let mut store =
-        SurrealOperationStore::ws_root("localhost:8000", "test", "test", "root", "root")
-            .await
-            .unwrap();
+    // let mut store =
+    //     SurrealOperationStore::ws_root("localhost:8000", "test", "test", "root", "root")
+    //         .await
+    //         .unwrap();
 
-    let source = OuraFileSource::new("./mainnet");
-    let mut rx = source.receiver();
+    let mut store = InMemoryOperationStore::default();
+
+    // let source = OuraFileSource::new("./mainnet");
+    let source = OuraN2NSource::new("localhost:3001", &NetworkIdentifier::Mainnet);
+
+    let mut rx = source.receiver().expect("unable to create a DLT source");
 
     while let Some(published_atala_object) = rx.recv().await {
         let block = published_atala_object.atala_object.block_content;

@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use self::operation::{ParsedPublicKey, ParsedService};
 use crate::{
     crypto::{
@@ -11,6 +9,7 @@ use crate::{
 };
 use bytes::Bytes;
 use enum_dispatch::enum_dispatch;
+use std::str::FromStr;
 
 pub mod operation;
 

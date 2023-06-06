@@ -1,7 +1,6 @@
+use super::codec::HexStr;
 use bytes::Bytes;
 use ring::digest;
-
-use super::codec::HexStr;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Sha256Digest([u8; 32]);

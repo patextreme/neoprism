@@ -74,7 +74,7 @@ pub struct PublishedAtalaObject {
 }
 
 pub trait DltSource {
-    fn receiver(self) -> Receiver<PublishedAtalaObject>;
+    fn receiver(self) -> Result<Receiver<PublishedAtalaObject>, String>;
 }
 
 pub trait DltSink {
@@ -115,8 +115,8 @@ impl InMemoryDlt {
 }
 
 impl DltSource for InMemoryDltSource {
-    fn receiver(self) -> Receiver<PublishedAtalaObject> {
-        self.rx
+    fn receiver(self) -> Result<Receiver<PublishedAtalaObject>, String> {
+        Ok(self.rx)
     }
 }
 
