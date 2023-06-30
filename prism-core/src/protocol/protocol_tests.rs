@@ -3,78 +3,62 @@ use crate::{
     crypto::{ec::Secp256k1PublicKey, hash::Sha256Digest},
     did::{
         operation::{
-            ParsedPublicKey, ParsedPublicKeyData, ParsedService, ParsedServiceEndpoint,
-            ParsedServiceType, PublicKeyId, ServiceEndpointValue, ServiceId,
+            PublicKey, PublicKeyData, PublicKeyId, Service, ServiceEndpoint, ServiceEndpointValue,
+            ServiceId, ServiceType,
         },
         CanonicalPrismDid,
     },
-    dlt::{BlockTimestamp, OperationTimestamp},
+    dlt::{BlockMetadata, OperationMetadata},
     protocol::DidStateMut,
 };
 use bytes::Bytes;
-use chrono::{Duration, TimeZone, Utc};
+use chrono::{Duration, Utc};
 
-fn random_master_public_key(id: &str) -> ParsedPublicKey {
+fn random_master_public_key(id: &str) -> PublicKey {
     let max_id_size = ProtocolParameter::default().max_id_size;
-    ParsedPublicKey {
+    PublicKey {
         id: PublicKeyId::parse(id, max_id_size).unwrap(),
-        data: ParsedPublicKeyData::Master {
+        data: PublicKeyData::Master {
             data: Secp256k1PublicKey::random(),
         },
     }
 }
 
-fn default_service(id: &str) -> ParsedService {
+fn default_service(id: &str) -> Service {
     let max_id_size = ProtocolParameter::default().max_id_size;
-    ParsedService {
+    Service {
         id: ServiceId::parse(id, max_id_size).unwrap(),
-        r#type: ParsedServiceType::Single("LinkedDomains".to_string()),
-        service_endpoints: ParsedServiceEndpoint::Single(ServiceEndpointValue::URI(
+        r#type: ServiceType::Single("LinkedDomains".to_string()),
+        service_endpoints: ServiceEndpoint::Single(ServiceEndpointValue::URI(
             "https://example.com".to_string(),
         )),
     }
 }
 
-fn default_operation_timestamp() -> OperationTimestamp {
-    OperationTimestamp {
-        block_timestamp: BlockTimestamp {
-            cbt: Utc.timestamp_opt(0, 0).unwrap(),
-            absn: 0,
-        },
-        osn: 0,
-    }
-}
-
 #[test]
-fn revocable_is_revoked_on_non_revoked() {
-    let timestamp = OperationTimestamp {
-        block_timestamp: BlockTimestamp {
-            cbt: Utc::now(),
-            absn: 0,
-        },
-        osn: 0,
-    };
-    let revocable = Revocable::new(42, &timestamp);
+fn revocable_is_revoked_on_non_revoked_item() {
+    let metadata = Default::default();
+    let revocable = Revocable::new(42, &metadata);
     assert!(!revocable.is_revoked());
-    assert!(revocable.added_at == timestamp);
+    assert!(revocable.added_at == metadata);
 }
 
 #[test]
-fn revocable_is_revoked_on_revoked() {
-    let timestamp_1 = OperationTimestamp {
-        block_timestamp: BlockTimestamp {
+fn revocable_is_revoked_on_revoked_item() {
+    let metadata_1 = OperationMetadata {
+        block_metadata: BlockMetadata {
             cbt: Utc::now(),
-            absn: 0,
+            ..Default::default()
         },
-        osn: 0,
+        ..Default::default()
     };
-    let mut timestamp_2 = timestamp_1.clone();
-    timestamp_2.block_timestamp.cbt += Duration::seconds(10);
-    let mut revocable = Revocable::new(42, &timestamp_1);
-    revocable.revoke(&timestamp_2);
+    let mut metadata_2 = metadata_1.clone();
+    metadata_2.block_metadata.cbt += Duration::seconds(10);
+    let mut revocable = Revocable::new(42, &metadata_1);
+    revocable.revoke(&metadata_2);
     assert!(revocable.is_revoked());
-    assert!(revocable.added_at == timestamp_1);
-    assert!(revocable.revoked_at == Some(timestamp_2));
+    assert!(revocable.added_at == metadata_1);
+    assert!(revocable.revoked_at == Some(metadata_2));
 }
 
 #[test]
@@ -123,16 +107,16 @@ fn did_state_mut_add_public_key() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().public_keys.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let pk_1 = random_master_public_key("master-0");
-    state.add_public_key(pk_1.clone(), &ts).unwrap();
+    state.add_public_key(pk_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.public_keys.len(), 1);
     assert!(finalized_state.public_keys.contains(&pk_1));
 
     let pk_2 = random_master_public_key("master-1");
-    state.add_public_key(pk_2.clone(), &ts).unwrap();
+    state.add_public_key(pk_2.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.public_keys.len(), 2);
     assert!(finalized_state.public_keys.contains(&pk_2));
@@ -144,16 +128,16 @@ fn did_state_mut_add_public_key_duplicate() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().public_keys.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let pk_1 = random_master_public_key("master-0");
-    state.add_public_key(pk_1.clone(), &ts).unwrap();
+    state.add_public_key(pk_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.public_keys.len(), 1);
     assert!(finalized_state.public_keys.contains(&pk_1));
 
     let pk_2 = random_master_public_key("master-0");
-    let result = state.add_public_key(pk_2.clone(), &ts);
+    let result = state.add_public_key(pk_2.clone(), &metadata);
     assert!(result.is_err());
     assert_eq!(state.clone().finalize().public_keys.len(), 1);
 }
@@ -164,17 +148,17 @@ fn did_state_mut_add_public_key_duplicate_revoked() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().public_keys.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let pk_1 = random_master_public_key("master-0");
-    state.add_public_key(pk_1.clone(), &ts).unwrap();
+    state.add_public_key(pk_1.clone(), &metadata).unwrap();
     assert_eq!(state.clone().finalize().public_keys.len(), 1);
 
-    state.revoke_public_key(&pk_1.id, &ts).unwrap();
+    state.revoke_public_key(&pk_1.id, &metadata).unwrap();
     assert!(state.clone().finalize().public_keys.is_empty());
 
     let pk_2 = random_master_public_key("master-0");
-    let result = state.add_public_key(pk_2.clone(), &ts);
+    let result = state.add_public_key(pk_2.clone(), &metadata);
     assert!(result.is_err());
     assert!(state.clone().finalize().public_keys.is_empty());
 }
@@ -185,21 +169,21 @@ fn did_state_mut_revoke_public_key() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().public_keys.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let pk_1 = random_master_public_key("master-0");
-    state.add_public_key(pk_1.clone(), &ts).unwrap();
+    state.add_public_key(pk_1.clone(), &metadata).unwrap();
     let finalilzed_state = state.clone().finalize();
     assert_eq!(finalilzed_state.public_keys.len(), 1);
     assert!(finalilzed_state.public_keys.contains(&pk_1));
 
     let pk_2 = random_master_public_key("master-1");
-    state.add_public_key(pk_2.clone(), &ts).unwrap();
+    state.add_public_key(pk_2.clone(), &metadata).unwrap();
     let finalilzed_state = state.clone().finalize();
     assert_eq!(finalilzed_state.public_keys.len(), 2);
     assert!(finalilzed_state.public_keys.contains(&pk_2));
 
-    state.revoke_public_key(&pk_1.id, &ts).unwrap();
+    state.revoke_public_key(&pk_1.id, &metadata).unwrap();
     let finalilzed_state = state.clone().finalize();
     assert_eq!(finalilzed_state.public_keys.len(), 1);
     assert!(!finalilzed_state.public_keys.contains(&pk_1));
@@ -212,16 +196,16 @@ fn did_state_mut_revoke_public_key_not_exist() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().public_keys.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let pk_1 = random_master_public_key("master-0");
-    state.add_public_key(pk_1.clone(), &ts).unwrap();
+    state.add_public_key(pk_1.clone(), &metadata).unwrap();
     let finalilzed_state = state.clone().finalize();
     assert_eq!(finalilzed_state.public_keys.len(), 1);
     assert!(finalilzed_state.public_keys.contains(&pk_1));
 
     let pk_2 = random_master_public_key("master-1");
-    let result = state.revoke_public_key(&pk_2.id, &ts);
+    let result = state.revoke_public_key(&pk_2.id, &metadata);
     let finalilzed_state = state.clone().finalize();
     assert!(result.is_err());
     assert_eq!(finalilzed_state.public_keys.len(), 1);
@@ -233,19 +217,19 @@ fn did_state_mut_revoke_public_key_already_revoked() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().public_keys.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let pk_1 = random_master_public_key("master-0");
-    state.add_public_key(pk_1.clone(), &ts).unwrap();
+    state.add_public_key(pk_1.clone(), &metadata).unwrap();
     let finalilzed_state = state.clone().finalize();
     assert_eq!(finalilzed_state.public_keys.len(), 1);
     assert!(finalilzed_state.public_keys.contains(&pk_1));
 
-    state.revoke_public_key(&pk_1.id, &ts).unwrap();
+    state.revoke_public_key(&pk_1.id, &metadata).unwrap();
     let finalilzed_state = state.clone().finalize();
     assert_eq!(finalilzed_state.public_keys.len(), 0);
 
-    let result = state.revoke_public_key(&pk_1.id, &ts);
+    let result = state.revoke_public_key(&pk_1.id, &metadata);
     assert!(result.is_err());
     assert_eq!(finalilzed_state.public_keys.len(), 0);
 }
@@ -256,16 +240,16 @@ fn did_state_mut_add_service() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
     let service_2 = default_service("service-1");
-    state.add_service(service_2.clone(), &ts).unwrap();
+    state.add_service(service_2.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 2);
     assert!(finalized_state.services.contains(&service_2));
@@ -277,16 +261,16 @@ fn did_state_mut_add_sevice_duplicate() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
     let service_2 = default_service("service-0");
-    let result = state.add_service(service_2.clone(), &ts);
+    let result = state.add_service(service_2.clone(), &metadata);
     assert!(result.is_err());
     assert_eq!(finalized_state.services.len(), 1);
 }
@@ -297,20 +281,20 @@ fn did_state_mut_add_sevice_duplicate_revoked() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
-    state.revoke_service(&service_1.id, &ts).unwrap();
+    state.revoke_service(&service_1.id, &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 0);
 
     let service_2 = default_service("service-0");
-    let result = state.add_service(service_2.clone(), &ts);
+    let result = state.add_service(service_2.clone(), &metadata);
     assert!(result.is_err());
     assert_eq!(finalized_state.services.len(), 0);
 }
@@ -321,21 +305,21 @@ fn did_state_mut_revoke_service() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
     let service_2 = default_service("service-1");
-    state.add_service(service_2.clone(), &ts).unwrap();
+    state.add_service(service_2.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 2);
     assert!(finalized_state.services.contains(&service_2));
 
-    state.revoke_service(&service_1.id, &ts).unwrap();
+    state.revoke_service(&service_1.id, &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(!finalized_state.services.contains(&service_1));
@@ -348,16 +332,16 @@ fn did_stae_mut_revoke_service_not_exist() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
     let service_3 = default_service("service-2");
-    let result = state.revoke_service(&service_3.id, &ts);
+    let result = state.revoke_service(&service_3.id, &metadata);
     assert!(result.is_err());
     assert_eq!(finalized_state.services.len(), 1);
 }
@@ -368,19 +352,19 @@ fn did_state_mut_revoke_service_already_revoked() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
-    state.revoke_service(&service_1.id, &ts).unwrap();
+    state.revoke_service(&service_1.id, &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 0);
 
-    let result = state.revoke_service(&service_1.id, &ts);
+    let result = state.revoke_service(&service_1.id, &metadata);
     assert!(result.is_err());
     assert_eq!(finalized_state.services.len(), 0);
 }
@@ -391,15 +375,15 @@ fn did_state_mut_update_service_type() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
-    let service_type = ParsedServiceType::Single("DIDCommMessaging".to_string());
+    let service_type = ServiceType::Single("DIDCommMessaging".to_string());
     state
         .update_service_type(&service_1.id, service_type.clone())
         .unwrap();
@@ -417,16 +401,16 @@ fn did_state_mut_update_service_type_not_exist() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
     let service_2 = default_service("service-1");
-    let service_type = ParsedServiceType::Single("DIDCommMessaging".to_string());
+    let service_type = ServiceType::Single("DIDCommMessaging".to_string());
     let result = state.update_service_type(&service_2.id, service_type.clone());
     assert!(result.is_err());
     assert_eq!(finalized_state.services.len(), 1);
@@ -439,19 +423,19 @@ fn did_state_mut_update_service_type_already_revoked() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
-    state.revoke_service(&service_1.id, &ts).unwrap();
+    state.revoke_service(&service_1.id, &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 0);
 
-    let service_type = ParsedServiceType::Single("DIDCommMessaging".to_string());
+    let service_type = ServiceType::Single("DIDCommMessaging".to_string());
     let result = state.update_service_type(&service_1.id, service_type.clone());
     assert!(result.is_err());
     assert_eq!(finalized_state.services.len(), 0);
@@ -463,15 +447,15 @@ fn did_state_mut_update_service_endpoint() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
-    let endpoint = ParsedServiceEndpoint::Single(ServiceEndpointValue::URI(
+    let endpoint = ServiceEndpoint::Single(ServiceEndpointValue::URI(
         "https://example.com/endpoint".to_string(),
     ));
     state
@@ -491,16 +475,16 @@ fn did_state_mut_update_service_endpoint_not_exist() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
     let service_2 = default_service("service-1");
-    let endpoint = ParsedServiceEndpoint::Single(ServiceEndpointValue::URI(
+    let endpoint = ServiceEndpoint::Single(ServiceEndpointValue::URI(
         "https://example.com/endpoint".to_string(),
     ));
     let result = state.update_service_endpoint(&service_2.id, endpoint.clone());
@@ -515,19 +499,19 @@ fn did_state_mut_update_service_already_revoked() {
     let mut state = DidStateMut::new(did);
     assert!(state.clone().finalize().services.is_empty());
 
-    let ts = default_operation_timestamp();
+    let metadata = Default::default();
 
     let service_1 = default_service("service-0");
-    state.add_service(service_1.clone(), &ts).unwrap();
+    state.add_service(service_1.clone(), &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
-    state.revoke_service(&service_1.id, &ts).unwrap();
+    state.revoke_service(&service_1.id, &metadata).unwrap();
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 0);
 
-    let endpoint = ParsedServiceEndpoint::Single(ServiceEndpointValue::URI(
+    let endpoint = ServiceEndpoint::Single(ServiceEndpointValue::URI(
         "https://example.com/endpoint".to_string(),
     ));
     let result = state.update_service_endpoint(&service_1.id, endpoint.clone());

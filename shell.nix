@@ -28,14 +28,24 @@ let
 
       ${pkgs.grcov}/bin/grcov . --binary-path ${rootDir}/target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o ${rootDir}/target/coverage/html
     '';
+
+    generateEntity = pkgs.writeShellScriptBin "generateEntity" ''
+      mkdir -p ${rootDir}/target
+      rm -f ${rootDir}/target/tmp.db
+      touch ${rootDir}/target/tmp.db
+      ${rust}/bin/cargo run -p prism-persistence --no-default-features -- sqlite://${rootDir}/target/tmp.db
+      ${pkgs.sea-orm-cli}/bin/sea-orm-cli generate entity \
+        --database-url sqlite://${rootDir}/target/tmp.db \
+        -o ${rootDir}/prism-persistence/src/entity
+    '';
   };
 in pkgs.mkShell {
   packages = with pkgs;
-    [ git which rust protobuf oura surrealdb rust-analyzer ]
+    [ git which rust protobuf oura rust-analyzer sea-orm-cli ]
     ++ (builtins.attrValues scripts);
   shellHook = "";
 
   # envs
-  RUST_LOG = "oura=error,info";
+  RUST_LOG = "oura=error,sqlx::query=warn,prism_core=debug,info";
   RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
 }

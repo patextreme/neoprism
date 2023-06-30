@@ -4,10 +4,10 @@ use super::{
 use crate::{
     crypto::{ec::DsaPublicKey, hash::sha256},
     did::operation::{
-        ParsedCreateOperation, ParsedDeactivateOperation, ParsedKeyUsage, ParsedPublicKeyData,
-        ParsedUpdateOperation, ParsedUpdateOperationAction, PublicKeyId,
+        CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId,
+        UpdateOperation, UpdateOperationAction,
     },
-    dlt::OperationTimestamp,
+    dlt::OperationMetadata,
     proto::{
         CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation,
         SignedAtalaOperation, UpdateDidOperation,
@@ -36,7 +36,7 @@ impl OperationProcessor for V1Processor {
         };
 
         match &pk.get().data {
-            ParsedPublicKeyData::Master { data } => {
+            PublicKeyData::Master { data } => {
                 let signature = signed_operation.signature.as_slice();
                 let message = signed_operation
                     .operation
@@ -49,7 +49,7 @@ impl OperationProcessor for V1Processor {
                 data.verify(message, signature)
                     .map_err(ProcessError::InvalidSignature)?
             }
-            ParsedPublicKeyData::Other { .. } => Err(ProcessError::InvalidSignature(
+            PublicKeyData::Other { .. } => Err(ProcessError::InvalidSignature(
                 "signed_with is invalid (key is not MasterKey)".to_string(),
             ))?,
         }
@@ -61,9 +61,9 @@ impl OperationProcessor for V1Processor {
         &self,
         state: &DidStateMut,
         operation: CreateDidOperation,
-        timestamp: OperationTimestamp,
+        metadata: OperationMetadata,
     ) -> Result<DidStateMut, ProcessError> {
-        let parsed_operation = ParsedCreateOperation::parse(&self.parameters, &operation)?;
+        let parsed_operation = CreateOperation::parse(&self.parameters, &operation)?;
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
@@ -71,12 +71,12 @@ impl OperationProcessor for V1Processor {
         candidate_state.with_last_operation_hash(state.did.suffix.clone());
         for pk in parsed_operation.public_keys {
             candidate_state
-                .add_public_key(pk, &timestamp)
+                .add_public_key(pk, &metadata)
                 .map_err(ProcessError::DidStateConflict)?;
         }
         for service in parsed_operation.services {
             candidate_state
-                .add_service(service, &timestamp)
+                .add_service(service, &metadata)
                 .map_err(ProcessError::DidStateConflict)?;
         }
 
@@ -88,9 +88,9 @@ impl OperationProcessor for V1Processor {
         &self,
         state: &DidStateMut,
         operation: UpdateDidOperation,
-        timestamp: OperationTimestamp,
+        metadata: OperationMetadata,
     ) -> Result<DidStateMut, ProcessError> {
-        let parsed_operation = ParsedUpdateOperation::parse(&self.parameters, &operation)?;
+        let parsed_operation = UpdateOperation::parse(&self.parameters, &operation)?;
         if parsed_operation.prev_operation_hash != *state.last_operation_hash {
             Err(ProcessError::DidStateConflict(
                 "prev_operation_hash is invalid".to_string(),
@@ -101,7 +101,7 @@ impl OperationProcessor for V1Processor {
         let mut candidate_state = state.clone();
         candidate_state.with_last_operation_hash(sha256(operation.encode_to_bytes()?));
         for action in parsed_operation.actions {
-            apply_update_action(&mut candidate_state, action, &timestamp)
+            apply_update_action(&mut candidate_state, action, &metadata)
                 .map_err(ProcessError::DidStateConflict)?;
         }
 
@@ -113,9 +113,9 @@ impl OperationProcessor for V1Processor {
         &self,
         state: &DidStateMut,
         operation: DeactivateDidOperation,
-        timestamp: OperationTimestamp,
+        metadata: OperationMetadata,
     ) -> Result<DidStateMut, ProcessError> {
-        let parsed_operation = ParsedDeactivateOperation::parse(&operation)?;
+        let parsed_operation = DeactivateOperation::parse(&operation)?;
 
         if parsed_operation.prev_operation_hash != *state.last_operation_hash {
             Err(ProcessError::DidStateConflict(
@@ -128,12 +128,12 @@ impl OperationProcessor for V1Processor {
         candidate_state.with_last_operation_hash(sha256(operation.encode_to_bytes()?));
         for (id, _) in &state.public_keys {
             candidate_state
-                .revoke_public_key(id, &timestamp)
+                .revoke_public_key(id, &metadata)
                 .map_err(ProcessError::DidStateConflict)?;
         }
         for (id, _) in &state.services {
             candidate_state
-                .revoke_service(id, &timestamp)
+                .revoke_service(id, &metadata)
                 .map_err(ProcessError::DidStateConflict)?;
         }
 
@@ -144,7 +144,7 @@ impl OperationProcessor for V1Processor {
     fn protocol_version_update(
         &self,
         _: ProtocolVersionUpdateOperation,
-        _: OperationTimestamp,
+        _: OperationMetadata,
     ) -> Result<OperationProcessorAny, ProcessError> {
         // TODO: add support for protocol version update
         log::warn!("Protocol version update is not yet supported");
@@ -181,7 +181,7 @@ impl Validator<UpdateDidOperation> for UpdateDidValidator {
         if !state
             .public_keys
             .iter()
-            .any(|(_, pk)| pk.get().usage() == ParsedKeyUsage::MasterKey)
+            .any(|(_, pk)| pk.get().usage() == KeyUsage::MasterKey)
         {
             Err(ProcessError::DidStateConflict(
                 "At least one master key must exist after update".to_string(),
@@ -217,17 +217,15 @@ impl Validator<DeactivateDidOperation> for DeactivateDidValidator {
 
 fn apply_update_action(
     state: &mut DidStateMut,
-    action: ParsedUpdateOperationAction,
-    timestamp: &OperationTimestamp,
+    action: UpdateOperationAction,
+    metadata: &OperationMetadata,
 ) -> Result<(), String> {
     match action {
-        ParsedUpdateOperationAction::AddKey(pk) => state.add_public_key(pk, timestamp)?,
-        ParsedUpdateOperationAction::RemoveKey(id) => state.revoke_public_key(&id, timestamp)?,
-        ParsedUpdateOperationAction::AddService(service) => {
-            state.add_service(service, timestamp)?
-        }
-        ParsedUpdateOperationAction::RemoveService(id) => state.revoke_service(&id, timestamp)?,
-        ParsedUpdateOperationAction::UpdateService {
+        UpdateOperationAction::AddKey(pk) => state.add_public_key(pk, metadata)?,
+        UpdateOperationAction::RemoveKey(id) => state.revoke_public_key(&id, metadata)?,
+        UpdateOperationAction::AddService(service) => state.add_service(service, metadata)?,
+        UpdateOperationAction::RemoveService(id) => state.revoke_service(&id, metadata)?,
+        UpdateOperationAction::UpdateService {
             id,
             r#type,
             service_endpoints,
@@ -239,7 +237,7 @@ fn apply_update_action(
                 state.update_service_endpoint(&id, ep)?;
             }
         }
-        ParsedUpdateOperationAction::PatchContext(ctx) => {
+        UpdateOperationAction::PatchContext(ctx) => {
             state.with_context(ctx);
         }
     }

@@ -1,5 +1,2 @@
 [workspace]
-members = [
-  "prism-core",
-  "prism-node",
-]
+members = ["prism-core", "prism-node", "prism-persistence"]

@@ -4,13 +4,12 @@ use crate::{
     did::{
         self,
         operation::{
-            CreateOperationParsingError, DeactivateOperationParsingError, ParsedPublicKey,
-            ParsedService, ParsedServiceEndpoint, ParsedServiceType, PublicKeyId, ServiceId,
-            UpdateOperationParsingError,
+            CreateOperationParsingError, DeactivateOperationParsingError, PublicKey, PublicKeyId,
+            Service, ServiceEndpoint, ServiceId, ServiceType, UpdateOperationParsingError,
         },
         CanonicalPrismDid, DidState,
     },
-    dlt::OperationTimestamp,
+    dlt::OperationMetadata,
     proto::{
         atala_operation::Operation, CreateDidOperation, DeactivateDidOperation,
         ProtocolVersionUpdateOperation, SignedAtalaOperation, UpdateDidOperation,
@@ -72,12 +71,12 @@ pub enum ProcessError {
 #[derive(Debug, Clone)]
 struct Revocable<T> {
     inner: T,
-    added_at: OperationTimestamp,
-    revoked_at: Option<OperationTimestamp>,
+    added_at: OperationMetadata,
+    revoked_at: Option<OperationMetadata>,
 }
 
 impl<T> Revocable<T> {
-    fn new(item: T, added_at: &OperationTimestamp) -> Self {
+    fn new(item: T, added_at: &OperationMetadata) -> Self {
         Self {
             inner: item,
             added_at: added_at.clone(),
@@ -89,7 +88,7 @@ impl<T> Revocable<T> {
         self.revoked_at.is_some()
     }
 
-    fn revoke(&mut self, revoked_at: &OperationTimestamp) {
+    fn revoke(&mut self, revoked_at: &OperationMetadata) {
         self.revoked_at = Some(revoked_at.clone());
     }
 
@@ -114,8 +113,8 @@ struct DidStateMut {
     did: Rc<CanonicalPrismDid>,
     context: Rc<Vec<String>>,
     last_operation_hash: Rc<Sha256Digest>,
-    public_keys: InternalMap<PublicKeyId, ParsedPublicKey>,
-    services: InternalMap<ServiceId, ParsedService>,
+    public_keys: InternalMap<PublicKeyId, PublicKey>,
+    services: InternalMap<ServiceId, Service>,
 }
 
 impl DidStateMut {
@@ -140,8 +139,8 @@ impl DidStateMut {
 
     fn add_public_key(
         &mut self,
-        public_key: ParsedPublicKey,
-        added_at: &OperationTimestamp,
+        public_key: PublicKey,
+        added_at: &OperationMetadata,
     ) -> Result<(), String> {
         if self.public_keys.contains_key(&public_key.id) {
             Err(format!(
@@ -160,7 +159,7 @@ impl DidStateMut {
     fn revoke_public_key(
         &mut self,
         id: &PublicKeyId,
-        revoke_at: &OperationTimestamp,
+        revoke_at: &OperationMetadata,
     ) -> Result<(), String> {
         let Some(public_key) = self.public_keys.get_mut(id) else {
             Err(format!("Public key with id {:?} does not exist", id))?
@@ -176,8 +175,8 @@ impl DidStateMut {
 
     fn add_service(
         &mut self,
-        service: ParsedService,
-        added_at: &OperationTimestamp,
+        service: Service,
+        added_at: &OperationMetadata,
     ) -> Result<(), String> {
         if self.services.contains_key(&service.id) {
             Err(format!("Service with id {:?} already exists", service.id))?
@@ -193,7 +192,7 @@ impl DidStateMut {
     fn revoke_service(
         &mut self,
         id: &ServiceId,
-        revoke_at: &OperationTimestamp,
+        revoke_at: &OperationMetadata,
     ) -> Result<(), String> {
         let Some(service) = self.services.get_mut(id) else {
             Err(format!("Service with id {:?} does not exist", id))?
@@ -207,11 +206,7 @@ impl DidStateMut {
         Ok(())
     }
 
-    fn update_service_type(
-        &mut self,
-        id: &ServiceId,
-        new_type: ParsedServiceType,
-    ) -> Result<(), String> {
+    fn update_service_type(&mut self, id: &ServiceId, new_type: ServiceType) -> Result<(), String> {
         let Some(service) = self.services.get_mut(id) else {
             Err(format!("Service with id {:?} does not exist", id))?
         };
@@ -227,7 +222,7 @@ impl DidStateMut {
     fn update_service_endpoint(
         &mut self,
         id: &ServiceId,
-        new_endpoint: ParsedServiceEndpoint,
+        new_endpoint: ServiceEndpoint,
     ) -> Result<(), String> {
         let Some(service) = self.services.get_mut(id) else {
             Err(format!("Service with id {:?} does not exist", id))?
@@ -249,13 +244,13 @@ impl DidStateMut {
             .map(|s| s.as_str().to_string())
             .collect();
         let last_operation_hash: Sha256Digest = (*self.last_operation_hash).clone();
-        let public_keys: Vec<ParsedPublicKey> = self
+        let public_keys: Vec<PublicKey> = self
             .public_keys
             .into_iter()
             .filter(|(_, i)| !i.is_revoked())
             .map(|(_, i)| i.into_item())
             .collect();
-        let services: Vec<ParsedService> = self
+        let services: Vec<Service> = self
             .services
             .into_iter()
             .filter(|(_, i)| !i.is_revoked())
@@ -279,7 +274,7 @@ struct DidStateOps {
 impl DidStateOps {
     fn new(
         signed_operation: SignedAtalaOperation,
-        timestamp: OperationTimestamp,
+        metadata: OperationMetadata,
     ) -> Result<Self, ProcessError> {
         let Some(operation) = &signed_operation.operation else {
             Err(ProcessError::EmptyOperation)?
@@ -290,8 +285,7 @@ impl DidStateOps {
             Some(Operation::CreateDid(op)) => {
                 let initial_state = DidStateMut::new(did);
                 let processor = OperationProcessorAny::V1(V1Processor::default());
-                let candidate_state =
-                    processor.create_did(&initial_state, op.clone(), timestamp)?;
+                let candidate_state = processor.create_did(&initial_state, op.clone(), metadata)?;
                 processor.check_signature(&candidate_state, &signed_operation)?;
                 Ok(Self {
                     state: candidate_state,
@@ -305,11 +299,7 @@ impl DidStateOps {
         }
     }
 
-    fn process(
-        self,
-        signed_operation: SignedAtalaOperation,
-        timestamp: OperationTimestamp,
-    ) -> Self {
+    fn process(self, signed_operation: SignedAtalaOperation, metadata: OperationMetadata) -> Self {
         if self
             .processor
             .check_signature(&self.state, &signed_operation)
@@ -328,15 +318,15 @@ impl DidStateOps {
             )),
             Some(Operation::UpdateDid(op)) => self
                 .processor
-                .update_did(&self.state, op, timestamp)
+                .update_did(&self.state, op, metadata)
                 .map(|s| (Some(s), None)),
             Some(Operation::DeactivateDid(op)) => self
                 .processor
-                .deactivate_did(&self.state, op, timestamp)
+                .deactivate_did(&self.state, op, metadata)
                 .map(|s| (Some(s), None)),
             Some(Operation::ProtocolVersionUpdate(op)) => self
                 .processor
-                .protocol_version_update(op, timestamp)
+                .protocol_version_update(op, metadata)
                 .map(|s| (None, Some(s))),
             None => Err(ProcessError::EmptyOperation),
         };
@@ -366,27 +356,27 @@ trait OperationProcessor {
         &self,
         state: &DidStateMut,
         operation: CreateDidOperation,
-        timestamp: OperationTimestamp,
+        metadata: OperationMetadata,
     ) -> Result<DidStateMut, ProcessError>;
 
     fn update_did(
         &self,
         state: &DidStateMut,
         operation: UpdateDidOperation,
-        timestamp: OperationTimestamp,
+        metadata: OperationMetadata,
     ) -> Result<DidStateMut, ProcessError>;
 
     fn deactivate_did(
         &self,
         state: &DidStateMut,
         operation: DeactivateDidOperation,
-        timestamp: OperationTimestamp,
+        metadata: OperationMetadata,
     ) -> Result<DidStateMut, ProcessError>;
 
     fn protocol_version_update(
         &self,
         operation: ProtocolVersionUpdateOperation,
-        timestamp: OperationTimestamp,
+        metadata: OperationMetadata,
     ) -> Result<OperationProcessorAny, ProcessError>;
 }
 

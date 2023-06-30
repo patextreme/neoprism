@@ -61,3 +61,5 @@ where
 pub fn is_uri_fragment(s: &str) -> bool {
     URI_FRAGMENT_RE.is_match(s)
 }
+
+pub type StdError = Box<dyn std::error::Error>;

@@ -1,4 +1,4 @@
-use self::operation::{ParsedPublicKey, ParsedService};
+use self::operation::{PublicKey, Service};
 use crate::{
     crypto::{
         codec::{Base64UrlStrNoPad, HexStr},
@@ -35,7 +35,7 @@ pub struct LongFormPrismDid {
 pub trait PrismDid {
     fn suffix(&self) -> &Sha256Digest;
 
-    fn method(&self) -> &str {
+    fn method(&self) -> &'static str {
         "prism"
     }
 
@@ -164,6 +164,6 @@ pub struct DidState {
     pub did: CanonicalPrismDid,
     pub context: Vec<String>,
     pub last_operation_hash: Sha256Digest,
-    pub public_keys: Vec<ParsedPublicKey>,
-    pub services: Vec<ParsedService>,
+    pub public_keys: Vec<PublicKey>,
+    pub services: Vec<Service>,
 }

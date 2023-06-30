@@ -1,8 +1,8 @@
 use super::DidStateOps;
-use crate::{did::DidState, dlt::OperationTimestamp, proto::SignedAtalaOperation};
+use crate::{did::DidState, dlt::OperationMetadata, proto::SignedAtalaOperation};
 use std::collections::VecDeque;
 
-type OperationList = VecDeque<(OperationTimestamp, SignedAtalaOperation)>;
+type OperationList = VecDeque<(OperationMetadata, SignedAtalaOperation)>;
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ResolutionError {
@@ -11,7 +11,7 @@ pub enum ResolutionError {
 }
 
 pub fn resolve(
-    mut operations: Vec<(OperationTimestamp, SignedAtalaOperation)>,
+    mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>,
 ) -> Result<DidState, ResolutionError> {
     operations.sort_by(|(t_a, _), (t_b, _)| t_a.cmp(t_b));
     let operations: OperationList = OperationList::from(operations);
@@ -19,8 +19,8 @@ pub fn resolve(
     log::debug!("resolving DID data from {} operations", operations.len());
 
     let (mut state_ops, mut remaining) = init_state_ops(operations)?;
-    while let Some((timestamp, operation)) = remaining.pop_front() {
-        state_ops = state_ops.process(operation, timestamp);
+    while let Some((metadata, operation)) = remaining.pop_front() {
+        state_ops = state_ops.process(operation, metadata);
     }
 
     Ok(state_ops.finalize())
@@ -29,8 +29,8 @@ pub fn resolve(
 fn init_state_ops(
     mut operations: OperationList,
 ) -> Result<(DidStateOps, OperationList), ResolutionError> {
-    while let Some((timestamp, operation)) = operations.pop_front() {
-        if let Ok(state_ops) = DidStateOps::new(operation, timestamp) {
+    while let Some((metadata, operation)) = operations.pop_front() {
+        if let Ok(state_ops) = DidStateOps::new(operation, metadata) {
             return Ok((state_ops, operations));
         }
     }

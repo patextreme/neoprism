@@ -8,5 +8,7 @@ edition = "2021"
 [dependencies]
 env_logger = "0.10"
 log = "0.4"
-prism-core = { path = "../prism-core" }
+prism-core = { path = "../prism-core", features = ["full"] }
+prism-persistence = { path = "../prism-persistence", features = ["sqlite"] }
 tokio = { version = "1", features = ["full"] }
+clap = { version = "4", features = ["derive"] }

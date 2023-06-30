@@ -1,13 +1,16 @@
 use crate::proto::AtalaObject;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 #[cfg(feature = "cardano")]
 pub mod cardano;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct BlockTimestamp {
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct BlockMetadata {
+    /// Cardano slot number
+    pub slot_number: u64,
+    /// Cardano block number
+    pub block_number: u64,
     /// Cardano block timestamp
     pub cbt: DateTime<Utc>,
     /// AtalaBlock seqeuence number
@@ -16,26 +19,17 @@ pub struct BlockTimestamp {
     pub absn: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct OperationTimestamp {
-    /// AtalaBlock timestamp
-    pub block_timestamp: BlockTimestamp,
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct OperationMetadata {
+    /// AtalaBlock metadata
+    pub block_metadata: BlockMetadata,
     /// Operation sequence number
     ///
     /// This is used to order AtalaOperation within the same AtalaBlock
-    pub osn: usize,
+    pub osn: u32,
 }
 
-impl BlockTimestamp {
-    pub fn into_operation_ts(self, atala_block_idx: usize) -> OperationTimestamp {
-        OperationTimestamp {
-            block_timestamp: self,
-            osn: atala_block_idx,
-        }
-    }
-}
-
-impl PartialOrd for BlockTimestamp {
+impl PartialOrd for BlockMetadata {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         let tuple_self = (self.cbt, self.absn);
         let tuple_other = (other.cbt, other.absn);
@@ -43,7 +37,7 @@ impl PartialOrd for BlockTimestamp {
     }
 }
 
-impl Ord for BlockTimestamp {
+impl Ord for BlockMetadata {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         let tuple_self = (self.cbt, self.absn);
         let tuple_other = (other.cbt, other.absn);
@@ -51,25 +45,25 @@ impl Ord for BlockTimestamp {
     }
 }
 
-impl PartialOrd for OperationTimestamp {
+impl PartialOrd for OperationMetadata {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let tuple_self = (&self.block_timestamp, self.osn);
-        let tuple_other = (&other.block_timestamp, other.osn);
+        let tuple_self = (&self.block_metadata, self.osn);
+        let tuple_other = (&other.block_metadata, other.osn);
         tuple_self.partial_cmp(&tuple_other)
     }
 }
 
-impl Ord for OperationTimestamp {
+impl Ord for OperationMetadata {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let tuple_self = (&self.block_timestamp, self.osn);
-        let tuple_other = (&other.block_timestamp, other.osn);
+        let tuple_self = (&self.block_metadata, self.osn);
+        let tuple_other = (&other.block_metadata, other.osn);
         tuple_self.cmp(&tuple_other)
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct PublishedAtalaObject {
-    pub block_timestamp: BlockTimestamp,
+    pub block_metadata: BlockMetadata,
     pub atala_object: AtalaObject,
 }
 
@@ -94,7 +88,7 @@ pub struct InMemoryDltSource {
 pub struct InMemoryDltSink {
     delay: tokio::time::Duration,
     tx: Sender<PublishedAtalaObject>,
-    slot: u64,
+    block_number: u64,
 }
 
 impl InMemoryDlt {
@@ -108,7 +102,7 @@ impl InMemoryDlt {
         let sink = InMemoryDltSink {
             delay: self.delay,
             tx: self.tx,
-            slot: 0,
+            block_number: 0,
         };
         (source, sink)
     }
@@ -124,14 +118,17 @@ impl DltSink for InMemoryDltSink {
     fn send(&mut self, atala_object: AtalaObject) {
         let owned_delay = self.delay;
         let owned_tx = self.tx.clone();
+        let block_number = self.block_number;
         tokio::spawn(async move {
             tokio::time::sleep(owned_delay).await;
-            let block_timestamp = BlockTimestamp {
+            let block_metadata = BlockMetadata {
+                slot_number: block_number,
+                block_number,
                 cbt: Utc::now(),
                 absn: 0,
             };
             let published_atala_object = PublishedAtalaObject {
-                block_timestamp,
+                block_metadata,
                 atala_object,
             };
             let send_result = owned_tx.send(published_atala_object).await;
@@ -139,6 +136,6 @@ impl DltSink for InMemoryDltSink {
                 log::error!("Error sending AtalaObject to InMemoryDlt: {}", e);
             }
         });
-        self.slot += 1;
+        self.block_number += 1;
     }
 }

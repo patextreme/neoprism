@@ -1,21 +1,21 @@
 pub mod time {
     use chrono::{DateTime, NaiveDateTime, Utc};
-    use prism_core::dlt::{BlockTimestamp, OperationTimestamp};
+    use prism_core::dlt::{BlockMetadata, OperationMetadata};
 
-    pub fn default_operation_timestamp() -> OperationTimestamp {
-        operation_timestamp(&DateTime::<Utc>::from_utc(
+    pub fn default_operation_metadata() -> OperationMetadata {
+        operation_metadata(&DateTime::<Utc>::from_utc(
             NaiveDateTime::from_timestamp_opt(0, 0).unwrap(),
             Utc,
         ))
     }
 
-    pub fn operation_timestamp(datetime: &DateTime<Utc>) -> OperationTimestamp {
-        OperationTimestamp {
-            block_timestamp: BlockTimestamp {
+    pub fn operation_metadata(datetime: &DateTime<Utc>) -> OperationMetadata {
+        OperationMetadata {
+            block_metadata: BlockMetadata {
                 cbt: datetime.clone(),
-                absn: 0,
+                ..Default::default()
             },
-            osn: 0,
+            ..Default::default()
         }
     }
 }

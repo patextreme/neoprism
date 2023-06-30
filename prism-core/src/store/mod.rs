@@ -1,14 +1,12 @@
 use crate::{
     did::{self, CanonicalPrismDid},
-    dlt::OperationTimestamp,
+    dlt::OperationMetadata,
+    prelude::StdError,
     proto::{atala_operation::Operation, AtalaOperation, SignedAtalaOperation},
 };
 use std::collections::HashMap;
 
-#[cfg(feature = "surrealdb")]
-pub mod surreal;
-
-fn get_did_from_operation(
+pub fn get_did_from_operation(
     atala_operation: &AtalaOperation,
 ) -> Result<CanonicalPrismDid, OperationStoreError> {
     match &atala_operation.operation {
@@ -22,13 +20,19 @@ fn get_did_from_operation(
     }
 }
 
-fn get_did_from_signed_operation(
+pub fn get_did_from_signed_operation(
     signed_operation: &SignedAtalaOperation,
 ) -> Result<CanonicalPrismDid, OperationStoreError> {
     match &signed_operation.operation {
         Some(operation) => get_did_from_operation(operation),
         None => Err(OperationStoreError::EmptyOperation),
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct DltCursor {
+    pub slot: u64,
+    pub block_hash: Vec<u8>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -43,6 +47,8 @@ pub enum OperationStoreError {
     OperationDecodeError(#[from] prost::DecodeError),
     #[error("Storage mechanism error: {0}")]
     StorageBackendError(Box<dyn std::error::Error>),
+    #[error("Storage encoding/decoding error: {0}")]
+    StorageEncodingError(Box<dyn std::error::Error>),
 }
 
 #[async_trait::async_trait]
@@ -50,38 +56,53 @@ pub trait OperationStore {
     async fn get_by_did(
         &mut self,
         did: &CanonicalPrismDid,
-    ) -> Result<Vec<(OperationTimestamp, SignedAtalaOperation)>, OperationStoreError>;
+    ) -> Result<Vec<(OperationMetadata, SignedAtalaOperation)>, OperationStoreError>;
 
     async fn insert(
         &mut self,
         signed_operation: SignedAtalaOperation,
-        timestamp: OperationTimestamp,
+        metadata: OperationMetadata,
     ) -> Result<(), OperationStoreError>;
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct InMemoryOperationStore {
-    operations: HashMap<CanonicalPrismDid, Vec<(OperationTimestamp, SignedAtalaOperation)>>,
+#[derive(Debug, thiserror::Error)]
+pub enum CursorStoreError {
+    #[error("Storage mechanism error: {0}")]
+    StorageBackendError(StdError),
+    #[error("Storage encoding/decoding error: {0}")]
+    StorageEncodingError(StdError),
 }
 
 #[async_trait::async_trait]
-impl OperationStore for InMemoryOperationStore {
+pub trait DltCursorStore {
+    async fn set_cursor(&mut self, cursor: DltCursor) -> Result<(), CursorStoreError>;
+    async fn get_cursor(&mut self) -> Result<Option<DltCursor>, CursorStoreError>;
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct InMemoryStore {
+    operations: HashMap<CanonicalPrismDid, Vec<(OperationMetadata, SignedAtalaOperation)>>,
+    cursor: Option<DltCursor>,
+}
+
+#[async_trait::async_trait]
+impl OperationStore for InMemoryStore {
     async fn insert(
         &mut self,
         signed_operation: SignedAtalaOperation,
-        timestamp: OperationTimestamp,
+        metadata: OperationMetadata,
     ) -> Result<(), OperationStoreError> {
         let did = get_did_from_signed_operation(&signed_operation)?;
         let did_str = did.to_string();
         self.operations
             .entry(did)
             .or_insert_with(Vec::new)
-            .push((timestamp, signed_operation));
+            .push((metadata, signed_operation));
 
         let did_count = self.operations.len();
         let ops_count = self.operations.values().map(|v| v.len()).sum::<usize>();
-        log::info!(
-            "Operation of {} inserted. Store contains {} DIDs and {} operations.",
+        log::debug!(
+            "Inserted operation of {}. Store contains {} DIDs and {} operations.",
             did_str,
             did_count,
             ops_count
@@ -93,7 +114,7 @@ impl OperationStore for InMemoryOperationStore {
     async fn get_by_did(
         &mut self,
         did: &CanonicalPrismDid,
-    ) -> Result<Vec<(OperationTimestamp, SignedAtalaOperation)>, OperationStoreError> {
+    ) -> Result<Vec<(OperationMetadata, SignedAtalaOperation)>, OperationStoreError> {
         let result = self.operations.get(did).cloned();
 
         log::info!(
@@ -102,5 +123,17 @@ impl OperationStore for InMemoryOperationStore {
         );
 
         Ok(result.unwrap_or_default())
+    }
+}
+
+#[async_trait::async_trait]
+impl DltCursorStore for InMemoryStore {
+    async fn set_cursor(&mut self, cursor: DltCursor) -> Result<(), CursorStoreError> {
+        self.cursor = Some(cursor);
+        Ok(())
+    }
+
+    async fn get_cursor(&mut self) -> Result<Option<DltCursor>, CursorStoreError> {
+        Ok(self.cursor.clone())
     }
 }
