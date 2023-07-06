@@ -107,7 +107,7 @@ impl std::fmt::Debug for LongFormPrismDid {
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum DidParsingError {
     #[error("Invalid operation type: {0}")]
     InvalidOperationType(String),

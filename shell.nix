@@ -6,7 +6,7 @@ let
   scripts = rec {
     build = pkgs.writeShellScriptBin "build" ''
       ${rust}/bin/cargo fmt
-      ${rust}/bin/cargo build
+      ${rust}/bin/cargo build --all-features
     '';
 
     clean = pkgs.writeShellScriptBin "clean" ''

@@ -9,17 +9,23 @@ use crate::{
         UpdateDidAction, UpdateDidOperation,
     },
     protocol::ProtocolParameter,
-    util::{is_slice_unique, is_uri_fragment},
+    util::{is_slice_unique, is_uri, is_uri_fragment},
 };
 use bytes::Bytes;
+use regex::Regex;
+use std::{str::FromStr, sync::OnceLock};
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[cfg(test)]
+#[path = "operation_tests.rs"]
+mod tests;
+
+#[derive(Debug, thiserror::Error)]
 pub enum CreateOperationParsingError {
     #[error("Missing did_data in create operation")]
     MissingDidData,
-    #[error("Invalid public key: {0}")]
+    #[error(transparent)]
     InvalidPublicKey(#[from] PublicKeyParsingError),
-    #[error("Invalid service: {0}")]
+    #[error(transparent)]
     InvalidService(#[from] ServiceParsingError),
     #[error("Too many public keys")]
     TooManyPublicKeys,
@@ -105,22 +111,22 @@ impl CreateOperation {
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum UpdateOperationParsingError {
-    #[error("Invalid did id: {0}")]
+    #[error(transparent)]
     InvalidDidId(#[from] DidParsingError),
     #[error("Invalid previous operation hash: {0}")]
     InvalidPreviousOperationHash(String),
     #[error("Update action is malformed: {0}")]
     MalformedUpdateAction(String),
-    #[error("Unable to parse public_key in update action: {0}")]
+    #[error(transparent)]
     PublicKeyParsingError(#[from] PublicKeyParsingError),
-    #[error("Unable to parse service in update action: {0}")]
+    #[error(transparent)]
     ServiceParsingError(#[from] ServiceParsingError),
-    #[error("Unable to parse service_type in update action: {0}")]
-    ServiceTypeParsingError(String),
-    #[error("Unable to parse service_endpoint in update action: {0}")]
-    ServiceEndpointParsingError(String),
+    #[error(transparent)]
+    ServiceTypeParsingError(#[from] ServiceTypeParsingError),
+    #[error(transparent)]
+    ServiceEndpointParsingError(#[from] ServiceEndpointParsingError),
     #[error("Empty update action")]
     EmptyUpdateAction,
 }
@@ -261,7 +267,7 @@ impl UpdateOperationAction {
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum DeactivateOperationParsingError {
     #[error("Invalid did id: {0}")]
     InvalidDidId(#[from] DidParsingError),
@@ -349,7 +355,7 @@ impl std::fmt::Display for ServiceId {
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum PublicKeyParsingError {
     #[error("Invalid key id: {0}")]
     InvalidKeyId(String),
@@ -445,14 +451,14 @@ impl KeyUsage {
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum ServiceParsingError {
     #[error("Invalid service id: {0}")]
     InvalidServiceId(String),
-    #[error("Invalid service_type: {0}")]
-    InvalidServiceType(String),
-    #[error("Invalid service_endpoint: {0}")]
-    InvalidServiceEndpoint(String),
+    #[error(transparent)]
+    InvalidServiceType(#[from] ServiceTypeParsingError),
+    #[error(transparent)]
+    InvalidServiceEndpoint(#[from] ServiceEndpointParsingError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -482,56 +488,93 @@ impl Service {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum ServiceTypeParsingError {
+    #[error(transparent)]
+    InvalidValue(#[from] ServiceTypeNameParsingError),
+    #[error("Service type string must not exceed {limit} characters. Got {actual}.")]
+    TooLong { limit: usize, actual: usize },
+    #[error("Service type must not be an empty array")]
+    EmptyList,
+    #[error("Service type does not conform to the ABNF rule")]
+    NotConformToABNF,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceType {
-    Single(String),
-    Multiple(Vec<String>),
+    Single(ServiceTypeName),
+    Multiple(Vec<ServiceTypeName>),
 }
 
 impl ServiceType {
-    // TODO: align with the spec
-    pub fn parse(service_type: &str, param: &ProtocolParameter) -> Result<Self, String> {
+    pub fn parse(
+        service_type: &str,
+        param: &ProtocolParameter,
+    ) -> Result<Self, ServiceTypeParsingError> {
         if service_type.len() > param.max_type_size {
-            Err(format!(
-                "Service type must not exceed {} bytes. Got {} bytes",
-                param.max_type_size,
-                service_type.len()
-            ))?
+            Err(ServiceTypeParsingError::TooLong {
+                limit: param.max_type_size,
+                actual: service_type.len(),
+            })?
         }
 
         // try parse as json list of strings
         let parsed: Result<Vec<String>, _> = serde_json::from_str(service_type);
         if let Ok(list) = parsed {
             if list.is_empty() {
-                Err("Service type must not be empty".to_owned())?
+                Err(ServiceTypeParsingError::EmptyList)?
             }
 
-            for i in &list {
-                Self::validate_type_value(i)?;
+            if service_type
+                != serde_json::to_string(&list)
+                    .expect("Serializing Vec<String> to JSON must not fail!")
+            {
+                Err(ServiceTypeParsingError::NotConformToABNF)?
             }
 
-            return Ok(Self::Multiple(list));
+            let names: Result<Vec<ServiceTypeName>, _> =
+                list.iter().map(|i| ServiceTypeName::from_str(i)).collect();
+
+            return Ok(Self::Multiple(names?));
         }
 
         // try parse as single string
-        Self::validate_type_value(service_type)?;
-        Ok(Self::Single(service_type.to_owned()))
+        let name = ServiceTypeName::from_str(service_type)?;
+        Ok(Self::Single(name))
     }
+}
 
-    fn validate_type_value(value: &str) -> Result<(), String> {
-        if value.is_empty() {
-            Err("Service type must not be empty".to_owned())?
+static SERVICE_TYPE_NAME_RE: OnceLock<Regex> = OnceLock::new();
+
+#[derive(Debug, thiserror::Error)]
+#[error("The string {0} is not a valid serviceType name")]
+pub struct ServiceTypeNameParsingError(String);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ServiceTypeName(String);
+
+impl FromStr for ServiceTypeName {
+    type Err = ServiceTypeNameParsingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let regex = SERVICE_TYPE_NAME_RE
+            .get_or_init(|| Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$").unwrap());
+        if regex.is_match(s) {
+            Ok(Self(s.to_owned()))
+        } else {
+            Err(ServiceTypeNameParsingError(s.to_owned()))
         }
-
-        if value.starts_with(char::is_whitespace) || value.ends_with(char::is_whitespace) {
-            Err(format!(
-                "Service type must not start or end with whitespace. Got '{}'",
-                value
-            ))?
-        }
-
-        Ok(())
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ServiceEndpointParsingError {
+    #[error(transparent)]
+    InvalidValue(#[from] ServiceEndpointValueParsingError),
+    #[error("Service endpoint string must not exceed {limit} characters. Got {actual}.")]
+    TooLong { limit: usize, actual: usize },
+    #[error("Service endpoint must not be an empty array")]
+    EmptyList,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -541,61 +584,78 @@ pub enum ServiceEndpoint {
 }
 
 impl ServiceEndpoint {
-    // TODO: align with the spec
-    pub fn parse(service_endpoint: &str, param: &ProtocolParameter) -> Result<Self, String> {
+    pub fn parse(
+        service_endpoint: &str,
+        param: &ProtocolParameter,
+    ) -> Result<Self, ServiceEndpointParsingError> {
         if service_endpoint.len() > param.max_service_endpoint_size {
-            Err(format!(
-                "Service endpoint must not exceed {} bytes. Got {} bytes",
-                param.max_service_endpoint_size,
-                service_endpoint.len()
-            ))?
+            Err(ServiceEndpointParsingError::TooLong {
+                limit: param.max_service_endpoint_size,
+                actual: service_endpoint.len(),
+            })?
         }
 
-        // try parsing as json object
-        let parsed_map: Result<serde_json::Map<String, serde_json::Value>, _> =
-            serde_json::from_str(service_endpoint);
+        // try parse as json object
+        let parsed_map = serde_json::from_str(service_endpoint);
         if let Ok(json) = parsed_map {
             return Ok(Self::Single(ServiceEndpointValue::Json(json)));
         }
 
-        // try parsing as json array
-        let parsed_array: Result<Vec<serde_json::Value>, _> =
-            serde_json::from_str(service_endpoint);
+        // try parse as json array
+        let parsed_array = serde_json::from_str::<Vec<serde_json::Value>>(service_endpoint);
         if let Ok(list) = parsed_array {
             if list.is_empty() {
-                Err("Service endpoint must not be empty array".to_owned())?
+                Err(ServiceEndpointParsingError::EmptyList)?
             }
 
-            let mut endpoints = Vec::with_capacity(list.len());
-            for i in list {
-                endpoints.push(ServiceEndpointValue::parse(i)?);
-            }
-
-            return Ok(Self::Multiple(endpoints));
+            let endpoints: Result<Vec<ServiceEndpointValue>, _> = list
+                .into_iter()
+                .map(|i| ServiceEndpointValue::try_from(i))
+                .collect();
+            return Ok(Self::Multiple(endpoints?));
         }
 
         // try parse as single string
-        Ok(Self::Single(ServiceEndpointValue::URI(
-            service_endpoint.to_owned(),
-        )))
+        Ok(Self::Single(ServiceEndpointValue::from_str(
+            &service_endpoint,
+        )?))
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ServiceEndpointValueParsingError {
+    #[error("Fail to parse '{uri}' as a URI")]
+    InvalidURI { uri: String },
+    #[error("ServiceEndpoint is not a URI string nor JSON object. Got {0}.")]
+    InvalidJSONType(serde_json::Value),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceEndpointValue {
-    URI(String), // TODO: validate value is a valid normalized URI
+    URI(String),
     Json(serde_json::Map<String, serde_json::Value>),
 }
 
-impl ServiceEndpointValue {
-    pub fn parse(value: serde_json::Value) -> Result<Self, String> {
+impl FromStr for ServiceEndpointValue {
+    type Err = ServiceEndpointValueParsingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if is_uri(&s) {
+            Ok(Self::URI(s.to_owned()))
+        } else {
+            Err(ServiceEndpointValueParsingError::InvalidURI { uri: s.to_string() })
+        }
+    }
+}
+
+impl TryFrom<serde_json::Value> for ServiceEndpointValue {
+    type Error = ServiceEndpointValueParsingError;
+
+    fn try_from(value: serde_json::Value) -> Result<Self, Self::Error> {
         match value {
-            serde_json::Value::String(s) => Ok(Self::URI(s)),
+            serde_json::Value::String(s) => Self::from_str(&s),
             serde_json::Value::Object(map) => Ok(Self::Json(map)),
-            _ => Err(format!(
-                "Service endpoint must be either a URI or a JSON object. Got '{}'",
-                value
-            )),
+            _ => Err(ServiceEndpointValueParsingError::InvalidJSONType(value)),
         }
     }
 }

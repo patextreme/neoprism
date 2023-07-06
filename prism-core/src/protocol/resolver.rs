@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 
 type OperationList = VecDeque<(OperationMetadata, SignedAtalaOperation)>;
 
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum ResolutionError {
     #[error("The DID is not found")]
     DidNotFound,

@@ -46,7 +46,7 @@ impl Default for ProtocolParameter {
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum ProcessError {
     #[error("Unable to derive Did from operation")]
     DidConversionError(#[from] did::DidParsingError),

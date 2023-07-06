@@ -105,7 +105,7 @@ mod model {
         pub v: u64,
     }
 
-    #[derive(Debug, Clone, thiserror::Error)]
+    #[derive(Debug, thiserror::Error)]
     pub enum ConversionError {
         #[error("hex conversion error: {0}")]
         HexDecodeError(#[from] hex::FromHexError),

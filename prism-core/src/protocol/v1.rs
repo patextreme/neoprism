@@ -28,7 +28,7 @@ impl OperationProcessor for V1Processor {
     ) -> Result<(), ProcessError> {
         let key_id = PublicKeyId::parse(&signed_operation.signed_with, self.parameters.max_id_size)
             .map_err(|e| {
-                ProcessError::InvalidSignature(format!("signed_with is invalid ({})", e))
+                ProcessError::InvalidSignature(format!("signed_with key-id is invalid ({})", e))
             })?;
 
         let Some(pk) = state.public_keys.get(&key_id) else {
@@ -41,9 +41,7 @@ impl OperationProcessor for V1Processor {
                 let message = signed_operation
                     .operation
                     .as_ref()
-                    .ok_or(ProcessError::InvalidSignature(
-                        "Operation is missing".to_string(),
-                    ))?
+                    .ok_or(ProcessError::EmptyOperation)?
                     .encode_to_bytes()?;
 
                 data.verify(message, signature)

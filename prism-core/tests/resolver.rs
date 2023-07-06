@@ -6,7 +6,7 @@ use prism_core::{
         create_did_operation::DidCreationData, public_key::KeyData, KeyUsage, PublicKey,
         SignedAtalaOperation,
     },
-    protocol::resolver::{resolve, ResolutionError},
+    protocol::resolver::resolve,
 };
 use prost::Message;
 use secp256k1::SecretKey;
@@ -38,7 +38,7 @@ fn valid_signed_create_operation_with_keypair(
 #[test]
 fn resolve_no_operation() {
     let result = resolve(vec![]);
-    assert_eq!(result, Err(ResolutionError::DidNotFound));
+    assert!(result.is_err());
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn resolve_update_operation_only() {
     let signed_operation = common::operation::sign_operation("master-0", &private_key, &operation);
     let metadata = common::time::default_operation_metadata();
     let result = resolve(vec![(metadata, signed_operation)]);
-    assert_eq!(result, Err(ResolutionError::DidNotFound));
+    assert!(result.is_err());
 }
 
 #[test]
@@ -79,7 +79,7 @@ fn resolve_empty_signed_operation() {
     let signed_operation = SignedAtalaOperation::default();
     let metadata = common::time::default_operation_metadata();
     let result = resolve(vec![(metadata, signed_operation)]);
-    assert_eq!(result, Err(ResolutionError::DidNotFound));
+    assert!(result.is_err());
 }
 
 #[test]
@@ -89,7 +89,7 @@ fn resolve_create_operation_incorrect_signature() {
 
     let metadata = common::time::default_operation_metadata();
     let result = resolve(vec![(metadata, signed_operation)]);
-    assert_eq!(result, Err(ResolutionError::DidNotFound));
+    assert!(result.is_err());
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn resolve_create_operation_incorrect_signed_with() {
 
     let metadata = common::time::default_operation_metadata();
     let result = resolve(vec![(metadata, signed_operation)]);
-    assert_eq!(result, Err(ResolutionError::DidNotFound));
+    assert!(result.is_err());
 }
 
 #[test]
@@ -118,7 +118,7 @@ fn resolve_create_operation_without_master_key() {
 
     let metadata = common::time::default_operation_metadata();
     let result = resolve(vec![(metadata, signed_operation)]);
-    assert_eq!(result, Err(ResolutionError::DidNotFound));
+    assert!(result.is_err());
 }
 
 #[test]

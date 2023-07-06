@@ -4,7 +4,7 @@ use crate::{
     did::{
         operation::{
             PublicKey, PublicKeyData, PublicKeyId, Service, ServiceEndpoint, ServiceEndpointValue,
-            ServiceId, ServiceType,
+            ServiceId, ServiceType, ServiceTypeName,
         },
         CanonicalPrismDid,
     },
@@ -13,6 +13,7 @@ use crate::{
 };
 use bytes::Bytes;
 use chrono::{Duration, Utc};
+use std::str::FromStr;
 
 fn random_master_public_key(id: &str) -> PublicKey {
     let max_id_size = ProtocolParameter::default().max_id_size;
@@ -28,7 +29,7 @@ fn default_service(id: &str) -> Service {
     let max_id_size = ProtocolParameter::default().max_id_size;
     Service {
         id: ServiceId::parse(id, max_id_size).unwrap(),
-        r#type: ServiceType::Single("LinkedDomains".to_string()),
+        r#type: ServiceType::Single(ServiceTypeName::from_str("LinkedDomains").unwrap()),
         service_endpoints: ServiceEndpoint::Single(ServiceEndpointValue::URI(
             "https://example.com".to_string(),
         )),
@@ -383,7 +384,7 @@ fn did_state_mut_update_service_type() {
     assert_eq!(finalized_state.services.len(), 1);
     assert!(finalized_state.services.contains(&service_1));
 
-    let service_type = ServiceType::Single("DIDCommMessaging".to_string());
+    let service_type = ServiceType::Single(ServiceTypeName::from_str("DIDCommMessaging").unwrap());
     state
         .update_service_type(&service_1.id, service_type.clone())
         .unwrap();
@@ -410,7 +411,7 @@ fn did_state_mut_update_service_type_not_exist() {
     assert!(finalized_state.services.contains(&service_1));
 
     let service_2 = default_service("service-1");
-    let service_type = ServiceType::Single("DIDCommMessaging".to_string());
+    let service_type = ServiceType::Single(ServiceTypeName::from_str("DIDCommMessaging").unwrap());
     let result = state.update_service_type(&service_2.id, service_type.clone());
     assert!(result.is_err());
     assert_eq!(finalized_state.services.len(), 1);
@@ -435,7 +436,7 @@ fn did_state_mut_update_service_type_already_revoked() {
     let finalized_state = state.clone().finalize();
     assert_eq!(finalized_state.services.len(), 0);
 
-    let service_type = ServiceType::Single("DIDCommMessaging".to_string());
+    let service_type = ServiceType::Single(ServiceTypeName::from_str("DIDCommMessaging").unwrap());
     let result = state.update_service_type(&service_1.id, service_type.clone());
     assert!(result.is_err());
     assert_eq!(finalized_state.services.len(), 0);
