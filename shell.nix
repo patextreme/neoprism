@@ -33,7 +33,7 @@ let
       mkdir -p ${rootDir}/target
       rm -f ${rootDir}/target/tmp.db
       touch ${rootDir}/target/tmp.db
-      ${rust}/bin/cargo run -p prism-persistence --no-default-features -- sqlite://${rootDir}/target/tmp.db
+      ${rust}/bin/cargo run -p prism-persistence --no-default-features -- "sqlite://${rootDir}/target/tmp.db"
       ${pkgs.sea-orm-cli}/bin/sea-orm-cli generate entity \
         --database-url sqlite://${rootDir}/target/tmp.db \
         -o ${rootDir}/prism-persistence/src/entity
@@ -46,6 +46,6 @@ in pkgs.mkShell {
   shellHook = "";
 
   # envs
-  RUST_LOG = "oura=error,sqlx::query=warn,prism_core=debug,info";
+  RUST_LOG = "oura=warn,sqlx::query=warn,prism_core=debug,prism_node=debug,info";
   RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
 }

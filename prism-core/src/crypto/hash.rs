@@ -7,8 +7,7 @@ pub struct Sha256Digest([u8; 32]);
 
 impl std::fmt::Debug for Sha256Digest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let bytes = Bytes::copy_from_slice(&self.0);
-        HexStr::from(bytes).fmt(f)
+        HexStr::from(self.0.as_slice()).fmt(f)
     }
 }
 
@@ -38,6 +37,11 @@ impl Sha256Digest {
         let mut digest = [0u8; 32];
         digest.copy_from_slice(&bytes);
         Ok(Self(digest))
+    }
+
+    pub fn from_slice(slice: &[u8]) -> Result<Self, String> {
+        let bytes = Bytes::copy_from_slice(slice);
+        Self::from_bytes(bytes)
     }
 }
 

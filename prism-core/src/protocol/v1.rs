@@ -176,11 +176,11 @@ impl Validator<UpdateDidOperation> for UpdateDidValidator {
         state: &DidStateMut,
     ) -> Result<(), ProcessError> {
         // check at least one master key exists
-        if !state
+        let contains_master_key = state
             .public_keys
             .iter()
-            .any(|(_, pk)| pk.get().usage() == KeyUsage::MasterKey)
-        {
+            .any(|(_, pk)| pk.get().usage() == KeyUsage::MasterKey);
+        if !contains_master_key {
             Err(ProcessError::DidStateConflict(
                 "At least one master key must exist after update".to_string(),
             ))?

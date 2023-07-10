@@ -300,11 +300,10 @@ impl DidStateOps {
     }
 
     fn process(self, signed_operation: SignedAtalaOperation, metadata: OperationMetadata) -> Self {
-        if self
+        let signature_verification = self
             .processor
-            .check_signature(&self.state, &signed_operation)
-            .is_err()
-        {
+            .check_signature(&self.state, &signed_operation);
+        if signature_verification.is_err() {
             return self;
         }
 

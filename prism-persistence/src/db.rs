@@ -31,17 +31,20 @@ pub mod sqlite {
         dlt::OperationMetadata,
         prelude::CanonicalPrismDid,
         proto::SignedAtalaOperation,
-        store::{CursorStoreError, DltCursor, DltCursorStore, OperationStore, OperationStoreError},
+        store::{
+            get_did_from_signed_operation, CursorStoreError, DltCursor, DltCursorStore,
+            OperationStore, OperationStoreError,
+        },
     };
-    use sea_orm::*;
+    use sea_orm::{sea_query::OnConflict, *};
 
     #[async_trait::async_trait]
     impl OperationStore for PrismDB {
         async fn get_by_did(
-            &mut self,
+            &self,
             did: &CanonicalPrismDid,
         ) -> Result<Vec<(OperationMetadata, SignedAtalaOperation)>, OperationStoreError> {
-            let did_str = did.to_string();
+            let did_str = did.suffix.as_bytes();
             let operations = raw_operation::Entity::find()
                 .filter(raw_operation::Column::Did.eq(did_str))
                 .all(&self.db)
@@ -58,21 +61,40 @@ pub mod sqlite {
         }
 
         async fn insert(
-            &mut self,
+            &self,
             signed_operation: SignedAtalaOperation,
             metadata: OperationMetadata,
         ) -> Result<(), OperationStoreError> {
-            let operation: raw_operation::ActiveModel = (metadata, signed_operation)
+            let did = get_did_from_signed_operation(&signed_operation)?;
+            let operation: raw_operation::ActiveModel = (did, metadata, signed_operation)
                 .try_into()
                 .map_err(OperationStoreError::StorageEncodingError)?;
-            operation.insert(&self.db).await.map_err(Conv)?;
-            Ok(())
+
+            let on_conflict = OnConflict::columns([
+                raw_operation::Column::Did,
+                raw_operation::Column::BlockNumber,
+                raw_operation::Column::Absn,
+                raw_operation::Column::Osn,
+            ])
+            .do_nothing()
+            .to_owned();
+
+            let insert_result = raw_operation::Entity::insert(operation)
+                .on_conflict(on_conflict)
+                .exec(&self.db)
+                .await;
+
+            match insert_result {
+                Ok(_) => Ok(()),
+                Err(DbErr::RecordNotInserted) => Ok(()), // inserting same operation is not an error
+                Err(e) => Err(Conv(e))?,
+            }
         }
     }
 
     #[async_trait::async_trait]
     impl DltCursorStore for PrismDB {
-        async fn get_cursor(&mut self) -> Result<Option<DltCursor>, CursorStoreError> {
+        async fn get_cursor(&self) -> Result<Option<DltCursor>, CursorStoreError> {
             let result = dlt_cursor::Entity::find()
                 .order_by_desc(dlt_cursor::Column::Slot)
                 .one(&self.db)
@@ -82,7 +104,7 @@ pub mod sqlite {
             result.map_or(Ok(None), |v| v.map(Some))
         }
 
-        async fn set_cursor(&mut self, cursor: DltCursor) -> Result<(), CursorStoreError> {
+        async fn set_cursor(&self, cursor: DltCursor) -> Result<(), CursorStoreError> {
             let slot = <i32 as TryFrom<u64>>::try_from(cursor.slot)
                 .map_err(|e| CursorStoreError::StorageEncodingError(e.into()))?;
 

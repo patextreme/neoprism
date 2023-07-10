@@ -1,12 +1,13 @@
 use super::hash::sha256;
 use crate::proto::public_key::KeyData;
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use ed25519_dalek::Verifier;
 use enum_dispatch::enum_dispatch;
 
 #[enum_dispatch]
 pub trait ECPublicKey {
     fn curve_name(&self) -> &'static str;
+    fn encode(&self) -> Bytes;
 }
 
 pub trait DsaPublicKey {
@@ -75,6 +76,10 @@ impl ECPublicKey for Secp256k1PublicKey {
     fn curve_name(&self) -> &'static str {
         "secp256k1"
     }
+
+    fn encode(&self) -> Bytes {
+        Bytes::copy_from_slice(self.0.serialize().as_slice())
+    }
 }
 
 impl DsaPublicKey for Secp256k1PublicKey {
@@ -115,6 +120,10 @@ impl Ed25519PublicKey {
 impl ECPublicKey for Ed25519PublicKey {
     fn curve_name(&self) -> &'static str {
         "ed25519"
+    }
+
+    fn encode(&self) -> Bytes {
+        Bytes::copy_from_slice(self.0.as_bytes().as_slice())
     }
 }
 
@@ -157,5 +166,9 @@ impl X25519PublicKey {
 impl ECPublicKey for X25519PublicKey {
     fn curve_name(&self) -> &'static str {
         "x25519"
+    }
+
+    fn encode(&self) -> Bytes {
+        Bytes::copy_from_slice(self.0.as_bytes().as_slice())
     }
 }

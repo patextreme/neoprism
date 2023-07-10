@@ -11,9 +11,8 @@ use crate::{
     protocol::ProtocolParameter,
     util::{is_slice_unique, is_uri, is_uri_fragment},
 };
-use bytes::Bytes;
 use regex::Regex;
-use std::{str::FromStr, sync::OnceLock};
+use std::{fmt::Display, str::FromStr, sync::OnceLock};
 
 #[cfg(test)]
 #[path = "operation_tests.rs"]
@@ -148,8 +147,7 @@ impl UpdateOperation {
         }
 
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
-        let prev_operation_hash = Bytes::copy_from_slice(&operation.previous_operation_hash);
-        let prev_operation_hash = Sha256Digest::from_bytes(prev_operation_hash)
+        let prev_operation_hash = Sha256Digest::from_slice(&operation.previous_operation_hash)
             .map_err(UpdateOperationParsingError::InvalidPreviousOperationHash)?;
 
         let actions = operation
@@ -286,8 +284,7 @@ impl DeactivateOperation {
         operation: &DeactivateDidOperation,
     ) -> Result<Self, DeactivateOperationParsingError> {
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
-        let prev_operation_hash = Bytes::copy_from_slice(&operation.previous_operation_hash);
-        let prev_operation_hash = Sha256Digest::from_bytes(prev_operation_hash)
+        let prev_operation_hash = Sha256Digest::from_slice(&operation.previous_operation_hash)
             .map_err(DeactivateOperationParsingError::InvalidPreviousOperationHash)?;
 
         Ok(Self {
@@ -553,6 +550,12 @@ pub struct ServiceTypeNameParsingError(String);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ServiceTypeName(String);
 
+impl Display for ServiceTypeName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl FromStr for ServiceTypeName {
     type Err = ServiceTypeNameParsingError;
 
@@ -610,14 +613,14 @@ impl ServiceEndpoint {
 
             let endpoints: Result<Vec<ServiceEndpointValue>, _> = list
                 .into_iter()
-                .map(|i| ServiceEndpointValue::try_from(i))
+                .map(ServiceEndpointValue::try_from)
                 .collect();
             return Ok(Self::Multiple(endpoints?));
         }
 
         // try parse as single string
         Ok(Self::Single(ServiceEndpointValue::from_str(
-            &service_endpoint,
+            service_endpoint,
         )?))
     }
 }
@@ -640,7 +643,7 @@ impl FromStr for ServiceEndpointValue {
     type Err = ServiceEndpointValueParsingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if is_uri(&s) {
+        if is_uri(s) {
             Ok(Self::URI(s.to_owned()))
         } else {
             Err(ServiceEndpointValueParsingError::InvalidURI { uri: s.to_string() })

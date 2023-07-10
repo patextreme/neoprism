@@ -1,4 +1,5 @@
 use clap::{Args, Parser, Subcommand};
+use std::net::Ipv4Addr;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -26,9 +27,12 @@ pub struct ServerArgs {
     pub db_args: DbArgs,
     #[clap(flatten)]
     pub cardano_args: CaardanoArgs,
-    /// PRISM node listening port
+    /// PRISM node HTTP server bind address
+    #[arg(long, default_value = "0.0.0.0", value_name = "ADDR")]
+    pub bind: Ipv4Addr,
+    /// PRISM node HTTP server listening port
     #[arg(short, long, default_value_t = 8080)]
-    pub port: u32,
+    pub port: u16,
 }
 
 #[derive(Args)]

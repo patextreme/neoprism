@@ -2,6 +2,7 @@ use self::model::MetadataEvent;
 use super::{DltSource, PublishedAtalaObject};
 use crate::{
     crypto::codec::HexStr,
+    prelude::StdError,
     store::{CursorStoreError, DltCursor, DltCursorStore},
 };
 use bytes::Bytes;
@@ -17,7 +18,10 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::{
+    sync::mpsc::{self, Receiver, Sender},
+    task::JoinHandle,
+};
 
 pub struct OuraFileSource {
     path: PathBuf,
@@ -234,10 +238,10 @@ pub struct OuraN2NSource<Store: DltCursorStore + Send + 'static> {
     store: Store,
 }
 
-impl<Store: DltCursorStore + Send + 'static> OuraN2NSource<Store> {
+impl<Store: DltCursorStore + Send + Sync + 'static> OuraN2NSource<Store> {
     // FIXME: 71482683 was about the slot that first AtalaBlock was observed on mainnet.
     // How can we support multiple network and define genesis slot / block?
-    pub fn new_since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
+    pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
         let intersect = oura::sources::IntersectArg::Point(PointArg(
             71482683,
             "f3fd56f7e390d4e45d06bb797d83b7814b1d32c2112bc997779e34de1579fa7d".to_string(),
@@ -245,8 +249,8 @@ impl<Store: DltCursorStore + Send + 'static> OuraN2NSource<Store> {
         Self::new(store, remote_addr, chain, intersect)
     }
 
-    pub async fn new_since_persisted_cursor(
-        mut store: Store,
+    pub async fn since_persisted_cursor_or_genesis(
+        store: Store,
         remote_addr: &str,
         chain: &NetworkIdentifier,
     ) -> Result<Self, CursorStoreError> {
@@ -261,7 +265,7 @@ impl<Store: DltCursorStore + Send + 'static> OuraN2NSource<Store> {
             }
             None => {
                 log::info!("Persisted cursor not found, staring syncing from PRISM genesis block");
-                Ok(Self::new_since_genesis(store, remote_addr, chain))
+                Ok(Self::since_genesis(store, remote_addr, chain))
             }
         }
     }
@@ -280,7 +284,7 @@ impl<Store: DltCursorStore + Send + 'static> OuraN2NSource<Store> {
             intersect: Some(intersect),
             well_known: None,
             mapper: Default::default(),
-            min_depth: 112, // TODO: make this configurable?
+            min_depth: 112,
             retry_policy: None,
             finalize: None,
         };
@@ -290,14 +294,13 @@ impl<Store: DltCursorStore + Send + 'static> OuraN2NSource<Store> {
     }
 }
 
-impl<Store: DltCursorStore + Send + 'static> DltSource for OuraN2NSource<Store> {
+impl<Store: DltCursorStore + Send + Sync + 'static> DltSource for OuraN2NSource<Store> {
     fn receiver(self) -> Result<Receiver<PublishedAtalaObject>, String> {
-        let (_, oura_rx) = self.with_utils.bootstrap().map_err(|e| e.to_string())?;
         let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedAtalaObject>(1024);
         let (cursor_tx, cursor_rx) = tokio::sync::watch::channel::<Option<DltCursor>>(None);
 
         let oura_stream_worker = OuraStreamWorker {
-            oura_rx,
+            with_utils: self.with_utils,
             cursor_tx,
             event_tx,
         };
@@ -307,38 +310,47 @@ impl<Store: DltCursorStore + Send + 'static> DltSource for OuraN2NSource<Store> 
             store: self.store,
         };
 
-        oura_stream_worker.spawn();
-        cursor_persist_worker.spawn();
+        // TODO: improve error propagation
+        let handle_1 = oura_stream_worker.spawn();
+        let handle_2 = cursor_persist_worker.spawn();
+
         Ok(rx)
     }
 }
 
 struct OuraStreamWorker {
-    oura_rx: StageReceiver,
+    with_utils: WithUtils<Config>,
     cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
     event_tx: Sender<PublishedAtalaObject>,
 }
 
 impl OuraStreamWorker {
-    fn spawn(self) {
-        std::thread::spawn(move || {
-            loop {
-                let maybe_event = self.oura_rx.recv();
-                let handle_result = match maybe_event {
-                    Ok(event) => {
-                        self.persist_cursor(&event);
-                        self.handle_atala_event(event.clone())
-                    }
-                    Err(e) => Err(e.into()),
-                };
-                if let Err(e) = handle_result {
-                    log::error!("Error handling event from oura source. {}", e);
-                    break;
-                }
-            }
+    fn spawn(self) -> std::thread::JoinHandle<Result<(), StdError>> {
+        std::thread::spawn(move || loop {
+            log::info!("Bootstraping oura pipeline thread");
+            let (oura_handle, oura_rx) = self.with_utils.bootstrap().map_err(|e| e.to_string())?;
+            let exit_err = self.stream_loop(oura_rx);
+            log::error!("Oura pipeline terminated. Retry in 10 seconds");
+            std::thread::sleep(std::time::Duration::from_secs(10));
+        })
+    }
 
-            log::info!("Oura event stream terminated");
-        });
+    fn stream_loop(&self, receiver: StageReceiver) -> StdError {
+        let timeout = std::time::Duration::from_secs(300);
+        loop {
+            let received_event = receiver.recv_timeout(timeout);
+            let handle_result = match received_event {
+                Ok(event) => {
+                    self.persist_cursor(&event);
+                    self.handle_atala_event(event.clone())
+                }
+                Err(e) => Err(e.into()),
+            };
+            if let Err(e) = handle_result {
+                log::error!("Error handling event from oura source. {}", e);
+                return e;
+            }
+        }
     }
 
     fn persist_cursor(&self, event: &Event) {
@@ -352,7 +364,7 @@ impl OuraStreamWorker {
         let _ = self.cursor_tx.send(Some(cursor));
     }
 
-    fn handle_atala_event(&self, event: Event) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle_atala_event(&self, event: Event) -> Result<(), StdError> {
         let EventData::Metadata(meta) = event.data else { return Ok(()) };
         if meta.label != "21325" {
             return Ok(());
@@ -385,11 +397,12 @@ struct CursorPersistWorker<Store: DltCursorStore + Send + 'static> {
     store: Store,
 }
 
-impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
-    fn spawn(mut self) {
+impl<Store: DltCursorStore + Send + Sync + 'static> CursorPersistWorker<Store> {
+    fn spawn(mut self) -> JoinHandle<Result<(), StdError>> {
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+
                 let recv_result = self.cursor_rx.changed().await;
                 if let Err(e) = recv_result {
                     log::error!("Error getting cursor to persist: {}", e);
@@ -397,15 +410,20 @@ impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
 
                 let cursor = self.cursor_rx.borrow_and_update().clone();
                 let Some(cursor) = cursor else { continue };
-                log::debug!("Persisting cursor on slot {}", cursor.slot);
-                let persist_result = self.store.set_cursor(cursor).await;
+                log::debug!(
+                    "Persisting cursor on slot ({}, {})",
+                    cursor.slot,
+                    HexStr::from(cursor.block_hash.as_slice()).to_string(),
+                );
 
+                let persist_result = self.store.set_cursor(cursor).await;
                 if let Err(e) = persist_result {
                     log::error!("Error persisting cursor: {}", e);
                 }
             }
 
             log::info!("CursorPersistWorker terminated");
-        });
+            Ok(())
+        })
     }
 }

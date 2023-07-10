@@ -25,7 +25,7 @@ async fn execute_server(args: &ServerArgs) {
 
     // TODO: support custom network
     let store = do_migrate(&args.db_args).await;
-    let source = OuraN2NSource::new_since_persisted_cursor(
+    let source = OuraN2NSource::since_persisted_cursor_or_genesis(
         store.clone(),
         cardano_addr,
         &NetworkIdentifier::Mainnet,
@@ -33,7 +33,7 @@ async fn execute_server(args: &ServerArgs) {
     .await
     .expect("Unable to create a OuraN2NSource");
     let node_app = PrismNodeApp::new(store, source);
-    node_app.run().await;
+    node_app.run(args.bind, args.port).await;
 }
 
 async fn do_migrate(db_args: &DbArgs) -> PrismDB {

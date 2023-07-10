@@ -83,4 +83,4 @@ pub fn is_uri_fragment(s: &str) -> bool {
     regex.is_match(s)
 }
 
-pub type StdError = Box<dyn std::error::Error>;
+pub type StdError = Box<dyn std::error::Error + Send + Sync>;

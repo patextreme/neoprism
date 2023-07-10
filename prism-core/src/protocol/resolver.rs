@@ -30,8 +30,10 @@ fn init_state_ops(
     mut operations: OperationList,
 ) -> Result<(DidStateOps, OperationList), ResolutionError> {
     while let Some((metadata, operation)) = operations.pop_front() {
-        if let Ok(state_ops) = DidStateOps::new(operation, metadata) {
-            return Ok((state_ops, operations));
+        let result = DidStateOps::new(operation, metadata);
+        match result {
+            Ok(state_ops) => return Ok((state_ops, operations)),
+            Err(e) => log::debug!("unable to initialize DIDState from operation: {:?}", e,),
         }
     }
     Err(ResolutionError::DidNotFound)

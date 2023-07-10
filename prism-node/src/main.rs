@@ -3,6 +3,7 @@ use clap::Parser;
 mod app;
 mod cli;
 mod exec;
+mod util;
 
 #[tokio::main]
 async fn main() {

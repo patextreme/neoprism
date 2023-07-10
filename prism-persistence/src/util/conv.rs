@@ -12,7 +12,7 @@ mod sqlite {
         dlt::{BlockMetadata, OperationMetadata},
         prelude::*,
         proto::SignedAtalaOperation,
-        store::{self, DltCursor},
+        store::DltCursor,
         util::StdError,
     };
     use sea_orm::ActiveValue;
@@ -24,7 +24,7 @@ mod sqlite {
     }
 
     impl TryFrom<Conv<String>> for DateTime<Utc> {
-        type Error = Box<dyn std::error::Error>;
+        type Error = StdError;
 
         fn try_from(value: Conv<String>) -> Result<Self, Self::Error> {
             Ok(DateTime::parse_from_rfc3339(&value.0)?.with_timezone(&Utc))
@@ -50,13 +50,17 @@ mod sqlite {
         }
     }
 
-    impl TryFrom<(OperationMetadata, SignedAtalaOperation)> for entity::raw_operation::ActiveModel {
+    impl TryFrom<(CanonicalPrismDid, OperationMetadata, SignedAtalaOperation)>
+        for entity::raw_operation::ActiveModel
+    {
         type Error = StdError;
 
-        fn try_from(value: (OperationMetadata, SignedAtalaOperation)) -> Result<Self, Self::Error> {
-            let metadata = value.0;
-            let signed_operation = value.1;
-            let did = store::get_did_from_signed_operation(&signed_operation)?;
+        fn try_from(
+            value: (CanonicalPrismDid, OperationMetadata, SignedAtalaOperation),
+        ) -> Result<Self, Self::Error> {
+            let did = value.0;
+            let metadata = value.1;
+            let signed_operation = value.2;
             let operation = entity::raw_operation::ActiveModel {
                 slot: ActiveValue::Set(metadata.block_metadata.slot_number.try_into()?),
                 block_number: ActiveValue::Set(metadata.block_metadata.block_number.try_into()?),

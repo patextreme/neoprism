@@ -13,6 +13,13 @@ macro_rules! bytes_repr {
             }
         }
 
+        impl From<&[u8]> for $id {
+            fn from(slice: &[u8]) -> Self {
+                let bytes = Bytes::copy_from_slice(slice);
+                bytes.into()
+            }
+        }
+
         impl From<Bytes> for $id {
             fn from(bytes: Bytes) -> Self {
                 Self(bytes)
