@@ -310,7 +310,6 @@ impl<Store: DltCursorStore + Send + Sync + 'static> DltSource for OuraN2NSource<
             store: self.store,
         };
 
-        // TODO: improve error propagation
         let handle_1 = oura_stream_worker.spawn();
         let handle_2 = cursor_persist_worker.spawn();
 
