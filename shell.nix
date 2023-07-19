@@ -4,6 +4,12 @@ let
   rootDir = toString ./.;
   inherit (import ./nix/input.nix) pkgs oura rust;
   scripts = rec {
+    format = pkgs.writeShellScriptBin "format" ''
+      ${pkgs.nixfmt}/bin/nixfmt *.nix
+      ${pkgs.nixfmt}/bin/nixfmt ${rootDir}/nix/*.nix
+      ${rust}/bin/cargo fmt
+    '';
+
     build = pkgs.writeShellScriptBin "build" ''
       ${rust}/bin/cargo fmt
       ${rust}/bin/cargo build --all-features
@@ -41,11 +47,11 @@ let
   };
 in pkgs.mkShell {
   packages = with pkgs;
-    [ git which rust protobuf oura rust-analyzer sea-orm-cli ]
+    [ git which rust protobuf oura sea-orm-cli ]
     ++ (builtins.attrValues scripts);
   shellHook = "";
 
   # envs
-  RUST_LOG = "oura=warn,sqlx::query=warn,prism_core=debug,prism_node=debug,info";
-  RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
+  RUST_LOG =
+    "oura=warn,sqlx::query=warn,prism_core=debug,prism_node=debug,info";
 }

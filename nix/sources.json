@@ -5,22 +5,22 @@
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "78419edadf0fabbe5618643bd850b2f2198ed060",
-        "sha256": "10xp417avlhl3gp9h3a7pj12w5g88wmizlz9bjjr7k15is4ihdkn",
+        "rev": "6cee3b5893090b0f5f0a06b4cf42ca4e60e5d222",
+        "sha256": "088yi2181nfyxalkg0g84jv4jcmxclihnrcaywfmxqzz61vr8x4f",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/78419edadf0fabbe5618643bd850b2f2198ed060.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/6cee3b5893090b0f5f0a06b4cf42ca4e60e5d222.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "nixpkgs-mozilla": {
+    "rust-overlay": {
         "branch": "master",
-        "description": "Mozilla overlay for Nixpkgs.",
+        "description": "Pure and reproducible nix overlay of binary distributed rust toolchains",
         "homepage": "",
-        "owner": "mozilla",
-        "repo": "nixpkgs-mozilla",
-        "rev": "3a44b8783514e7d6db4b63df96071b6c2b014b07",
-        "sha256": "00dnnmrfqdgwkafbd9pqvxddr3s30jn0jkj7j0m1lmcqmb7nlajd",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "31d08cf9f5c3a49475e723c75c6f645171364a74",
+        "sha256": "1219v45422vkcqxya9x3r8apihkk65zfw8ry923zxyg6j9c07q8w",
         "type": "tarball",
-        "url": "https://github.com/mozilla/nixpkgs-mozilla/archive/3a44b8783514e7d6db4b63df96071b6c2b014b07.tar.gz",
+        "url": "https://github.com/oxalica/rust-overlay/archive/31d08cf9f5c3a49475e723c75c6f645171364a74.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

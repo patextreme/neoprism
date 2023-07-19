@@ -2,14 +2,12 @@ let sources = import ./sources.nix;
 in rec {
   pkgs = import sources.nixpkgs {
     config = { allowUnfree = true; };
-    overlays = [ (import sources.nixpkgs-mozilla) ];
+    overlays = [ (import sources.rust-overlay) ];
   };
 
-  rust = pkgs.latest.rustChannels.stable.rust;
-
-  rustPlatform = pkgs.makeRustPlatform {
-    cargo = rust;
-    rustc = rust;
+  rust = pkgs.rust-bin.stable.latest.default.override {
+    extensions = [ "rust-src" "rust-analyzer" ];
+    targets = [ ];
   };
 
   oura = pkgs.rustPlatform.buildRustPackage {
