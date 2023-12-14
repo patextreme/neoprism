@@ -6,13 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1"
-axum = "0.6"
-clap = { version = "4", features = ["derive"] }
-env_logger = "0.10"
-log = "0.4"
+anyhow = { workspace = true }
+axum = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+env_logger = { workspace = true }
+log = { workspace = true }
 prism-core = { path = "../prism-core", features = ["full"] }
-prism-persistence = { path = "../prism-persistence", features = ["sqlite"] }
-serde_json = "1"
-serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
+prism-storage = { path = "../prism-storage", features = ["sqlite"] }
+serde_json = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["full"] }

@@ -187,7 +187,7 @@ impl UpdateOperationAction {
         param: &ProtocolParameter,
     ) -> Result<Option<Self>, UpdateOperationParsingError> {
         let Some(action) = &action.action else {
-            return Ok(None)
+            return Ok(None);
         };
 
         let action = match action {

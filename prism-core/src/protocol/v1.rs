@@ -32,7 +32,9 @@ impl OperationProcessor for V1Processor {
             })?;
 
         let Some(pk) = state.public_keys.get(&key_id) else {
-            Err(ProcessError::InvalidSignature("signed_with is invalid (key not found)".to_string()))?
+            Err(ProcessError::InvalidSignature(
+                "signed_with is invalid (key not found)".to_string(),
+            ))?
         };
 
         match &pk.get().data {

@@ -44,7 +44,7 @@ pub enum OperationStoreError {
     OperationEncodeError(#[from] prost::EncodeError),
     #[error("Operation canno be decoded from bytes: {0}")]
     OperationDecodeError(#[from] prost::DecodeError),
-    #[error("Storage mechanism error: {0}")]
+    #[error("Storage backend error: {0}")]
     StorageBackendError(StdError),
     #[error("Storage encoding/decoding error: {0}")]
     StorageEncodingError(StdError),

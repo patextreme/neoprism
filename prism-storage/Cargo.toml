@@ -1,0 +1,20 @@
+[package]
+name = "prism-storage"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = { workspace = true }
+env_logger = { workspace = true }
+log = { workspace = true }
+prism-core = { path = "../prism-core" }
+sea-query-binder = { workspace = true, features = [ "sqlx-sqlite", "with-time", ] }
+sea-query = { workspace = true, features = [ "backend-sqlite", "with-time", "derive", ] }
+sqlx = { workspace = true, features = [ "migrate", "runtime-tokio", "sqlite", "time", ] }
+thiserror = { workspace = true }
+time = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+
+[features]
+default = ["sqlite"]
+sqlite = []

@@ -1,25 +1,25 @@
 use crate::proto::AtalaObject;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 #[cfg(feature = "cardano")]
 pub mod cardano;
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlockMetadata {
     /// Cardano slot number
     pub slot_number: u64,
     /// Cardano block number
     pub block_number: u64,
     /// Cardano block timestamp
-    pub cbt: DateTime<Utc>,
+    pub cbt: OffsetDateTime,
     /// AtalaBlock seqeuence number
     ///
     /// This is used to order AtalaBlock within the same Cardano block
     pub absn: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OperationMetadata {
     /// AtalaBlock metadata
     pub block_metadata: BlockMetadata,
@@ -124,7 +124,7 @@ impl DltSink for InMemoryDltSink {
             let block_metadata = BlockMetadata {
                 slot_number: block_number,
                 block_number,
-                cbt: Utc::now(),
+                cbt: OffsetDateTime::now_utc(),
                 absn: 0,
             };
             let published_atala_object = PublishedAtalaObject {

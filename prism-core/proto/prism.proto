@@ -5,7 +5,7 @@ package proto;
 /**
  * Represent a block that holds operations.
  */
- message AtalaBlock {
+message AtalaBlock {
   reserved 1; // Represents the version of the block. Deprecated
   repeated SignedAtalaOperation operations = 2; // A signed operation, necessary to post anything on the blockchain.
 }
@@ -125,7 +125,7 @@ message UpdateDIDAction {
 
 // Specifies the necessary data to update a public DID.
 message UpdateDIDOperation {
-    bytes previous_operation_hash = 1; // The hash of the operation that issued the DID.
+    bytes previous_operation_hash = 1; // The hash of the most recent operation that was used to create or update the DID.
     string id = 2; // @exclude TODO: To be redefined after we start using this operation.
     repeated UpdateDIDAction actions = 3; // The actual updates to perform on the DID.
 }
@@ -157,7 +157,7 @@ message ProtocolVersionInfo {
 }
 
 message DeactivateDIDOperation {
-    bytes previous_operation_hash = 1; // The hash of the operation that issued the DID.
+    bytes previous_operation_hash = 1; // The hash of the most recent operation that was used to create or update the DID.
     string id = 2; // DID Suffix of the DID to be deactivated
 }
 

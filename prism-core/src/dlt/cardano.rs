@@ -1,4 +1,3 @@
-use self::model::MetadataEvent;
 use super::{DltSource, PublishedAtalaObject};
 use crate::{
     crypto::codec::HexStr,
@@ -13,62 +12,11 @@ use oura::{
     sources::{n2n::Config, AddressArg, IntersectArg, MagicArg, PointArg},
     utils::{ChainWellKnownInfo, Utils, WithUtils},
 };
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::Arc,
-};
+use std::{str::FromStr, sync::Arc};
 use tokio::{
-    sync::mpsc::{self, Receiver, Sender},
+    sync::mpsc::{Receiver, Sender},
     task::JoinHandle,
 };
-
-pub struct OuraFileSource {
-    path: PathBuf,
-}
-
-impl OuraFileSource {
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
-        Self {
-            path: path.as_ref().to_path_buf(),
-        }
-    }
-
-    fn parse(self) -> Result<Vec<PublishedAtalaObject>, Box<dyn std::error::Error>> {
-        let lines = std::fs::read_to_string(self.path)?;
-        let mut atala_objects = Vec::with_capacity(lines.len());
-        for line in lines.trim().split('\n') {
-            let metadata_event: MetadataEvent = serde_json::from_str(line)?;
-            let atala_object: PublishedAtalaObject = metadata_event.try_into()?;
-            atala_objects.push(atala_object)
-        }
-        Ok(atala_objects)
-    }
-}
-
-impl DltSource for OuraFileSource {
-    fn receiver(self) -> Result<Receiver<PublishedAtalaObject>, String> {
-        let (tx, rx) = mpsc::channel(2048);
-
-        tokio::spawn(async move {
-            let atala_objects = match self.parse() {
-                Ok(atala_objects) => atala_objects,
-                Err(e) => {
-                    log::error!("Error parsing OuraFileSource: {}", e);
-                    return;
-                }
-            };
-            for atala_object in atala_objects {
-                if let Err(e) = tx.send(atala_object).await {
-                    log::error!("Error sending AtalaObject from OuraFileSource: {}", e);
-                    break;
-                }
-            }
-        });
-
-        Ok(rx)
-    }
-}
 
 mod model {
     use crate::{
@@ -76,10 +24,10 @@ mod model {
         proto::AtalaObject,
     };
     use bytes::BytesMut;
-    use chrono::{DateTime, TimeZone, Utc};
     use oura::model::{EventContext, MetadataRecord};
     use prost::Message;
     use serde::{Deserialize, Serialize};
+    use time::OffsetDateTime;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct MetadataEvent {
@@ -119,49 +67,6 @@ mod model {
         MalformedMetadata(String),
     }
 
-    impl TryFrom<MetadataEvent> for AtalaObject {
-        type Error = ConversionError;
-
-        fn try_from(value: MetadataEvent) -> Result<Self, Self::Error> {
-            let published_atala_object = PublishedAtalaObject::try_from(value)?;
-            Ok(published_atala_object.atala_object)
-        }
-    }
-
-    impl TryFrom<MetadataEvent> for PublishedAtalaObject {
-        type Error = ConversionError;
-
-        fn try_from(value: MetadataEvent) -> Result<Self, Self::Error> {
-            let hex_group = value.metadata.map_json.c;
-            let mut buf = BytesMut::with_capacity(64 * hex_group.len());
-
-            for hex in hex_group {
-                let b = hex::decode(hex)?;
-                buf.extend(b);
-            }
-
-            let bytes = buf.freeze();
-            let atala_object = AtalaObject::decode(bytes)?;
-            let timestamp: DateTime<Utc> = Utc
-                .timestamp_opt(value.context.timestamp, 0)
-                .single()
-                .ok_or_else(|| {
-                ConversionError::ProtoDecodeError(prost::DecodeError::new("timestamp is not valid"))
-            })?;
-            let block_metadata = BlockMetadata {
-                slot_number: value.context.slot,
-                cbt: timestamp,
-                absn: value.context.tx_idx,
-                block_number: value.context.block_number,
-            };
-            let published_atala_object = PublishedAtalaObject {
-                block_metadata,
-                atala_object,
-            };
-            Ok(published_atala_object)
-        }
-    }
-
     pub fn parse_oura_event(
         context: EventContext,
         metadata: MetadataRecord,
@@ -188,10 +93,7 @@ mod model {
         let timestamp = context.timestamp.ok_or(ConversionError::MalformedMetadata(
             "Timestamp must be present in Cardano metadata".to_string(),
         ))? as i64;
-        let timestamp: DateTime<Utc> =
-            Utc.timestamp_opt(timestamp, 0).single().ok_or_else(|| {
-                ConversionError::ProtoDecodeError(prost::DecodeError::new("timestamp is not valid"))
-            })?;
+        let timestamp = OffsetDateTime::from_unix_timestamp(timestamp).unwrap(); // TODO
         let block_metadata = BlockMetadata {
             cbt: timestamp,
             absn: context.tx_idx.ok_or(ConversionError::MalformedMetadata(
@@ -233,7 +135,7 @@ impl NetworkIdentifier {
     }
 }
 
-pub struct OuraN2NSource<Store: DltCursorStore + Send + 'static> {
+pub struct OuraN2NSource<Store: DltCursorStore + Send + Sync + 'static> {
     with_utils: WithUtils<Config>,
     store: Store,
 }
@@ -257,14 +159,18 @@ impl<Store: DltCursorStore + Send + Sync + 'static> OuraN2NSource<Store> {
         let cursor = store.get_cursor().await?;
         match cursor {
             Some(cursor) => {
-                let intersect = oura::sources::IntersectArg::Point(PointArg(
+                let blockhash_hex = HexStr::from(Bytes::from(cursor.block_hash)).to_string();
+                log::info!(
+                    "Persisted cursor found, starting syncing from ({}, {})",
                     cursor.slot,
-                    HexStr::from(Bytes::from(cursor.block_hash)).to_string(),
-                ));
+                    blockhash_hex
+                );
+                let intersect =
+                    oura::sources::IntersectArg::Point(PointArg(cursor.slot, blockhash_hex));
                 Ok(Self::new(store, remote_addr, chain, intersect))
             }
             None => {
-                log::info!("Persisted cursor not found, staring syncing from PRISM genesis block");
+                log::info!("Persisted cursor not found, staring syncing from PRISM genesis slot");
                 Ok(Self::since_genesis(store, remote_addr, chain))
             }
         }
@@ -353,8 +259,12 @@ impl OuraStreamWorker {
     }
 
     fn persist_cursor(&self, event: &Event) {
-        let Some(slot) = event.context.slot else { return };
-        let Some(block_hash_hex) = &event.context.block_hash else { return };
+        let Some(slot) = event.context.slot else {
+            return;
+        };
+        let Some(block_hash_hex) = &event.context.block_hash else {
+            return;
+        };
         let block_hash = HexStr::from_str(block_hash_hex)
             .unwrap_or_else(|_| panic!("Invalid hex string for block_hash on slot {}", slot))
             .as_bytes()
@@ -364,7 +274,9 @@ impl OuraStreamWorker {
     }
 
     fn handle_atala_event(&self, event: Event) -> Result<(), StdError> {
-        let EventData::Metadata(meta) = event.data else { return Ok(()) };
+        let EventData::Metadata(meta) = event.data else {
+            return Ok(());
+        };
         if meta.label != "21325" {
             return Ok(());
         }
@@ -391,16 +303,21 @@ impl OuraStreamWorker {
     }
 }
 
-struct CursorPersistWorker<Store: DltCursorStore + Send + 'static> {
+struct CursorPersistWorker<Store: DltCursorStore + Send + Sync + 'static> {
     cursor_rx: tokio::sync::watch::Receiver<Option<DltCursor>>,
     store: Store,
 }
 
 impl<Store: DltCursorStore + Send + Sync + 'static> CursorPersistWorker<Store> {
     fn spawn(mut self) -> JoinHandle<Result<(), StdError>> {
+        let interval_sec = 30;
+        log::info!(
+            "Spawn cursor persist worker with {} seconds interval",
+            interval_sec
+        );
         tokio::spawn(async move {
             loop {
-                tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+                tokio::time::sleep(tokio::time::Duration::from_secs(interval_sec)).await;
 
                 let recv_result = self.cursor_rx.changed().await;
                 if let Err(e) = recv_result {

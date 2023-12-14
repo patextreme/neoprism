@@ -1,2 +1,42 @@
 [workspace]
-members = ["prism-core", "prism-node", "prism-persistence"]
+members = ["prism-core", "prism-storage", "prism-node"]
+resolver = "2"
+
+
+[workspace.dependencies]
+# general
+anyhow = "1"
+async-trait = "0.1"
+axum = "0.6"
+base64 = "0.21"
+bytes = "1"
+clap = "4"
+enum_dispatch = "0.3"
+env_logger = "0.10"
+hex = "0.4"
+im-rc = "15"
+log = "0.4"
+regex = "1"
+serde = "1"
+serde_json = "1"
+thiserror = "1"
+time = "0.3"
+tokio = "1"
+uriparse = "0.6"
+# db
+sea-query = "0.30"
+sea-query-binder = "0.5"
+sqlx = "0.7"
+# crypto
+curve25519-dalek = "3"
+ed25519-dalek = "1"
+rand = "0.8"
+ring = "0.16"
+secp256k1 = "0.27"
+x25519-dalek = "1"
+# cardano
+oura = "1.8"
+# proto
+prost = "0.11"
+prost-types = "0.11"
+prost-build = "0.11"

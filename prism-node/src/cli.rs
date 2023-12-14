@@ -13,6 +13,8 @@ pub enum Commands {
     Migrate(MigrateArgs),
     /// Run PRISM node server
     Server(ServerArgs),
+    /// Set cardano sync cursor
+    SetCursor(SetCursorArgs),
 }
 
 #[derive(Args)]
@@ -26,7 +28,7 @@ pub struct ServerArgs {
     #[clap(flatten)]
     pub db_args: DbArgs,
     #[clap(flatten)]
-    pub cardano_args: CaardanoArgs,
+    pub cardano_args: CardanoArgs,
     /// PRISM node HTTP server bind address
     #[arg(long, default_value = "0.0.0.0", value_name = "ADDR")]
     pub bind: Ipv4Addr,
@@ -38,13 +40,27 @@ pub struct ServerArgs {
 #[derive(Args)]
 pub struct DbArgs {
     /// Database URL (e.g. sqlite://mydata.db)
-    #[arg(long = "db", value_name = "DB_URL")]
+    #[arg(long = "db", value_name = "DB_URL", default_value = "sqlite::memory:")]
     pub db_url: String,
 }
 
 #[derive(Args)]
-pub struct CaardanoArgs {
-    /// Address of the Cardano node to consume events from (e.g. relays-new.cardano-mainnet.iohk.io:3001)
-    #[arg(long = "cardano_addr", value_name = "CARDANO_ADDR")]
+pub struct CardanoArgs {
+    /// Address of the Cardano node to consume events from
+    #[arg(
+        long = "cardano_addr",
+        value_name = "CARDANO_ADDR",
+        default_value = "relays-new.cardano-mainnet.iohk.io:3001"
+    )]
     pub address: String,
+}
+
+#[derive(Args)]
+pub struct SetCursorArgs {
+    #[clap(flatten)]
+    pub db_args: DbArgs,
+    /// Cursor slot
+    pub slot: u64,
+    /// Cursor block hash in hexadecimal string
+    pub blockhash: String,
 }
