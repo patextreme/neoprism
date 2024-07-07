@@ -6,11 +6,12 @@ use crate::{
 };
 use anyhow::Context;
 use prism_core::{
-    crypto::codec::HexStr,
     dlt::cardano::{NetworkIdentifier, OuraN2NSource},
     store::{DltCursor, DltCursorStore},
+    utils::codec::HexStr,
 };
-use prism_storage::db::PrismDB;
+use prism_migration::run_migrations;
+use prism_storage::PostgresDb;
 
 pub async fn execute_command(cli: &Cli) -> anyhow::Result<()> {
     match &cli.command {
@@ -46,11 +47,14 @@ async fn execute_server(args: &ServerArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn do_migrate(db_args: &DbArgs) -> anyhow::Result<PrismDB> {
+async fn do_migrate(db_args: &DbArgs) -> anyhow::Result<PostgresDb> {
     log::info!("Executing database migration");
     let db_url = &db_args.db_url;
-    let prism_db = PrismDB::connect_url(db_url).await.unwrap();
-    prism_db.migrate().await?;
+    run_migrations(db_url)
+        .await
+        .map_err(|e| anyhow::anyhow!("{}", e))
+        .context("Unable to apply migrations")?;
+    let prism_db = PostgresDb::connect(db_url, false).await?;
     log::info!("Applied migration successfully");
     Ok(prism_db)
 }
@@ -61,10 +65,11 @@ async fn execute_set_cursor(args: &SetCursorArgs) -> anyhow::Result<()> {
         slot: args.slot,
         block_hash: HexStr::from_str(&args.blockhash)
             .context("Unable to parse hexstring as bytes")?
-            .as_bytes()
-            .into(),
+            .to_bytes(),
     };
-    store.set_cursor(cursor).await?;
+    let tx = store.begin().await?;
+    tx.set_cursor(cursor).await?;
+    tx.commit().await?;
     log::info!("Set cursor successfully");
     Ok(())
 }

@@ -1,30 +1,22 @@
 use axum::{routing::get, Router};
 use prism_core::{
     dlt::{DltSource, OperationMetadata},
-    store::{OperationStore, OperationStoreError},
+    store::OperationStore,
 };
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    sync::Arc,
-};
+use prism_storage::PostgresDb;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-mod handler;
-
-pub struct PrismNodeApp<Store, Src> {
-    store: Arc<Store>,
+pub struct PrismNodeApp<Src> {
+    store: PostgresDb,
     source: Src,
 }
 
-impl<Store, Src> PrismNodeApp<Store, Src>
+impl<Src> PrismNodeApp<Src>
 where
-    Store: OperationStore + Send + Sync + 'static,
     Src: DltSource,
 {
-    pub fn new(store: Store, source: Src) -> Self {
-        Self {
-            store: Arc::new(store),
-            source,
-        }
+    pub fn new(store: PostgresDb, source: Src) -> Self {
+        Self { store, source }
     }
 
     pub async fn run(self, bind: Ipv4Addr, port: u16) {
@@ -38,18 +30,14 @@ where
     }
 }
 
-struct ServerApp<Store> {
-    store: Arc<Store>,
+struct ServerApp {
+    store: PostgresDb,
 }
 
-impl<Store> ServerApp<Store>
-where
-    Store: OperationStore + Send + Sync + 'static,
-{
+impl ServerApp {
     pub async fn run(self, bind: Ipv4Addr, port: u16) -> anyhow::Result<()> {
         let app = Router::new()
             .route("/", get(|| async { "hello" }))
-            .route("/dids/:didRef", get(handler::get_dids))
             .with_state(self.store);
 
         let server = axum::Server::bind(&SocketAddr::new(IpAddr::V4(bind), port));
@@ -60,14 +48,13 @@ where
     }
 }
 
-struct CardanoSyncApp<Store, Src> {
-    store: Arc<Store>,
+struct CardanoSyncApp<Src> {
+    store: PostgresDb,
     source: Src,
 }
 
-impl<Store, Src> CardanoSyncApp<Store, Src>
+impl<Src> CardanoSyncApp<Src>
 where
-    Store: OperationStore,
     Src: DltSource,
 {
     pub async fn run(self) -> anyhow::Result<()> {
@@ -80,9 +67,18 @@ where
             let block = published_atala_object.atala_object.block_content;
             let block_metadata = published_atala_object.block_metadata;
             let signed_operations = block.map(|i| i.operations).unwrap_or_default();
+            let tx = self.store.begin().await?;
             for (idx, signed_operation) in signed_operations.into_iter().enumerate() {
-                let insert_result = self
-                    .store
+                if signed_operation
+                    .operation
+                    .as_ref()
+                    .and_then(|i| i.operation.as_ref())
+                    .is_none()
+                {
+                    continue;
+                }
+
+                let insert_result = tx
                     .insert(
                         signed_operation,
                         OperationMetadata {
@@ -93,11 +89,11 @@ where
                     .await;
 
                 match insert_result {
-                    Err(OperationStoreError::EmptyOperation) => {}
                     Err(e) => log::error!("{:?}", e),
                     _ => {}
                 };
             }
+            tx.commit().await?;
         }
         Ok(())
     }

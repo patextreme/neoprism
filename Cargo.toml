@@ -1,5 +1,5 @@
 [workspace]
-members = ["prism-core", "prism-storage", "prism-node"]
+members = ["prism-core", "prism-migration", "prism-node", "prism-storage"]
 resolver = "2"
 
 
@@ -9,8 +9,8 @@ anyhow = "1"
 async-trait = "0.1"
 axum = "0.6"
 base64 = "0.21"
-bytes = "1"
 clap = "4"
+derive_more = "0.99"
 enum_dispatch = "0.3"
 env_logger = "0.10"
 hex = "0.4"
@@ -24,16 +24,15 @@ time = "0.3"
 tokio = "1"
 uriparse = "0.6"
 # db
+sea-orm = "0.12"
+sea-orm-migration = "0.12"
 sea-query = "0.30"
-sea-query-binder = "0.5"
-sqlx = "0.7"
 # crypto
-curve25519-dalek = "3"
-ed25519-dalek = "1"
+ed25519-dalek = "2"
 rand = "0.8"
-ring = "0.16"
-secp256k1 = "0.27"
-x25519-dalek = "1"
+ring = "0.17"
+secp256k1 = "0.29"
+x25519-dalek = "2"
 # cardano
 oura = "1.8"
 # proto

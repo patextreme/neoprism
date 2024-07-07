@@ -12,7 +12,8 @@ clap = { workspace = true, features = ["derive"] }
 env_logger = { workspace = true }
 log = { workspace = true }
 prism-core = { path = "../prism-core", features = ["full"] }
-prism-storage = { path = "../prism-storage", features = ["sqlite"] }
+prism-migration = { path = "../prism-migration" }
+prism-storage = { path = "../prism-storage" }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }

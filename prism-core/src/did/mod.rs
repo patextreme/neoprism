@@ -1,21 +1,21 @@
+use std::str::FromStr;
+
 use self::operation::{PublicKey, Service};
 use crate::{
-    crypto::{
-        codec::{Base64UrlStrNoPad, HexStr},
-        hash::{self, Sha256Digest},
-    },
     proto::{atala_operation::Operation, AtalaOperation},
-    util::MessageExt,
+    utils::{
+        codec::{Base64UrlStrNoPad, HexStr},
+        hash::{sha256, Sha256Digest},
+    },
 };
-use bytes::Bytes;
 use enum_dispatch::enum_dispatch;
-use std::str::FromStr;
+use prost::Message;
 
 pub mod operation;
 
 #[enum_dispatch(PrismDid)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum PrismDidAny {
+pub enum PrismDid {
     Canonical(CanonicalPrismDid),
     LongForm(LongFormPrismDid),
 }
@@ -32,7 +32,7 @@ pub struct LongFormPrismDid {
 }
 
 #[enum_dispatch]
-pub trait PrismDid {
+pub trait PrismDidLike {
     fn suffix(&self) -> &Sha256Digest;
 
     fn method(&self) -> &'static str {
@@ -40,7 +40,7 @@ pub trait PrismDid {
     }
 
     fn suffix_hex(&self) -> HexStr {
-        HexStr::from(Bytes::from(self.suffix().as_bytes().to_owned()))
+        HexStr::from(self.suffix().as_bytes().to_owned())
     }
 
     fn to_canonical(&self) -> CanonicalPrismDid {
@@ -50,13 +50,13 @@ pub trait PrismDid {
     }
 }
 
-impl PrismDid for CanonicalPrismDid {
+impl PrismDidLike for CanonicalPrismDid {
     fn suffix(&self) -> &Sha256Digest {
         &self.suffix
     }
 }
 
-impl PrismDid for LongFormPrismDid {
+impl PrismDidLike for LongFormPrismDid {
     fn suffix(&self) -> &Sha256Digest {
         &self.suffix
     }
@@ -68,11 +68,11 @@ impl From<LongFormPrismDid> for CanonicalPrismDid {
     }
 }
 
-impl std::fmt::Display for PrismDidAny {
+impl std::fmt::Display for PrismDid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PrismDidAny::Canonical(did) => did.fmt(f),
-            PrismDidAny::LongForm(did) => did.fmt(f),
+            PrismDid::Canonical(did) => did.fmt(f),
+            PrismDid::LongForm(did) => did.fmt(f),
         }
     }
 }
@@ -113,12 +113,10 @@ pub enum DidParsingError {
     InvalidOperationType(String),
     #[error("Operation does not exist")]
     OperationMissing,
-    #[error("Error when converting protobuf message to bytes: {0}")]
-    EncodeError(#[from] prost::EncodeError),
     #[error("Invalid suffix length: {0}")]
     InvalidSuffixLength(String),
     #[error("Invalid suffix: {0}")]
-    InvalidSuffix(#[from] hex::FromHexError),
+    InvalidSuffix(#[from] crate::utils::codec::DecodeError),
 }
 
 impl CanonicalPrismDid {
@@ -132,9 +130,8 @@ impl CanonicalPrismDid {
     }
 
     pub fn from_suffix(suffix: HexStr) -> Result<Self, DidParsingError> {
-        let bytes: Bytes = suffix.into();
-        let suffix =
-            Sha256Digest::from_bytes(bytes).map_err(DidParsingError::InvalidSuffixLength)?;
+        let suffix = Sha256Digest::from_bytes(&suffix.to_bytes())
+            .map_err(DidParsingError::InvalidSuffixLength)?;
         Ok(Self { suffix })
     }
 }
@@ -143,8 +140,8 @@ impl LongFormPrismDid {
     pub fn from_operation(operation: &AtalaOperation) -> Result<Self, DidParsingError> {
         match operation.operation {
             Some(Operation::CreateDid(_)) => {
-                let bytes = operation.encode_to_bytes()?;
-                let suffix = hash::sha256(bytes.clone());
+                let bytes = operation.encode_to_vec();
+                let suffix = sha256(bytes.clone());
                 let encoded_state = Base64UrlStrNoPad::from(bytes);
                 Ok(Self {
                     suffix,

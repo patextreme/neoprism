@@ -29,35 +29,15 @@ pub struct OperationMetadata {
     pub osn: u32,
 }
 
-impl PartialOrd for BlockMetadata {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let tuple_self = (self.cbt, self.absn);
-        let tuple_other = (other.cbt, other.absn);
-        tuple_self.partial_cmp(&tuple_other)
+impl OperationMetadata {
+    pub fn compare_time_asc(a: &Self, b: &Self) -> std::cmp::Ordering {
+        let a_tup = (a.block_metadata.block_number, a.block_metadata.absn, a.osn);
+        let b_tup = (b.block_metadata.block_number, b.block_metadata.absn, b.osn);
+        a_tup.cmp(&b_tup)
     }
-}
 
-impl Ord for BlockMetadata {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let tuple_self = (self.cbt, self.absn);
-        let tuple_other = (other.cbt, other.absn);
-        tuple_self.cmp(&tuple_other)
-    }
-}
-
-impl PartialOrd for OperationMetadata {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let tuple_self = (&self.block_metadata, self.osn);
-        let tuple_other = (&other.block_metadata, other.osn);
-        tuple_self.partial_cmp(&tuple_other)
-    }
-}
-
-impl Ord for OperationMetadata {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let tuple_self = (&self.block_metadata, self.osn);
-        let tuple_other = (&other.block_metadata, other.osn);
-        tuple_self.cmp(&tuple_other)
+    pub fn compare_time_desc(a: &Self, b: &Self) -> std::cmp::Ordering {
+        Self::compare_time_asc(b, a)
     }
 }
 

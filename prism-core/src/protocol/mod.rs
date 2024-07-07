@@ -1,6 +1,5 @@
 use self::v1::V1Processor;
 use crate::{
-    crypto::hash::Sha256Digest,
     did::{
         self,
         operation::{
@@ -14,6 +13,7 @@ use crate::{
         atala_operation::Operation, CreateDidOperation, DeactivateDidOperation,
         ProtocolVersionUpdateOperation, SignedAtalaOperation, UpdateDidOperation,
     },
+    utils::hash::Sha256Digest,
 };
 use enum_dispatch::enum_dispatch;
 use std::rc::Rc;
@@ -51,8 +51,6 @@ impl Default for ProtocolParameter {
 pub enum ProcessError {
     #[error("Unable to derive Did from operation")]
     DidConversionError(#[from] did::DidParsingError),
-    #[error("Unable to encode operation to bytes")]
-    EncodeError(#[from] prost::EncodeError),
     #[error("Operation is empty")]
     EmptyOperation,
     #[error("Unexpected operation type: {0}")]
@@ -110,7 +108,7 @@ type InternalMap<K, V> = im_rc::HashMap<K, Revocable<V>>;
 
 /// A struct optimized for mutating DID state as part of processing an operation.
 #[derive(Debug, Clone)]
-struct DidStateMut {
+struct DidStateRc {
     did: Rc<CanonicalPrismDid>,
     context: Rc<Vec<String>>,
     last_operation_hash: Rc<Sha256Digest>,
@@ -118,7 +116,7 @@ struct DidStateMut {
     services: InternalMap<ServiceId, Service>,
 }
 
-impl DidStateMut {
+impl DidStateRc {
     fn new(did: CanonicalPrismDid) -> Self {
         let last_operation_hash = did.suffix.clone();
         Self {
@@ -267,12 +265,12 @@ impl DidStateMut {
     }
 }
 
-struct DidStateOps {
-    state: DidStateMut,
-    processor: OperationProcessorAny,
+struct DidStateProcessingContext {
+    state: DidStateRc,
+    processor: OperationProcessorVariants,
 }
 
-impl DidStateOps {
+impl DidStateProcessingContext {
     fn new(
         signed_operation: SignedAtalaOperation,
         metadata: OperationMetadata,
@@ -284,8 +282,8 @@ impl DidStateOps {
         let did = CanonicalPrismDid::from_operation(operation)?;
         match &operation.operation {
             Some(Operation::CreateDid(op)) => {
-                let initial_state = DidStateMut::new(did);
-                let processor = OperationProcessorAny::V1(V1Processor::default());
+                let initial_state = DidStateRc::new(did);
+                let processor = OperationProcessorVariants::V1(V1Processor::default());
                 let candidate_state = processor.create_did(&initial_state, op.clone(), metadata)?;
                 processor.check_signature(&candidate_state, &signed_operation)?;
                 Ok(Self {
@@ -348,40 +346,40 @@ impl DidStateOps {
 trait OperationProcessor {
     fn check_signature(
         &self,
-        state: &DidStateMut,
+        state: &DidStateRc,
         signed_operation: &SignedAtalaOperation,
     ) -> Result<(), ProcessError>;
 
     fn create_did(
         &self,
-        state: &DidStateMut,
+        state: &DidStateRc,
         operation: CreateDidOperation,
         metadata: OperationMetadata,
-    ) -> Result<DidStateMut, ProcessError>;
+    ) -> Result<DidStateRc, ProcessError>;
 
     fn update_did(
         &self,
-        state: &DidStateMut,
+        state: &DidStateRc,
         operation: UpdateDidOperation,
         metadata: OperationMetadata,
-    ) -> Result<DidStateMut, ProcessError>;
+    ) -> Result<DidStateRc, ProcessError>;
 
     fn deactivate_did(
         &self,
-        state: &DidStateMut,
+        state: &DidStateRc,
         operation: DeactivateDidOperation,
         metadata: OperationMetadata,
-    ) -> Result<DidStateMut, ProcessError>;
+    ) -> Result<DidStateRc, ProcessError>;
 
     fn protocol_version_update(
         &self,
         operation: ProtocolVersionUpdateOperation,
         metadata: OperationMetadata,
-    ) -> Result<OperationProcessorAny, ProcessError>;
+    ) -> Result<OperationProcessorVariants, ProcessError>;
 }
 
 #[enum_dispatch(OperationProcessor)]
 #[derive(Debug, Clone)]
-enum OperationProcessorAny {
+enum OperationProcessorVariants {
     V1(V1Processor),
 }

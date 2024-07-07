@@ -1,22 +1,50 @@
 use super::{CanonicalPrismDid, DidParsingError};
 use crate::{
     crypto::{
-        ec::{ECPublicKeyAny, Secp256k1PublicKey},
-        hash::Sha256Digest,
+        ed25519::Ed25519PublicKey, secp256k1::Secp256k1PublicKey, x25519::X25519PublicKey,
+        ToPublicKey, ToPublicKeyError,
     },
+    prelude::{AtalaOperation, SignedAtalaOperation},
     proto::{
-        self, update_did_action::Action, CreateDidOperation, DeactivateDidOperation,
-        UpdateDidAction, UpdateDidOperation,
+        self, atala_operation::Operation, public_key::KeyData, update_did_action::Action,
+        CreateDidOperation, DeactivateDidOperation, UpdateDidAction, UpdateDidOperation,
     },
     protocol::ProtocolParameter,
-    util::{is_slice_unique, is_uri, is_uri_fragment},
+    utils::{hash::Sha256Digest, is_slice_unique, is_uri, is_uri_fragment},
 };
 use regex::Regex;
 use std::{fmt::Display, str::FromStr, sync::OnceLock};
 
-#[cfg(test)]
-#[path = "operation_tests.rs"]
-mod tests;
+#[derive(Debug, thiserror::Error)]
+pub enum GetDidFromOperation {
+    #[error("Unable to parse Did from operation: {0}")]
+    DidParseError(#[from] DidParsingError),
+    #[error("Operation is empty")]
+    EmptyOperation,
+}
+
+pub fn get_did_from_operation(
+    atala_operation: &AtalaOperation,
+) -> Result<CanonicalPrismDid, GetDidFromOperation> {
+    match &atala_operation.operation {
+        Some(Operation::CreateDid(_)) => Ok(CanonicalPrismDid::from_operation(atala_operation)?),
+        Some(Operation::UpdateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
+        Some(Operation::DeactivateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
+        Some(Operation::ProtocolVersionUpdate(op)) => {
+            Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?)
+        }
+        None => Err(GetDidFromOperation::EmptyOperation),
+    }
+}
+
+pub fn get_did_from_signed_operation(
+    signed_operation: &SignedAtalaOperation,
+) -> Result<CanonicalPrismDid, GetDidFromOperation> {
+    match &signed_operation.operation {
+        Some(operation) => get_did_from_operation(operation),
+        None => Err(GetDidFromOperation::EmptyOperation),
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateOperationParsingError {
@@ -147,7 +175,7 @@ impl UpdateOperation {
         }
 
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
-        let prev_operation_hash = Sha256Digest::from_slice(&operation.previous_operation_hash)
+        let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
             .map_err(UpdateOperationParsingError::InvalidPreviousOperationHash)?;
 
         let actions = operation
@@ -284,7 +312,7 @@ impl DeactivateOperation {
         operation: &DeactivateDidOperation,
     ) -> Result<Self, DeactivateOperationParsingError> {
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
-        let prev_operation_hash = Sha256Digest::from_slice(&operation.previous_operation_hash)
+        let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
             .map_err(DeactivateOperationParsingError::InvalidPreviousOperationHash)?;
 
         Ok(Self {
@@ -384,14 +412,14 @@ impl PublicKey {
         let Some(key_data) = &public_key.key_data else {
             Err(PublicKeyParsingError::MissingKeyData(id))?
         };
-        let pk = ECPublicKeyAny::from_key_data(key_data).map_err(|e| {
+        let pk = SupportedPublicKey::from_key_data(key_data).map_err(|e| {
             PublicKeyParsingError::KeyDataParseError {
                 id: id.clone(),
-                msg: e,
+                msg: e.to_string(),
             }
         })?;
         let data = match (usage, pk) {
-            (KeyUsage::MasterKey, ECPublicKeyAny::Secp256k1(pk)) => {
+            (KeyUsage::MasterKey, SupportedPublicKey::Secp256k1(pk)) => {
                 PublicKeyData::Master { data: pk }
             }
             (KeyUsage::MasterKey, _) => {
@@ -411,13 +439,79 @@ impl PublicKey {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum SupportedPublicKeyError {
+    #[error(transparent)]
+    Parse {
+        #[from]
+        source: ToPublicKeyError,
+    },
+    #[error("Unsupported curve {curve}")]
+    UnsupportedCurve { curve: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SupportedPublicKey {
+    Secp256k1(Secp256k1PublicKey),
+    Ed25519(Ed25519PublicKey),
+    X25519(X25519PublicKey),
+}
+
+impl SupportedPublicKey {
+    pub fn from_key_data(key_data: &KeyData) -> Result<Self, SupportedPublicKeyError> {
+        let curve_name: &str = match key_data {
+            KeyData::EcKeyData(k) => &k.curve,
+            KeyData::CompressedEcKeyData(k) => &k.curve,
+        };
+
+        match curve_name {
+            "secp256k1" => Ok(Self::Secp256k1(Self::convert_secp256k1(key_data)?)),
+            "ed25519" => Ok(Self::Ed25519(Self::convert_ed25519(key_data)?)),
+            "x25519" => Ok(Self::X25519(Self::convert_x25519(key_data)?)),
+            c => Err(SupportedPublicKeyError::UnsupportedCurve {
+                curve: c.to_string(),
+            }),
+        }
+    }
+
+    fn convert_secp256k1(key_data: &KeyData) -> Result<Secp256k1PublicKey, ToPublicKeyError> {
+        let pk = match key_data {
+            KeyData::EcKeyData(k) => {
+                let mut data = Vec::with_capacity(65);
+                data.push(0x04);
+                data.extend_from_slice(k.x.as_ref());
+                data.extend_from_slice(k.y.as_ref());
+                data.to_public_key()?
+            }
+            KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
+        };
+        Ok(pk)
+    }
+
+    fn convert_ed25519(key_data: &KeyData) -> Result<Ed25519PublicKey, ToPublicKeyError> {
+        let pk = match key_data {
+            KeyData::EcKeyData(k) => k.x.to_public_key()?,
+            KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
+        };
+        Ok(pk)
+    }
+
+    fn convert_x25519(key_data: &KeyData) -> Result<X25519PublicKey, ToPublicKeyError> {
+        let pk = match key_data {
+            KeyData::EcKeyData(k) => k.x.to_public_key()?,
+            KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
+        };
+        Ok(pk)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicKeyData {
     Master {
         data: Secp256k1PublicKey,
     },
     Other {
-        data: ECPublicKeyAny,
+        data: SupportedPublicKey,
         usage: KeyUsage,
     },
 }
@@ -560,8 +654,10 @@ impl FromStr for ServiceTypeName {
     type Err = ServiceTypeNameParsingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let regex = SERVICE_TYPE_NAME_RE
-            .get_or_init(|| Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$").unwrap());
+        let regex = SERVICE_TYPE_NAME_RE.get_or_init(|| {
+            Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$")
+                .expect("ServiceTypeName regex is invalid")
+        });
         if regex.is_match(s) {
             Ok(Self(s.to_owned()))
         } else {

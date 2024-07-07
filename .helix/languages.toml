@@ -1,0 +1,24 @@
+[language-server.rust-analyzer.config]
+cargo.features = "all"
+
+[[language]]
+name = "html"
+scope = "text.html.basic"
+injection-regex = "html"
+file-types = [
+  "html",
+  "htm",
+  "shtml",
+  "xhtml",
+  "xht",
+  "jsp",
+  "asp",
+  "aspx",
+  "jshtm",
+  "volt",
+  "rhtml",
+]
+roots = []
+language-servers = ["tailwindcss-ls", "vscode-html-language-server"]
+auto-format = true
+indent = { tab-width = 2, unit = "  " }

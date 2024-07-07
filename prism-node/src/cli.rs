@@ -40,7 +40,7 @@ pub struct ServerArgs {
 #[derive(Args)]
 pub struct DbArgs {
     /// Database URL (e.g. sqlite://mydata.db)
-    #[arg(long = "db", value_name = "DB_URL", default_value = "sqlite::memory:")]
+    #[arg(long = "db", value_name = "DB_URL")]
     pub db_url: String,
 }
 

@@ -1,0 +1,16 @@
+[package]
+name = "prism-migration"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "prism-migration"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { workspace = true, features = ["full"] }
+
+[dependencies.sea-orm-migration]
+workspace = true
+features = ["runtime-tokio-rustls", "sqlx-postgres"]

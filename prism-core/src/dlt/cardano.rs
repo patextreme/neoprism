@@ -1,11 +1,8 @@
 use super::{DltSource, PublishedAtalaObject};
 use crate::{
-    crypto::codec::HexStr,
-    prelude::StdError,
-    store::{CursorStoreError, DltCursor, DltCursorStore},
+    store::{DltCursor, DltCursorStore},
+    utils::{codec::HexStr, StdError},
 };
-use bytes::Bytes;
-use core::panic;
 use oura::{
     model::{Event, EventData},
     pipelining::{SourceProvider, StageReceiver},
@@ -19,11 +16,13 @@ use tokio::{
 };
 
 mod model {
+    use std::{backtrace::Backtrace, str::FromStr};
+
     use crate::{
         dlt::{BlockMetadata, PublishedAtalaObject},
         proto::AtalaObject,
+        utils::codec::HexStr,
     };
-    use bytes::BytesMut;
     use oura::model::{EventContext, MetadataRecord};
     use prost::Message;
     use serde::{Deserialize, Serialize};
@@ -59,10 +58,24 @@ mod model {
 
     #[derive(Debug, thiserror::Error)]
     pub enum ConversionError {
-        #[error("hex conversion error: {0}")]
-        HexDecodeError(#[from] hex::FromHexError),
-        #[error("protobuf decode error: {0}")]
-        ProtoDecodeError(#[from] prost::DecodeError),
+        #[error("hex conversion error: {source}")]
+        HexDecodeError {
+            #[from]
+            source: crate::utils::codec::DecodeError,
+            backtrace: Backtrace,
+        },
+        #[error("protobuf decode error: {source}")]
+        ProtoDecodeError {
+            #[from]
+            source: prost::DecodeError,
+            backtrace: Backtrace,
+        },
+        #[error("time component range error: {source}")]
+        TimeRange {
+            #[from]
+            source: time::error::ComponentRange,
+            backtrace: Backtrace,
+        },
         #[error("metadata malformed: {0}")]
         MalformedMetadata(String),
     }
@@ -81,19 +94,13 @@ mod model {
                 "Metadata is not a MapJson type".to_string(),
             ))?,
         };
-        let mut buf = BytesMut::with_capacity(64 * hex_group.len());
-
-        for hex in hex_group {
-            let b = hex::decode(hex)?;
-            buf.extend(b);
-        }
-
-        let bytes = buf.freeze();
-        let atala_object = AtalaObject::decode(bytes)?;
+        let hex = hex_group.join("");
+        let bytes = HexStr::from_str(&hex)?.to_bytes();
+        let atala_object = AtalaObject::decode(bytes.as_slice())?;
         let timestamp = context.timestamp.ok_or(ConversionError::MalformedMetadata(
             "Timestamp must be present in Cardano metadata".to_string(),
         ))? as i64;
-        let timestamp = OffsetDateTime::from_unix_timestamp(timestamp).unwrap(); // TODO
+        let timestamp = OffsetDateTime::from_unix_timestamp(timestamp)?;
         let block_metadata = BlockMetadata {
             cbt: timestamp,
             absn: context.tx_idx.ok_or(ConversionError::MalformedMetadata(
@@ -140,8 +147,8 @@ pub struct OuraN2NSource<Store: DltCursorStore + Send + Sync + 'static> {
     store: Store,
 }
 
-impl<Store: DltCursorStore + Send + Sync + 'static> OuraN2NSource<Store> {
-    // FIXME: 71482683 was about the slot that first AtalaBlock was observed on mainnet.
+impl<E, Store: DltCursorStore<Error = E> + Send + Sync + 'static> OuraN2NSource<Store> {
+    // 71482683 was about the slot that first AtalaBlock was observed on mainnet.
     // How can we support multiple network and define genesis slot / block?
     pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
         let intersect = oura::sources::IntersectArg::Point(PointArg(
@@ -155,11 +162,11 @@ impl<Store: DltCursorStore + Send + Sync + 'static> OuraN2NSource<Store> {
         store: Store,
         remote_addr: &str,
         chain: &NetworkIdentifier,
-    ) -> Result<Self, CursorStoreError> {
+    ) -> Result<Self, E> {
         let cursor = store.get_cursor().await?;
         match cursor {
             Some(cursor) => {
-                let blockhash_hex = HexStr::from(Bytes::from(cursor.block_hash)).to_string();
+                let blockhash_hex = HexStr::from(cursor.block_hash).to_string();
                 log::info!(
                     "Persisted cursor found, starting syncing from ({}, {})",
                     cursor.slot,
@@ -216,8 +223,8 @@ impl<Store: DltCursorStore + Send + Sync + 'static> DltSource for OuraN2NSource<
             store: self.store,
         };
 
-        let handle_1 = oura_stream_worker.spawn();
-        let handle_2 = cursor_persist_worker.spawn();
+        oura_stream_worker.spawn();
+        cursor_persist_worker.spawn();
 
         Ok(rx)
     }
@@ -233,9 +240,12 @@ impl OuraStreamWorker {
     fn spawn(self) -> std::thread::JoinHandle<Result<(), StdError>> {
         std::thread::spawn(move || loop {
             log::info!("Bootstraping oura pipeline thread");
-            let (oura_handle, oura_rx) = self.with_utils.bootstrap().map_err(|e| e.to_string())?;
+            let (_, oura_rx) = self.with_utils.bootstrap().map_err(|e| e.to_string())?;
             let exit_err = self.stream_loop(oura_rx);
-            log::error!("Oura pipeline terminated. Retry in 10 seconds");
+            log::error!(
+                "Oura pipeline terminated. Retry in 10 seconds. ({})",
+                exit_err
+            );
             std::thread::sleep(std::time::Duration::from_secs(10));
         })
     }
@@ -265,11 +275,13 @@ impl OuraStreamWorker {
         let Some(block_hash_hex) = &event.context.block_hash else {
             return;
         };
-        let block_hash = HexStr::from_str(block_hash_hex)
-            .unwrap_or_else(|_| panic!("Invalid hex string for block_hash on slot {}", slot))
-            .as_bytes()
-            .to_owned();
-        let cursor = DltCursor { slot, block_hash };
+        let Ok(block_hash) = HexStr::from_str(block_hash_hex) else {
+            return;
+        };
+        let cursor = DltCursor {
+            slot,
+            block_hash: block_hash.to_bytes(),
+        };
         let _ = self.cursor_tx.send(Some(cursor));
     }
 
@@ -295,7 +307,7 @@ impl OuraStreamWorker {
                 .blocking_send(atala_object)
                 .map_err(|e| e.to_string())?,
             Err(e) => {
-                log::warn!("Unable to parse metadata into AtalaObject. ({})", e);
+                log::warn!("Unable to parse oura event into AtalaObject. ({})", e);
             }
         }
 
@@ -310,16 +322,16 @@ struct CursorPersistWorker<Store: DltCursorStore + Send + Sync + 'static> {
 
 impl<Store: DltCursorStore + Send + Sync + 'static> CursorPersistWorker<Store> {
     fn spawn(mut self) -> JoinHandle<Result<(), StdError>> {
-        let interval_sec = 30;
+        let delay_sec = 30;
         log::info!(
             "Spawn cursor persist worker with {} seconds interval",
-            interval_sec
+            delay_sec
         );
         tokio::spawn(async move {
             loop {
-                tokio::time::sleep(tokio::time::Duration::from_secs(interval_sec)).await;
-
                 let recv_result = self.cursor_rx.changed().await;
+                tokio::time::sleep(tokio::time::Duration::from_secs(delay_sec)).await;
+
                 if let Err(e) = recv_result {
                     log::error!("Error getting cursor to persist: {}", e);
                 }
@@ -337,9 +349,6 @@ impl<Store: DltCursorStore + Send + Sync + 'static> CursorPersistWorker<Store> {
                     log::error!("Error persisting cursor: {}", e);
                 }
             }
-
-            log::info!("CursorPersistWorker terminated");
-            Ok(())
         })
     }
 }

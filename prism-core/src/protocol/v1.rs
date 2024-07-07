@@ -1,8 +1,8 @@
 use super::{
-    DidStateMut, OperationProcessor, OperationProcessorAny, ProcessError, ProtocolParameter,
+    DidStateRc, OperationProcessor, OperationProcessorVariants, ProcessError, ProtocolParameter,
 };
 use crate::{
-    crypto::{ec::DsaPublicKey, hash::sha256},
+    crypto::Verifiable,
     did::operation::{
         CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId,
         UpdateOperation, UpdateOperationAction,
@@ -12,8 +12,9 @@ use crate::{
         CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation,
         SignedAtalaOperation, UpdateDidOperation,
     },
-    util::MessageExt,
+    utils::hash::sha256,
 };
+use prost::Message;
 
 #[derive(Debug, Clone, Default)]
 pub struct V1Processor {
@@ -23,7 +24,7 @@ pub struct V1Processor {
 impl OperationProcessor for V1Processor {
     fn check_signature(
         &self,
-        state: &DidStateMut,
+        state: &DidStateRc,
         signed_operation: &SignedAtalaOperation,
     ) -> Result<(), ProcessError> {
         let key_id = PublicKeyId::parse(&signed_operation.signed_with, self.parameters.max_id_size)
@@ -44,10 +45,13 @@ impl OperationProcessor for V1Processor {
                     .operation
                     .as_ref()
                     .ok_or(ProcessError::EmptyOperation)?
-                    .encode_to_bytes()?;
+                    .encode_to_vec();
 
-                data.verify(message, signature)
-                    .map_err(ProcessError::InvalidSignature)?
+                if !data.verify(&message, signature) {
+                    Err(ProcessError::InvalidSignature(
+                        "signature did not pass verification".to_string(),
+                    ))?
+                }
             }
             PublicKeyData::Other { .. } => Err(ProcessError::InvalidSignature(
                 "signed_with is invalid (key is not MasterKey)".to_string(),
@@ -59,10 +63,10 @@ impl OperationProcessor for V1Processor {
 
     fn create_did(
         &self,
-        state: &DidStateMut,
+        state: &DidStateRc,
         operation: CreateDidOperation,
         metadata: OperationMetadata,
-    ) -> Result<DidStateMut, ProcessError> {
+    ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = CreateOperation::parse(&self.parameters, &operation)?;
 
         // clone and mutate candidate state
@@ -86,10 +90,10 @@ impl OperationProcessor for V1Processor {
 
     fn update_did(
         &self,
-        state: &DidStateMut,
+        state: &DidStateRc,
         operation: UpdateDidOperation,
         metadata: OperationMetadata,
-    ) -> Result<DidStateMut, ProcessError> {
+    ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = UpdateOperation::parse(&self.parameters, &operation)?;
         if parsed_operation.prev_operation_hash != *state.last_operation_hash {
             Err(ProcessError::DidStateConflict(
@@ -99,7 +103,7 @@ impl OperationProcessor for V1Processor {
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
-        candidate_state.with_last_operation_hash(sha256(operation.encode_to_bytes()?));
+        candidate_state.with_last_operation_hash(sha256(operation.encode_to_vec()));
         for action in parsed_operation.actions {
             apply_update_action(&mut candidate_state, action, &metadata)
                 .map_err(ProcessError::DidStateConflict)?;
@@ -111,10 +115,10 @@ impl OperationProcessor for V1Processor {
 
     fn deactivate_did(
         &self,
-        state: &DidStateMut,
+        state: &DidStateRc,
         operation: DeactivateDidOperation,
         metadata: OperationMetadata,
-    ) -> Result<DidStateMut, ProcessError> {
+    ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = DeactivateOperation::parse(&operation)?;
 
         if parsed_operation.prev_operation_hash != *state.last_operation_hash {
@@ -125,7 +129,7 @@ impl OperationProcessor for V1Processor {
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
-        candidate_state.with_last_operation_hash(sha256(operation.encode_to_bytes()?));
+        candidate_state.with_last_operation_hash(sha256(operation.encode_to_vec()));
         for (id, _) in &state.public_keys {
             candidate_state
                 .revoke_public_key(id, &metadata)
@@ -145,7 +149,7 @@ impl OperationProcessor for V1Processor {
         &self,
         _: ProtocolVersionUpdateOperation,
         _: OperationMetadata,
-    ) -> Result<OperationProcessorAny, ProcessError> {
+    ) -> Result<OperationProcessorVariants, ProcessError> {
         // TODO: add support for protocol version update
         log::warn!("Protocol version update is not yet supported");
         Ok(self.clone().into())
@@ -155,7 +159,7 @@ impl OperationProcessor for V1Processor {
 trait Validator<Op> {
     fn validate_candidate_state(
         param: &ProtocolParameter,
-        state: &DidStateMut,
+        state: &DidStateRc,
     ) -> Result<(), ProcessError>;
 }
 
@@ -164,10 +168,7 @@ struct UpdateDidValidator;
 struct DeactivateDidValidator;
 
 impl Validator<CreateDidOperation> for CreateDidValidator {
-    fn validate_candidate_state(
-        _: &ProtocolParameter,
-        _: &DidStateMut,
-    ) -> Result<(), ProcessError> {
+    fn validate_candidate_state(_: &ProtocolParameter, _: &DidStateRc) -> Result<(), ProcessError> {
         Ok(())
     }
 }
@@ -175,7 +176,7 @@ impl Validator<CreateDidOperation> for CreateDidValidator {
 impl Validator<UpdateDidOperation> for UpdateDidValidator {
     fn validate_candidate_state(
         param: &ProtocolParameter,
-        state: &DidStateMut,
+        state: &DidStateRc,
     ) -> Result<(), ProcessError> {
         // check at least one master key exists
         let contains_master_key = state
@@ -207,16 +208,13 @@ impl Validator<UpdateDidOperation> for UpdateDidValidator {
 }
 
 impl Validator<DeactivateDidOperation> for DeactivateDidValidator {
-    fn validate_candidate_state(
-        _: &ProtocolParameter,
-        _: &DidStateMut,
-    ) -> Result<(), ProcessError> {
+    fn validate_candidate_state(_: &ProtocolParameter, _: &DidStateRc) -> Result<(), ProcessError> {
         Ok(())
     }
 }
 
 fn apply_update_action(
-    state: &mut DidStateMut,
+    state: &mut DidStateRc,
     action: UpdateOperationAction,
     metadata: &OperationMetadata,
 ) -> Result<(), String> {

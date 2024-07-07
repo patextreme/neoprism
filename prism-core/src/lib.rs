@@ -1,4 +1,6 @@
-#![allow(unused_variables, unreachable_code, dead_code)] // TODO: remove
+// TODO: remove
+#![feature(error_generic_member_access, split_array)]
+#![allow(dead_code)]
 
 pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/proto.rs"));
@@ -10,4 +12,4 @@ pub mod dlt;
 pub mod prelude;
 pub mod protocol;
 pub mod store;
-pub mod util;
+pub mod utils;

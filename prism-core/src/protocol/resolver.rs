@@ -1,4 +1,4 @@
-use super::DidStateOps;
+use super::DidStateProcessingContext;
 use crate::{did::DidState, dlt::OperationMetadata, proto::SignedAtalaOperation};
 use std::collections::VecDeque;
 
@@ -13,7 +13,7 @@ pub enum ResolutionError {
 pub fn resolve(
     mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>,
 ) -> Result<DidState, ResolutionError> {
-    operations.sort_by(|(t_a, _), (t_b, _)| t_a.cmp(t_b));
+    operations.sort_by(|a, b| OperationMetadata::compare_time_asc(&a.0, &b.0));
     let operations: OperationList = OperationList::from(operations);
 
     log::debug!("resolving DID data from {} operations", operations.len());
@@ -28,9 +28,9 @@ pub fn resolve(
 
 fn init_state_ops(
     mut operations: OperationList,
-) -> Result<(DidStateOps, OperationList), ResolutionError> {
+) -> Result<(DidStateProcessingContext, OperationList), ResolutionError> {
     while let Some((metadata, operation)) = operations.pop_front() {
-        let result = DidStateOps::new(operation, metadata);
+        let result = DidStateProcessingContext::new(operation, metadata);
         match result {
             Ok(state_ops) => return Ok((state_ops, operations)),
             Err(e) => log::debug!("unable to initialize DIDState from operation: {:?}", e,),
