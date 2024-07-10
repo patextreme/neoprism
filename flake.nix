@@ -89,13 +89,13 @@
               '';
 
               migrate = pkgs.writeShellScriptBin "migrate" ''
-                ${pkgs.sea-orm-cli}/bin/sea-orm-cli migrate up -d prism-migration --database-url postgres://postgres:postgres@localhost:5432/postgres
+                ${pkgs.sea-orm-cli}/bin/sea-orm-cli migrate up -d prism-migration --database-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName}
               '';
 
               generateEntity = pkgs.writeShellScriptBin "generateEntity" ''
                 rm -rf prism-storage/src/entity
                 ${pkgs.sea-orm-cli}/bin/sea-orm-cli generate entity \
-                  --database-url postgres://postgres:postgres@localhost:5432/postgres \
+                  --database-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} \
                   -o prism-storage/src/entity \
                   --date-time-crate time
               '';
