@@ -1,19 +1,21 @@
-use super::{CanonicalPrismDid, DidParsingError};
-use crate::{
-    crypto::{
-        ed25519::Ed25519PublicKey, secp256k1::Secp256k1PublicKey, x25519::X25519PublicKey,
-        ToPublicKey, ToPublicKeyError,
-    },
-    prelude::{AtalaOperation, SignedAtalaOperation},
-    proto::{
-        self, atala_operation::Operation, public_key::KeyData, update_did_action::Action,
-        CreateDidOperation, DeactivateDidOperation, UpdateDidAction, UpdateDidOperation,
-    },
-    protocol::ProtocolParameter,
-    utils::{hash::Sha256Digest, is_slice_unique, is_uri, is_uri_fragment},
-};
+use std::str::FromStr;
+use std::sync::OnceLock;
+
 use regex::Regex;
-use std::{fmt::Display, str::FromStr, sync::OnceLock};
+
+use super::{CanonicalPrismDid, DidParsingError};
+use crate::crypto::ed25519::Ed25519PublicKey;
+use crate::crypto::secp256k1::Secp256k1PublicKey;
+use crate::crypto::x25519::X25519PublicKey;
+use crate::crypto::{ToPublicKey, ToPublicKeyError};
+use crate::prelude::{AtalaOperation, SignedAtalaOperation};
+use crate::proto::atala_operation::Operation;
+use crate::proto::public_key::KeyData;
+use crate::proto::update_did_action::Action;
+use crate::proto::{self, CreateDidOperation, DeactivateDidOperation, UpdateDidAction, UpdateDidOperation};
+use crate::protocol::ProtocolParameter;
+use crate::utils::hash::Sha256Digest;
+use crate::utils::{is_slice_unique, is_uri, is_uri_fragment};
 
 #[derive(Debug, thiserror::Error)]
 pub enum GetDidFromOperation {
@@ -23,16 +25,12 @@ pub enum GetDidFromOperation {
     EmptyOperation,
 }
 
-pub fn get_did_from_operation(
-    atala_operation: &AtalaOperation,
-) -> Result<CanonicalPrismDid, GetDidFromOperation> {
+pub fn get_did_from_operation(atala_operation: &AtalaOperation) -> Result<CanonicalPrismDid, GetDidFromOperation> {
     match &atala_operation.operation {
         Some(Operation::CreateDid(_)) => Ok(CanonicalPrismDid::from_operation(atala_operation)?),
         Some(Operation::UpdateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::DeactivateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
-        Some(Operation::ProtocolVersionUpdate(op)) => {
-            Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?)
-        }
+        Some(Operation::ProtocolVersionUpdate(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?),
         None => Err(GetDidFromOperation::EmptyOperation),
     }
 }
@@ -229,13 +227,12 @@ impl UpdateOperationAction {
                 ))?,
             },
             Action::RemoveKey(remove_key) => {
-                let key_id =
-                    PublicKeyId::parse(&remove_key.key_id, param.max_id_size).map_err(|e| {
-                        UpdateOperationParsingError::MalformedUpdateAction(format!(
-                            "Public key id cannot be parsed ({})",
-                            e
-                        ))
-                    })?;
+                let key_id = PublicKeyId::parse(&remove_key.key_id, param.max_id_size).map_err(|e| {
+                    UpdateOperationParsingError::MalformedUpdateAction(format!(
+                        "Public key id cannot be parsed ({})",
+                        e
+                    ))
+                })?;
                 Self::RemoveKey(key_id)
             }
             Action::AddService(add_service) => match &add_service.service {
@@ -248,32 +245,22 @@ impl UpdateOperationAction {
                 ))?,
             },
             Action::RemoveService(remove_service) => {
-                let service_id = ServiceId::parse(&remove_service.service_id, param.max_id_size)
-                    .map_err(|_| {
-                        UpdateOperationParsingError::MalformedUpdateAction(
-                            "Service id cannot be parsed".to_string(),
-                        )
-                    })?;
+                let service_id = ServiceId::parse(&remove_service.service_id, param.max_id_size).map_err(|_| {
+                    UpdateOperationParsingError::MalformedUpdateAction("Service id cannot be parsed".to_string())
+                })?;
                 Self::RemoveService(service_id)
             }
             Action::UpdateService(update_service) => {
-                let service_id = ServiceId::parse(&update_service.service_id, param.max_id_size)
-                    .map_err(|_| {
-                        UpdateOperationParsingError::MalformedUpdateAction(
-                            "Service id cannot be parsed".to_string(),
-                        )
-                    })?;
-                let service_type =
-                    match Some(update_service.r#type.clone()).filter(|i| !i.is_empty()) {
-                        Some(s) => Some(
-                            ServiceType::parse(&s, param)
-                                .map_err(UpdateOperationParsingError::ServiceTypeParsingError)?,
-                        ),
-                        None => None,
-                    };
-                let service_endpoints = match Some(update_service.service_endpoints.clone())
-                    .filter(|i| !i.is_empty())
-                {
+                let service_id = ServiceId::parse(&update_service.service_id, param.max_id_size).map_err(|_| {
+                    UpdateOperationParsingError::MalformedUpdateAction("Service id cannot be parsed".to_string())
+                })?;
+                let service_type = match Some(update_service.r#type.clone()).filter(|i| !i.is_empty()) {
+                    Some(s) => Some(
+                        ServiceType::parse(&s, param).map_err(UpdateOperationParsingError::ServiceTypeParsingError)?,
+                    ),
+                    None => None,
+                };
+                let service_endpoints = match Some(update_service.service_endpoints.clone()).filter(|i| !i.is_empty()) {
                     Some(s) => Some(
                         ServiceEndpoint::parse(&s, param)
                             .map_err(UpdateOperationParsingError::ServiceEndpointParsingError)?,
@@ -308,9 +295,7 @@ pub struct DeactivateOperation {
 }
 
 impl DeactivateOperation {
-    pub fn parse(
-        operation: &DeactivateDidOperation,
-    ) -> Result<Self, DeactivateOperationParsingError> {
+    pub fn parse(operation: &DeactivateDidOperation) -> Result<Self, DeactivateOperationParsingError> {
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
             .map_err(DeactivateOperationParsingError::InvalidPreviousOperationHash)?;
@@ -322,7 +307,7 @@ impl DeactivateOperation {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
 pub struct PublicKeyId(String);
 
 impl PublicKeyId {
@@ -345,13 +330,7 @@ impl PublicKeyId {
     }
 }
 
-impl std::fmt::Display for PublicKeyId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
 pub struct ServiceId(String);
 
 impl ServiceId {
@@ -371,12 +350,6 @@ impl ServiceId {
 
     pub fn as_str(&self) -> &str {
         &self.0
-    }
-}
-
-impl std::fmt::Display for ServiceId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
     }
 }
 
@@ -401,30 +374,19 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn parse(
-        public_key: &proto::PublicKey,
-        param: &ProtocolParameter,
-    ) -> Result<Self, PublicKeyParsingError> {
-        let id = PublicKeyId::parse(&public_key.id, param.max_id_size)
-            .map_err(PublicKeyParsingError::InvalidKeyId)?;
-        let usage = KeyUsage::parse(&public_key.usage())
-            .ok_or(PublicKeyParsingError::UnknownKeyUsage(id.clone()))?;
+    pub fn parse(public_key: &proto::PublicKey, param: &ProtocolParameter) -> Result<Self, PublicKeyParsingError> {
+        let id = PublicKeyId::parse(&public_key.id, param.max_id_size).map_err(PublicKeyParsingError::InvalidKeyId)?;
+        let usage = KeyUsage::parse(&public_key.usage()).ok_or(PublicKeyParsingError::UnknownKeyUsage(id.clone()))?;
         let Some(key_data) = &public_key.key_data else {
             Err(PublicKeyParsingError::MissingKeyData(id))?
         };
-        let pk = SupportedPublicKey::from_key_data(key_data).map_err(|e| {
-            PublicKeyParsingError::KeyDataParseError {
-                id: id.clone(),
-                msg: e.to_string(),
-            }
+        let pk = SupportedPublicKey::from_key_data(key_data).map_err(|e| PublicKeyParsingError::KeyDataParseError {
+            id: id.clone(),
+            msg: e.to_string(),
         })?;
         let data = match (usage, pk) {
-            (KeyUsage::MasterKey, SupportedPublicKey::Secp256k1(pk)) => {
-                PublicKeyData::Master { data: pk }
-            }
-            (KeyUsage::MasterKey, _) => {
-                Err(PublicKeyParsingError::InvalidMasterKeyType(id.clone()))?
-            }
+            (KeyUsage::MasterKey, SupportedPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
+            (KeyUsage::MasterKey, _) => Err(PublicKeyParsingError::InvalidMasterKeyType(id.clone()))?,
             (usage, pk) => PublicKeyData::Other { data: pk, usage },
         };
 
@@ -468,9 +430,7 @@ impl SupportedPublicKey {
             "secp256k1" => Ok(Self::Secp256k1(Self::convert_secp256k1(key_data)?)),
             "ed25519" => Ok(Self::Ed25519(Self::convert_ed25519(key_data)?)),
             "x25519" => Ok(Self::X25519(Self::convert_x25519(key_data)?)),
-            c => Err(SupportedPublicKeyError::UnsupportedCurve {
-                curve: c.to_string(),
-            }),
+            c => Err(SupportedPublicKeyError::UnsupportedCurve { curve: c.to_string() }),
         }
     }
 
@@ -507,13 +467,8 @@ impl SupportedPublicKey {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicKeyData {
-    Master {
-        data: Secp256k1PublicKey,
-    },
-    Other {
-        data: SupportedPublicKey,
-        usage: KeyUsage,
-    },
+    Master { data: Secp256k1PublicKey },
+    Other { data: SupportedPublicKey, usage: KeyUsage },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -560,14 +515,9 @@ pub struct Service {
 }
 
 impl Service {
-    pub fn parse(
-        service: &proto::Service,
-        param: &ProtocolParameter,
-    ) -> Result<Self, ServiceParsingError> {
-        let id = ServiceId::parse(&service.id, param.max_id_size)
-            .map_err(ServiceParsingError::InvalidServiceId)?;
-        let r#type = ServiceType::parse(&service.r#type, param)
-            .map_err(ServiceParsingError::InvalidServiceType)?;
+    pub fn parse(service: &proto::Service, param: &ProtocolParameter) -> Result<Self, ServiceParsingError> {
+        let id = ServiceId::parse(&service.id, param.max_id_size).map_err(ServiceParsingError::InvalidServiceId)?;
+        let r#type = ServiceType::parse(&service.r#type, param).map_err(ServiceParsingError::InvalidServiceType)?;
         let service_endpoints = ServiceEndpoint::parse(&service.service_endpoint, param)
             .map_err(ServiceParsingError::InvalidServiceEndpoint)?;
 
@@ -598,10 +548,7 @@ pub enum ServiceType {
 }
 
 impl ServiceType {
-    pub fn parse(
-        service_type: &str,
-        param: &ProtocolParameter,
-    ) -> Result<Self, ServiceTypeParsingError> {
+    pub fn parse(service_type: &str, param: &ProtocolParameter) -> Result<Self, ServiceTypeParsingError> {
         if service_type.len() > param.max_type_size {
             Err(ServiceTypeParsingError::TooLong {
                 limit: param.max_type_size,
@@ -616,15 +563,11 @@ impl ServiceType {
                 Err(ServiceTypeParsingError::EmptyList)?
             }
 
-            if service_type
-                != serde_json::to_string(&list)
-                    .expect("Serializing Vec<String> to JSON must not fail!")
-            {
+            if service_type != serde_json::to_string(&list).expect("Serializing Vec<String> to JSON must not fail!") {
                 Err(ServiceTypeParsingError::NotConformToABNF)?
             }
 
-            let names: Result<Vec<ServiceTypeName>, _> =
-                list.iter().map(|i| ServiceTypeName::from_str(i)).collect();
+            let names: Result<Vec<ServiceTypeName>, _> = list.iter().map(|i| ServiceTypeName::from_str(i)).collect();
 
             return Ok(Self::Multiple(names?));
         }
@@ -641,22 +584,15 @@ static SERVICE_TYPE_NAME_RE: OnceLock<Regex> = OnceLock::new();
 #[error("The string {0} is not a valid serviceType name")]
 pub struct ServiceTypeNameParsingError(String);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, derive_more::Display)]
 pub struct ServiceTypeName(String);
-
-impl Display for ServiceTypeName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
 
 impl FromStr for ServiceTypeName {
     type Err = ServiceTypeNameParsingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let regex = SERVICE_TYPE_NAME_RE.get_or_init(|| {
-            Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$")
-                .expect("ServiceTypeName regex is invalid")
+            Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$").expect("ServiceTypeName regex is invalid")
         });
         if regex.is_match(s) {
             Ok(Self(s.to_owned()))
@@ -683,10 +619,7 @@ pub enum ServiceEndpoint {
 }
 
 impl ServiceEndpoint {
-    pub fn parse(
-        service_endpoint: &str,
-        param: &ProtocolParameter,
-    ) -> Result<Self, ServiceEndpointParsingError> {
+    pub fn parse(service_endpoint: &str, param: &ProtocolParameter) -> Result<Self, ServiceEndpointParsingError> {
         if service_endpoint.len() > param.max_service_endpoint_size {
             Err(ServiceEndpointParsingError::TooLong {
                 limit: param.max_service_endpoint_size,
@@ -707,17 +640,13 @@ impl ServiceEndpoint {
                 Err(ServiceEndpointParsingError::EmptyList)?
             }
 
-            let endpoints: Result<Vec<ServiceEndpointValue>, _> = list
-                .into_iter()
-                .map(ServiceEndpointValue::try_from)
-                .collect();
+            let endpoints: Result<Vec<ServiceEndpointValue>, _> =
+                list.into_iter().map(ServiceEndpointValue::try_from).collect();
             return Ok(Self::Multiple(endpoints?));
         }
 
         // try parse as single string
-        Ok(Self::Single(ServiceEndpointValue::from_str(
-            service_endpoint,
-        )?))
+        Ok(Self::Single(ServiceEndpointValue::from_str(service_endpoint)?))
     }
 }
 

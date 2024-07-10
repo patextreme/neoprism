@@ -11,22 +11,10 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(RawOperation::Table)
                     .col(ColumnDef::new(RawOperation::Did).binary_len(32).not_null())
-                    .col(
-                        ColumnDef::new(RawOperation::SignedOperationData)
-                            .binary()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(RawOperation::SignedOperationData).binary().not_null())
                     .col(ColumnDef::new(RawOperation::Slot).big_integer().not_null())
-                    .col(
-                        ColumnDef::new(RawOperation::BlockNumber)
-                            .big_integer()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(RawOperation::Cbt)
-                            .timestamp_with_time_zone()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(RawOperation::BlockNumber).big_integer().not_null())
+                    .col(ColumnDef::new(RawOperation::Cbt).timestamp_with_time_zone().not_null())
                     .col(ColumnDef::new(RawOperation::Absn).integer().not_null())
                     .col(ColumnDef::new(RawOperation::Osn).integer().not_null())
                     .primary_key(
@@ -46,11 +34,7 @@ impl MigrationTrait for Migration {
                     .table(DltCursor::Table)
                     .col(ColumnDef::new(DltCursor::Slot).big_integer().not_null())
                     .col(ColumnDef::new(DltCursor::BlockHash).binary().not_null())
-                    .primary_key(
-                        Index::create()
-                            .col(DltCursor::Slot)
-                            .col(DltCursor::BlockHash),
-                    )
+                    .primary_key(Index::create().col(DltCursor::Slot).col(DltCursor::BlockHash))
                     .to_owned(),
             )
             .await?;

@@ -2,16 +2,14 @@
 
 use std::backtrace::Backtrace;
 
-use prism_core::{
-    did::operation::{get_did_from_signed_operation, GetDidFromOperation},
-    dlt::{BlockMetadata, OperationMetadata},
-    prelude::*,
-    proto::SignedAtalaOperation,
-    store::{DltCursor, DltCursorStore, OperationStore},
-};
+use prism_core::did::operation::{get_did_from_signed_operation, GetDidFromOperation};
+use prism_core::dlt::{BlockMetadata, OperationMetadata};
+use prism_core::prelude::*;
+use prism_core::proto::SignedAtalaOperation;
+use prism_core::store::{DltCursor, DltCursorStore, OperationStore};
 use sea_orm::{
-    ColumnTrait, ConnectOptions, Database, DatabaseConnection, DatabaseTransaction, EntityTrait,
-    IntoActiveValue, ModelTrait, QueryFilter, TransactionTrait,
+    ColumnTrait, ConnectOptions, Database, DatabaseConnection, DatabaseTransaction, EntityTrait, IntoActiveValue,
+    ModelTrait, QueryFilter, TransactionTrait,
 };
 use sea_query::OnConflict;
 
@@ -74,7 +72,7 @@ impl PostgresTransaction {
 impl OperationStore for PostgresTransaction {
     type Error = Error;
 
-    async fn get_by_did(
+    async fn get_operations_by_did(
         &self,
         did: &CanonicalPrismDid,
     ) -> Result<Vec<(OperationMetadata, SignedAtalaOperation)>, Self::Error> {
@@ -166,12 +164,9 @@ impl DltCursorStore for PostgresTransaction {
         }
         entity::dlt_cursor::Entity::insert(active_model)
             .on_conflict(
-                OnConflict::columns([
-                    entity::dlt_cursor::Column::Slot,
-                    entity::dlt_cursor::Column::BlockHash,
-                ])
-                .do_nothing()
-                .to_owned(),
+                OnConflict::columns([entity::dlt_cursor::Column::Slot, entity::dlt_cursor::Column::BlockHash])
+                    .do_nothing()
+                    .to_owned(),
             )
             .exec(&self.tx)
             .await?;

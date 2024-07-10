@@ -25,9 +25,9 @@ tokio = { workspace = true, features = ["full"] }
 uriparse = { workspace = true }
 # crypto
 ed25519-dalek = { workspace = true }
+k256 = { workspace = true, features = ["arithmetic", "ecdsa"] }
 rand = { workspace = true }
 ring = { workspace = true }
-secp256k1 = { workspace = true, features = ["rand"] }
 x25519-dalek = { workspace = true }
 # cardano
 oura = { workspace = true, optional = true }

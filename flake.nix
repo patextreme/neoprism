@@ -40,7 +40,7 @@
               password = "postgres";
               dbName = "postgres";
             };
-            scripts = {
+            scripts = rec {
               format = pkgs.writeShellScriptBin "format" ''
                 cd ${rootDir}
                 find ${rootDir} | grep '\.nix$' | xargs -I _ bash -c "echo running nixfmt on _ && ${pkgs.nixfmt-rfc-style}/bin/nixfmt _"
@@ -49,7 +49,14 @@
                 ${rust}/bin/cargo fmt
               '';
 
+              buildAssets = pkgs.writeShellScriptBin "buildAssets" ''
+                cd ${rootDir}/prism-node
+                ${pkgs.nodePackages.tailwindcss}/bin/tailwindcss -i tailwind.css -o ./assets/tailwind.css
+              '';
+
               build = pkgs.writeShellScriptBin "build" ''
+                cd ${rootDir}
+                ${buildAssets}/bin/buildAssets
                 ${rust}/bin/cargo build --all-features
               '';
 
@@ -71,6 +78,16 @@
                 ${pkgs.docker}/bin/docker stop prism-db
               '';
 
+              pgDump = pkgs.writeShellScriptBin "pgDump" ''
+                export PGPASSWORD=${localDb.password}
+                ${pkgs.postgresql_16}/bin/pg_dump -h localhost -p ${toString localDb.port} -U ${localDb.username} -w -d ${localDb.dbName} -Fc > ${rootDir}/postgres.dump
+              '';
+
+              pgRestore = pkgs.writeShellScriptBin "pgRestore" ''
+                export PGPASSWORD=${localDb.password}
+                ${pkgs.postgresql_16}/bin/pg_restore -h localhost -p ${toString localDb.port} -U ${localDb.username} -w -d ${localDb.dbName} ${rootDir}/postgres.dump
+              '';
+
               migrate = pkgs.writeShellScriptBin "migrate" ''
                 ${pkgs.sea-orm-cli}/bin/sea-orm-cli migrate up -d prism-migration --database-url postgres://postgres:postgres@localhost:5432/postgres
               '';
@@ -84,7 +101,9 @@
               '';
 
               runServer = pkgs.writeShellScriptBin "runServer" ''
-                ${rust}/bin/cargo run --bin prism-node -- server --cardano_addr localhost:3000 --db postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName}
+                cd ${rootDir}
+                ${buildAssets}/bin/buildAssets
+                ${rust}/bin/cargo run --bin prism-node -- --db postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
               '';
             };
           in
@@ -125,7 +144,7 @@
             '';
 
             # envs
-            RUST_LOG = "oura=warn,sqlx::query=warn,prism_core=debug,prism_node=debug,tracing::span=warn,info";
+            RUST_LOG = "oura=warn,prism_core=debug,prism_node=debug,tracing::span=warn,info";
           };
       }
     );

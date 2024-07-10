@@ -1,32 +1,31 @@
+use std::str::FromStr;
+use std::sync::Arc;
+
+use oura::model::{Event, EventData};
+use oura::pipelining::{SourceProvider, StageReceiver};
+use oura::sources::n2n::Config;
+use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
+use oura::utils::{ChainWellKnownInfo, Utils, WithUtils};
+use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::task::JoinHandle;
+
 use super::{DltSource, PublishedAtalaObject};
-use crate::{
-    store::{DltCursor, DltCursorStore},
-    utils::{codec::HexStr, StdError},
-};
-use oura::{
-    model::{Event, EventData},
-    pipelining::{SourceProvider, StageReceiver},
-    sources::{n2n::Config, AddressArg, IntersectArg, MagicArg, PointArg},
-    utils::{ChainWellKnownInfo, Utils, WithUtils},
-};
-use std::{str::FromStr, sync::Arc};
-use tokio::{
-    sync::mpsc::{Receiver, Sender},
-    task::JoinHandle,
-};
+use crate::store::{DltCursor, DltCursorStore};
+use crate::utils::codec::HexStr;
+use crate::utils::StdError;
 
 mod model {
-    use std::{backtrace::Backtrace, str::FromStr};
+    use std::backtrace::Backtrace;
+    use std::str::FromStr;
 
-    use crate::{
-        dlt::{BlockMetadata, PublishedAtalaObject},
-        proto::AtalaObject,
-        utils::codec::HexStr,
-    };
     use oura::model::{EventContext, MetadataRecord};
     use prost::Message;
     use serde::{Deserialize, Serialize};
     use time::OffsetDateTime;
+
+    use crate::dlt::{BlockMetadata, PublishedAtalaObject};
+    use crate::proto::AtalaObject;
+    use crate::utils::codec::HexStr;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct MetadataEvent {
@@ -106,11 +105,9 @@ mod model {
             absn: context.tx_idx.ok_or(ConversionError::MalformedMetadata(
                 "Transaction index must be present in Cardano metadata".to_string(),
             ))? as u32,
-            block_number: context
-                .block_number
-                .ok_or(ConversionError::MalformedMetadata(
-                    "Block number must be present in Cardano metadata".to_string(),
-                ))?,
+            block_number: context.block_number.ok_or(ConversionError::MalformedMetadata(
+                "Block number must be present in Cardano metadata".to_string(),
+            ))?,
             slot_number: context.slot.ok_or(ConversionError::MalformedMetadata(
                 "Slot number must be present in Cardano metadata".to_string(),
             ))?,
@@ -142,12 +139,12 @@ impl NetworkIdentifier {
     }
 }
 
-pub struct OuraN2NSource<Store: DltCursorStore + Send + Sync + 'static> {
+pub struct OuraN2NSource<Store: DltCursorStore + Send + 'static> {
     with_utils: WithUtils<Config>,
     store: Store,
 }
 
-impl<E, Store: DltCursorStore<Error = E> + Send + Sync + 'static> OuraN2NSource<Store> {
+impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> {
     // 71482683 was about the slot that first AtalaBlock was observed on mainnet.
     // How can we support multiple network and define genesis slot / block?
     pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
@@ -172,8 +169,7 @@ impl<E, Store: DltCursorStore<Error = E> + Send + Sync + 'static> OuraN2NSource<
                     cursor.slot,
                     blockhash_hex
                 );
-                let intersect =
-                    oura::sources::IntersectArg::Point(PointArg(cursor.slot, blockhash_hex));
+                let intersect = oura::sources::IntersectArg::Point(PointArg(cursor.slot, blockhash_hex));
                 Ok(Self::new(store, remote_addr, chain, intersect))
             }
             None => {
@@ -183,12 +179,7 @@ impl<E, Store: DltCursorStore<Error = E> + Send + Sync + 'static> OuraN2NSource<
         }
     }
 
-    pub fn new(
-        store: Store,
-        remote_addr: &str,
-        chain: &NetworkIdentifier,
-        intersect: IntersectArg,
-    ) -> Self {
+    pub fn new(store: Store, remote_addr: &str, chain: &NetworkIdentifier, intersect: IntersectArg) -> Self {
         #[allow(deprecated)]
         let config = Config {
             address: AddressArg(oura::sources::BearerKind::Tcp, remote_addr.to_string()),
@@ -207,7 +198,7 @@ impl<E, Store: DltCursorStore<Error = E> + Send + Sync + 'static> OuraN2NSource<
     }
 }
 
-impl<Store: DltCursorStore + Send + Sync + 'static> DltSource for OuraN2NSource<Store> {
+impl<Store: DltCursorStore + Send> DltSource for OuraN2NSource<Store> {
     fn receiver(self) -> Result<Receiver<PublishedAtalaObject>, String> {
         let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedAtalaObject>(1024);
         let (cursor_tx, cursor_rx) = tokio::sync::watch::channel::<Option<DltCursor>>(None);
@@ -242,10 +233,7 @@ impl OuraStreamWorker {
             log::info!("Bootstraping oura pipeline thread");
             let (_, oura_rx) = self.with_utils.bootstrap().map_err(|e| e.to_string())?;
             let exit_err = self.stream_loop(oura_rx);
-            log::error!(
-                "Oura pipeline terminated. Retry in 10 seconds. ({})",
-                exit_err
-            );
+            log::error!("Oura pipeline terminated. Retry in 10 seconds. ({})", exit_err);
             std::thread::sleep(std::time::Duration::from_secs(10));
         })
     }
@@ -302,10 +290,7 @@ impl OuraStreamWorker {
 
         let parsed_atala_object = self::model::parse_oura_event(context, meta);
         match parsed_atala_object {
-            Ok(atala_object) => self
-                .event_tx
-                .blocking_send(atala_object)
-                .map_err(|e| e.to_string())?,
+            Ok(atala_object) => self.event_tx.blocking_send(atala_object).map_err(|e| e.to_string())?,
             Err(e) => {
                 log::warn!("Unable to parse oura event into AtalaObject. ({})", e);
             }
@@ -315,18 +300,15 @@ impl OuraStreamWorker {
     }
 }
 
-struct CursorPersistWorker<Store: DltCursorStore + Send + Sync + 'static> {
+struct CursorPersistWorker<Store: DltCursorStore> {
     cursor_rx: tokio::sync::watch::Receiver<Option<DltCursor>>,
     store: Store,
 }
 
-impl<Store: DltCursorStore + Send + Sync + 'static> CursorPersistWorker<Store> {
+impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
     fn spawn(mut self) -> JoinHandle<Result<(), StdError>> {
         let delay_sec = 30;
-        log::info!(
-            "Spawn cursor persist worker with {} seconds interval",
-            delay_sec
-        );
+        log::info!("Spawn cursor persist worker with {} seconds interval", delay_sec);
         tokio::spawn(async move {
             loop {
                 let recv_result = self.cursor_rx.changed().await;

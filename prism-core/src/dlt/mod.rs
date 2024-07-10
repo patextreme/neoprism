@@ -1,6 +1,7 @@
-use crate::proto::AtalaObject;
 use time::OffsetDateTime;
 use tokio::sync::mpsc::{self, Receiver, Sender};
+
+use crate::proto::AtalaObject;
 
 #[cfg(feature = "cardano")]
 pub mod cardano;

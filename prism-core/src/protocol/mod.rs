@@ -1,30 +1,23 @@
-use self::v1::V1Processor;
-use crate::{
-    did::{
-        self,
-        operation::{
-            CreateOperationParsingError, DeactivateOperationParsingError, PublicKey, PublicKeyId,
-            Service, ServiceEndpoint, ServiceId, ServiceType, UpdateOperationParsingError,
-        },
-        CanonicalPrismDid, DidState,
-    },
-    dlt::OperationMetadata,
-    proto::{
-        atala_operation::Operation, CreateDidOperation, DeactivateDidOperation,
-        ProtocolVersionUpdateOperation, SignedAtalaOperation, UpdateDidOperation,
-    },
-    utils::hash::Sha256Digest,
-};
-use enum_dispatch::enum_dispatch;
 use std::rc::Rc;
+
+use enum_dispatch::enum_dispatch;
+
+use self::v1::V1Processor;
+use crate::did::operation::{
+    CreateOperationParsingError, DeactivateOperationParsingError, PublicKey, PublicKeyId, Service, ServiceEndpoint,
+    ServiceId, ServiceType, UpdateOperationParsingError,
+};
+use crate::did::{self, CanonicalPrismDid, DidState};
+use crate::dlt::OperationMetadata;
+use crate::proto::atala_operation::Operation;
+use crate::proto::{
+    CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation, SignedAtalaOperation,
+    UpdateDidOperation,
+};
+use crate::utils::hash::Sha256Digest;
 
 pub mod resolver;
 mod v1;
-
-// TODO: restore test
-// #[cfg(test)]
-// #[path = "protocol_tests.rs"]
-// mod tests;
 
 #[derive(Debug, Clone)]
 pub struct ProtocolParameter {
@@ -136,16 +129,9 @@ impl DidStateRc {
         self.last_operation_hash = Rc::new(last_operation_hash)
     }
 
-    fn add_public_key(
-        &mut self,
-        public_key: PublicKey,
-        added_at: &OperationMetadata,
-    ) -> Result<(), String> {
+    fn add_public_key(&mut self, public_key: PublicKey, added_at: &OperationMetadata) -> Result<(), String> {
         if self.public_keys.contains_key(&public_key.id) {
-            Err(format!(
-                "Public key with id {} already exists",
-                public_key.id
-            ))?
+            Err(format!("Public key with id {} already exists", public_key.id))?
         }
 
         let updated_map = self
@@ -155,11 +141,7 @@ impl DidStateRc {
         Ok(())
     }
 
-    fn revoke_public_key(
-        &mut self,
-        id: &PublicKeyId,
-        revoke_at: &OperationMetadata,
-    ) -> Result<(), String> {
+    fn revoke_public_key(&mut self, id: &PublicKeyId, revoke_at: &OperationMetadata) -> Result<(), String> {
         let Some(public_key) = self.public_keys.get_mut(id) else {
             Err(format!("Public key with id {:?} does not exist", id))?
         };
@@ -172,11 +154,7 @@ impl DidStateRc {
         Ok(())
     }
 
-    fn add_service(
-        &mut self,
-        service: Service,
-        added_at: &OperationMetadata,
-    ) -> Result<(), String> {
+    fn add_service(&mut self, service: Service, added_at: &OperationMetadata) -> Result<(), String> {
         if self.services.contains_key(&service.id) {
             Err(format!("Service with id {:?} already exists", service.id))?
         }
@@ -188,11 +166,7 @@ impl DidStateRc {
         Ok(())
     }
 
-    fn revoke_service(
-        &mut self,
-        id: &ServiceId,
-        revoke_at: &OperationMetadata,
-    ) -> Result<(), String> {
+    fn revoke_service(&mut self, id: &ServiceId, revoke_at: &OperationMetadata) -> Result<(), String> {
         let Some(service) = self.services.get_mut(id) else {
             Err(format!("Service with id {:?} does not exist", id))?
         };
@@ -218,11 +192,7 @@ impl DidStateRc {
         Ok(())
     }
 
-    fn update_service_endpoint(
-        &mut self,
-        id: &ServiceId,
-        new_endpoint: ServiceEndpoint,
-    ) -> Result<(), String> {
+    fn update_service_endpoint(&mut self, id: &ServiceId, new_endpoint: ServiceEndpoint) -> Result<(), String> {
         let Some(service) = self.services.get_mut(id) else {
             Err(format!("Service with id {:?} does not exist", id))?
         };
@@ -237,11 +207,7 @@ impl DidStateRc {
 
     fn finalize(self) -> DidState {
         let did: CanonicalPrismDid = (*self.did).clone();
-        let context: Vec<String> = self
-            .context
-            .iter()
-            .map(|s| s.as_str().to_string())
-            .collect();
+        let context: Vec<String> = self.context.iter().map(|s| s.as_str().to_string()).collect();
         let last_operation_hash: Sha256Digest = (*self.last_operation_hash).clone();
         let public_keys: Vec<PublicKey> = self
             .public_keys
@@ -271,10 +237,7 @@ struct DidStateProcessingContext {
 }
 
 impl DidStateProcessingContext {
-    fn new(
-        signed_operation: SignedAtalaOperation,
-        metadata: OperationMetadata,
-    ) -> Result<Self, ProcessError> {
+    fn new(signed_operation: SignedAtalaOperation, metadata: OperationMetadata) -> Result<Self, ProcessError> {
         let Some(operation) = &signed_operation.operation else {
             Err(ProcessError::EmptyOperation)?
         };
@@ -298,16 +261,18 @@ impl DidStateProcessingContext {
         }
     }
 
-    fn process(self, signed_operation: SignedAtalaOperation, metadata: OperationMetadata) -> Self {
-        let signature_verification = self
-            .processor
-            .check_signature(&self.state, &signed_operation);
-        if signature_verification.is_err() {
-            return self;
+    fn process(
+        mut self,
+        signed_operation: SignedAtalaOperation,
+        metadata: OperationMetadata,
+    ) -> (Self, Option<ProcessError>) {
+        let signature_verification = self.processor.check_signature(&self.state, &signed_operation);
+        if let Err(e) = signature_verification {
+            return (self, Some(e));
         }
 
         let Some(operation) = signed_operation.operation else {
-            return self;
+            return (self, Some(ProcessError::EmptyOperation));
         };
 
         let process_result = match operation.operation {
@@ -330,10 +295,16 @@ impl DidStateProcessingContext {
         };
 
         match process_result {
-            Ok((Some(state), None)) => Self { state, ..self },
-            Ok((None, Some(processor))) => Self { processor, ..self },
-            Ok((Some(state), Some(processor))) => Self { state, processor },
-            _ => self,
+            Ok((state, processor)) => {
+                if let Some(state) = state {
+                    self.state = state;
+                };
+                if let Some(processor) = processor {
+                    self.processor = processor;
+                }
+                (self, None)
+            }
+            Err(e) => (self, Some(e)),
         }
     }
 
@@ -344,11 +315,7 @@ impl DidStateProcessingContext {
 
 #[enum_dispatch]
 trait OperationProcessor {
-    fn check_signature(
-        &self,
-        state: &DidStateRc,
-        signed_operation: &SignedAtalaOperation,
-    ) -> Result<(), ProcessError>;
+    fn check_signature(&self, state: &DidStateRc, signed_operation: &SignedAtalaOperation) -> Result<(), ProcessError>;
 
     fn create_did(
         &self,

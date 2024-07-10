@@ -1,3 +1,5 @@
 /target
 .envrc
 *.db
+*.dump
+node_modules/

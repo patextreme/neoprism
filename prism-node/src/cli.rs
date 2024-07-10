@@ -1,66 +1,40 @@
-use clap::{Args, Parser, Subcommand};
 use std::net::Ipv4Addr;
+use std::path::PathBuf;
+
+use clap::Parser;
+use rocket::Config;
 
 #[derive(Parser)]
-pub struct Cli {
-    #[command(subcommand)]
-    pub command: Commands,
-}
-
-#[derive(Subcommand)]
-pub enum Commands {
-    /// Run database migration
-    Migrate(MigrateArgs),
-    /// Run PRISM node server
-    Server(ServerArgs),
-    /// Set cardano sync cursor
-    SetCursor(SetCursorArgs),
-}
-
-#[derive(Args)]
-pub struct MigrateArgs {
-    #[clap(flatten)]
-    pub db_args: DbArgs,
-}
-
-#[derive(Args)]
-pub struct ServerArgs {
-    #[clap(flatten)]
-    pub db_args: DbArgs,
-    #[clap(flatten)]
-    pub cardano_args: CardanoArgs,
-    /// PRISM node HTTP server bind address
+pub struct CliArgs {
+    /// Database URL (e.g. postgres://user:pass@host:5432/db)
+    #[arg(long, value_name = "DB_URL")]
+    pub db: String,
+    /// Skip database migration on Node startup
+    #[arg(long, default_value_t = false)]
+    pub skip_migration: bool,
+    /// Address of the Cardano node to consume events from.
+    /// If not provided, the Node will not sync events from the Cardano node.
+    /// (e.g. relays-new.cardano-mainnet.iohk.io:3001)
+    #[arg(long, value_name = "CARDANO_ADDR")]
+    pub cardano: Option<String>,
+    /// Node HTTP server binding address
     #[arg(long, default_value = "0.0.0.0", value_name = "ADDR")]
-    pub bind: Ipv4Addr,
-    /// PRISM node HTTP server listening port
+    pub address: Ipv4Addr,
+    /// Node HTTP server listening port
     #[arg(short, long, default_value_t = 8080)]
     pub port: u16,
+    /// Path of the directory containing the Node assets
+    #[arg(long, default_value = "./prism-node/assets")]
+    pub assets: PathBuf,
 }
 
-#[derive(Args)]
-pub struct DbArgs {
-    /// Database URL (e.g. sqlite://mydata.db)
-    #[arg(long = "db", value_name = "DB_URL")]
-    pub db_url: String,
-}
-
-#[derive(Args)]
-pub struct CardanoArgs {
-    /// Address of the Cardano node to consume events from
-    #[arg(
-        long = "cardano_addr",
-        value_name = "CARDANO_ADDR",
-        default_value = "relays-new.cardano-mainnet.iohk.io:3001"
-    )]
-    pub address: String,
-}
-
-#[derive(Args)]
-pub struct SetCursorArgs {
-    #[clap(flatten)]
-    pub db_args: DbArgs,
-    /// Cursor slot
-    pub slot: u64,
-    /// Cursor block hash in hexadecimal string
-    pub blockhash: String,
+impl CliArgs {
+    pub fn rocket_config(&self) -> Config {
+        let config = Config::default();
+        Config {
+            address: self.address.into(),
+            port: self.port,
+            ..config
+        }
+    }
 }

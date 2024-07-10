@@ -33,7 +33,7 @@ pub enum ToPublicKeyError {
     #[error("Secp256k1 key is invalid. {source}")]
     Secp256k1Signature {
         #[from]
-        source: ::secp256k1::Error,
+        source: ::k256::elliptic_curve::Error,
         backtrace: Backtrace,
     },
 }

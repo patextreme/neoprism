@@ -7,11 +7,7 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub slot: i64,
-    #[sea_orm(
-        primary_key,
-        auto_increment = false,
-        column_type = "Binary(BlobSize::Blob(None))"
-    )]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Binary(BlobSize::Blob(None))")]
     pub block_hash: Vec<u8>,
 }
 

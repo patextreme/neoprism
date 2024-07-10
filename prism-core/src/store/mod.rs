@@ -1,4 +1,6 @@
-use crate::{did::CanonicalPrismDid, dlt::OperationMetadata, proto::SignedAtalaOperation};
+use crate::did::CanonicalPrismDid;
+use crate::dlt::OperationMetadata;
+use crate::proto::SignedAtalaOperation;
 
 #[derive(Debug, Clone)]
 pub struct DltCursor {
@@ -10,7 +12,7 @@ pub struct DltCursor {
 pub trait OperationStore {
     type Error: std::error::Error;
 
-    async fn get_by_did(
+    async fn get_operations_by_did(
         &self,
         did: &CanonicalPrismDid,
     ) -> Result<Vec<(OperationMetadata, SignedAtalaOperation)>, Self::Error>;

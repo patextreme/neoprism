@@ -1,15 +1,7 @@
-use clap::Parser;
+use prism_node::build_rocket;
+use rocket::launch;
 
-mod app;
-mod cli;
-mod exec;
-
-#[tokio::main]
-async fn main() {
-    env_logger::init();
-
-    let cli = cli::Cli::parse();
-    exec::execute_command(&cli)
-        .await
-        .expect("Program exited with an error");
+#[launch]
+fn rocket() -> _ {
+    build_rocket()
 }

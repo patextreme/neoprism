@@ -1,20 +1,16 @@
-use super::{
-    DidStateRc, OperationProcessor, OperationProcessorVariants, ProcessError, ProtocolParameter,
-};
-use crate::{
-    crypto::Verifiable,
-    did::operation::{
-        CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId,
-        UpdateOperation, UpdateOperationAction,
-    },
-    dlt::OperationMetadata,
-    proto::{
-        CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation,
-        SignedAtalaOperation, UpdateDidOperation,
-    },
-    utils::hash::sha256,
-};
 use prost::Message;
+
+use super::{DidStateRc, OperationProcessor, OperationProcessorVariants, ProcessError, ProtocolParameter};
+use crate::crypto::Verifiable;
+use crate::did::operation::{
+    CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId, UpdateOperation, UpdateOperationAction,
+};
+use crate::dlt::OperationMetadata;
+use crate::proto::{
+    CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation, SignedAtalaOperation,
+    UpdateDidOperation,
+};
+use crate::utils::hash::sha256;
 
 #[derive(Debug, Clone, Default)]
 pub struct V1Processor {
@@ -22,15 +18,9 @@ pub struct V1Processor {
 }
 
 impl OperationProcessor for V1Processor {
-    fn check_signature(
-        &self,
-        state: &DidStateRc,
-        signed_operation: &SignedAtalaOperation,
-    ) -> Result<(), ProcessError> {
+    fn check_signature(&self, state: &DidStateRc, signed_operation: &SignedAtalaOperation) -> Result<(), ProcessError> {
         let key_id = PublicKeyId::parse(&signed_operation.signed_with, self.parameters.max_id_size)
-            .map_err(|e| {
-                ProcessError::InvalidSignature(format!("signed_with key-id is invalid ({})", e))
-            })?;
+            .map_err(|e| ProcessError::InvalidSignature(format!("signed_with key-id is invalid ({})", e)))?;
 
         let Some(pk) = state.public_keys.get(&key_id) else {
             Err(ProcessError::InvalidSignature(
@@ -105,8 +95,7 @@ impl OperationProcessor for V1Processor {
         let mut candidate_state = state.clone();
         candidate_state.with_last_operation_hash(sha256(operation.encode_to_vec()));
         for action in parsed_operation.actions {
-            apply_update_action(&mut candidate_state, action, &metadata)
-                .map_err(ProcessError::DidStateConflict)?;
+            apply_update_action(&mut candidate_state, action, &metadata).map_err(ProcessError::DidStateConflict)?;
         }
 
         UpdateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
@@ -157,10 +146,7 @@ impl OperationProcessor for V1Processor {
 }
 
 trait Validator<Op> {
-    fn validate_candidate_state(
-        param: &ProtocolParameter,
-        state: &DidStateRc,
-    ) -> Result<(), ProcessError>;
+    fn validate_candidate_state(param: &ProtocolParameter, state: &DidStateRc) -> Result<(), ProcessError>;
 }
 
 struct CreateDidValidator;
@@ -174,10 +160,7 @@ impl Validator<CreateDidOperation> for CreateDidValidator {
 }
 
 impl Validator<UpdateDidOperation> for UpdateDidValidator {
-    fn validate_candidate_state(
-        param: &ProtocolParameter,
-        state: &DidStateRc,
-    ) -> Result<(), ProcessError> {
+    fn validate_candidate_state(param: &ProtocolParameter, state: &DidStateRc) -> Result<(), ProcessError> {
         // check at least one master key exists
         let contains_master_key = state
             .public_keys

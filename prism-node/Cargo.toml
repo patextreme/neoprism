@@ -7,13 +7,16 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
-axum = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
+dioxus-ssr = { workspace = true }
+dioxus = { workspace = true }
 env_logger = { workspace = true }
+html-escape = { workspace = true }
 log = { workspace = true }
 prism-core = { path = "../prism-core", features = ["full"] }
 prism-migration = { path = "../prism-migration" }
 prism-storage = { path = "../prism-storage" }
+rocket = { workspace = true, features = ["json"] }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }

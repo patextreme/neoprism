@@ -22,7 +22,7 @@ impl Sha256Digest {
     /// # Example
     ///
     /// ```
-    /// use neoprism_core::utils::hash::Sha256Digest;
+    /// use prism_core::utils::hash::Sha256Digest;
     /// let digest = Sha256Digest::from_bytes(&vec![42u8; 32]).unwrap();
     /// assert_eq!(digest.as_bytes(), vec![42u8; 32]);
     ///

@@ -1,17 +1,13 @@
 use std::fmt::Debug;
 
+use k256::ecdsa::signature::Verifier;
+use k256::elliptic_curve::sec1::{EncodedPoint, ToEncodedPoint};
+use k256::Secp256k1;
+
 use super::{EncodeArray, EncodeVec, ToPublicKey, ToPublicKeyError, Verifiable};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Secp256k1PublicKey(secp256k1::PublicKey);
-
-impl Secp256k1PublicKey {
-    pub fn random() -> Self {
-        let secp = secp256k1::Secp256k1::new();
-        let (_, pk) = secp.generate_keypair(&mut rand::thread_rng());
-        Self(pk)
-    }
-}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Secp256k1PublicKey(k256::PublicKey);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CurvePoint {
@@ -39,31 +35,37 @@ impl EncodeArray<65> for Secp256k1PublicKey {
 
 impl Verifiable for Secp256k1PublicKey {
     fn verify(&self, message: &[u8], signature: &[u8]) -> bool {
-        let secp = secp256k1::Secp256k1::verification_only();
-        let digest = crate::utils::hash::sha256(message);
-        let message = secp256k1::Message::from_digest(digest.as_array().to_owned());
-        let Ok(signature) = secp256k1::ecdsa::Signature::from_compact(signature) else {
+        let verifying_key: k256::ecdsa::VerifyingKey = self.0.into();
+        let Ok(signature) = k256::ecdsa::Signature::from_der(signature) else {
             return false;
         };
-        self.0.verify(&secp, &message, &signature).is_ok()
+        verifying_key.verify(message, &signature).is_ok()
     }
 }
 
 impl<T: AsRef<[u8]>> ToPublicKey<Secp256k1PublicKey> for T {
     fn to_public_key(&self) -> Result<Secp256k1PublicKey, ToPublicKeyError> {
-        let slice = self.as_ref();
-        let key = secp256k1::PublicKey::from_slice(slice)?;
-        Ok(Secp256k1PublicKey(key))
+        Ok(Secp256k1PublicKey(k256::PublicKey::from_sec1_bytes(self.as_ref())?))
     }
 }
 
 impl Secp256k1PublicKey {
     fn encode_uncompressed(&self) -> [u8; 65] {
-        self.0.serialize_uncompressed()
+        let bytes: EncodedPoint<Secp256k1> = self.0.to_encoded_point(false);
+        let bytes = bytes.to_bytes();
+        let Some((chunk, _)) = bytes.split_first_chunk::<65>() else {
+            unreachable!("EncodedPoint::to_bytes() must return a single chunk");
+        };
+        chunk.to_owned()
     }
 
     fn encode_compressed(&self) -> [u8; 33] {
-        self.0.serialize()
+        let bytes: EncodedPoint<Secp256k1> = self.0.to_encoded_point(true);
+        let bytes = bytes.to_bytes();
+        let Some((chunk, _)) = bytes.split_first_chunk::<33>() else {
+            unreachable!("EncodedPoint::to_bytes() must return a single chunk");
+        };
+        chunk.to_owned()
     }
 
     fn curve_point(&self) -> CurvePoint {

@@ -1,5 +1,7 @@
+use std::collections::BTreeSet;
+use std::sync::OnceLock;
+
 use regex::Regex;
-use std::{collections::BTreeSet, sync::OnceLock};
 
 pub mod codec;
 pub mod hash;
@@ -10,7 +12,7 @@ static URI_FRAGMENT_RE: OnceLock<Regex> = OnceLock::new();
 ///
 /// # Examples
 /// ```
-/// use prism_core::util::is_slice_unique;
+/// use prism_core::utils::is_slice_unique;
 /// assert_eq!(is_slice_unique(&[1, 2, 3]), true);
 /// assert_eq!(is_slice_unique(&[1, 2, 2]), false);
 /// assert_eq!(is_slice_unique(&[1, 1, 1]), false);
@@ -28,7 +30,7 @@ where
 ///
 /// # Example
 /// ```
-/// use prism_core::util::is_uri;
+/// use prism_core::utils::is_uri;
 ///
 /// assert_eq!(is_uri("http://example.com"), true);
 /// assert_eq!(is_uri("ftps://example.com/help?q=example"), true);
@@ -51,7 +53,7 @@ pub fn is_uri(s: &str) -> bool {
 /// # Example
 ///
 /// ```
-/// use prism_core::util::is_uri_fragment;
+/// use prism_core::utils::is_uri_fragment;
 ///
 /// assert_eq!(is_uri_fragment("hello"), true);
 /// assert_eq!(is_uri_fragment("hello%20world"), true);
@@ -67,8 +69,7 @@ pub fn is_uri(s: &str) -> bool {
 /// ```
 pub fn is_uri_fragment(s: &str) -> bool {
     let regex = URI_FRAGMENT_RE.get_or_init(|| {
-        Regex::new(r"^([A-Za-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9A-Fa-f]{2})*$")
-            .expect("URI regex is invalid")
+        Regex::new(r"^([A-Za-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9A-Fa-f]{2})*$").expect("URI regex is invalid")
     });
     regex.is_match(s)
 }
