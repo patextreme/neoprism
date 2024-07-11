@@ -20,6 +20,7 @@ RUN mkdir -p prism-core/src && touch prism-core/src/lib.rs && \
   mkdir -p prism-node/src && touch prism-node/src/lib.rs && \
   mkdir -p prism-storage/src && touch prism-storage/src/lib.rs && \
   mkdir -p prism-migration/src && touch prism-migration/src/lib.rs
+RUN cargo b
 # build the actual thing
 COPY . /workspace
 RUN cargo clean
