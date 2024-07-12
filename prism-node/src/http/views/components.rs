@@ -3,12 +3,13 @@ use rocket::uri;
 
 #[component]
 pub fn NavBar() -> Element {
-    let home_uri = uri!(crate::http::routes::index).to_string();
+    let resolver_uri = uri!(crate::http::routes::resolver).to_string();
+    let explorer_uri = uri!(crate::http::routes::explorer).to_string();
     rsx! {
         div { class: "navbar bg-neutral text-neutral-content",
             div { class: "flex-1",
-                a { class: "btn btn-ghost text-xl", href: "{home_uri}", "Resolver" }
-                a { class: "btn btn-ghost text-xl", "Explorer" }
+                a { class: "btn btn-ghost text-xl", href: "{resolver_uri}", "Resolver" }
+                a { class: "btn btn-ghost text-xl", href: "{explorer_uri}", "Explorer" }
             }
         }
     }

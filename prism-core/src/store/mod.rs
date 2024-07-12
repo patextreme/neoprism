@@ -1,12 +1,6 @@
 use crate::did::CanonicalPrismDid;
-use crate::dlt::OperationMetadata;
+use crate::dlt::{DltCursor, OperationMetadata};
 use crate::proto::SignedAtalaOperation;
-
-#[derive(Debug, Clone)]
-pub struct DltCursor {
-    pub slot: u64,
-    pub block_hash: Vec<u8>,
-}
 
 #[async_trait::async_trait]
 pub trait OperationStore {
@@ -22,6 +16,8 @@ pub trait OperationStore {
         signed_operation: SignedAtalaOperation,
         metadata: OperationMetadata,
     ) -> Result<(), Self::Error>;
+
+    async fn get_all_dids(&self) -> Result<Vec<CanonicalPrismDid>, Self::Error>;
 }
 
 #[async_trait::async_trait]

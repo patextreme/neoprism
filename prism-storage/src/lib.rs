@@ -3,15 +3,17 @@
 use std::backtrace::Backtrace;
 
 use prism_core::did::operation::{get_did_from_signed_operation, GetDidFromOperation};
-use prism_core::dlt::{BlockMetadata, OperationMetadata};
+use prism_core::did::DidParsingError;
+use prism_core::dlt::{BlockMetadata, DltCursor, OperationMetadata};
 use prism_core::prelude::*;
 use prism_core::proto::SignedAtalaOperation;
-use prism_core::store::{DltCursor, DltCursorStore, OperationStore};
+use prism_core::store::{DltCursorStore, OperationStore};
+use prism_core::utils::codec::HexStr;
 use sea_orm::{
-    ColumnTrait, ConnectOptions, Database, DatabaseConnection, DatabaseTransaction, EntityTrait, IntoActiveValue,
-    ModelTrait, QueryFilter, TransactionTrait,
+    ColumnTrait, ConnectOptions, Database, DatabaseConnection, DatabaseTransaction, EntityTrait, FromQueryResult,
+    IntoActiveValue, ModelTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
-use sea_query::OnConflict;
+use sea_query::{Alias, Expr, OnConflict};
 
 mod entity;
 
@@ -33,6 +35,12 @@ pub enum Error {
     ProtobufDecode {
         #[from]
         source: prost::DecodeError,
+        backtrace: Backtrace,
+    },
+    #[error("{source}")]
+    DidParsing {
+        #[from]
+        source: DidParsingError,
         backtrace: Backtrace,
     },
 }
@@ -134,6 +142,25 @@ impl OperationStore for PostgresTransaction {
             .await?;
         Ok(())
     }
+
+    async fn get_all_dids(&self) -> Result<Vec<CanonicalPrismDid>, Self::Error> {
+        let result = entity::raw_operation::Entity::find()
+            .select_only()
+            .column(entity::raw_operation::Column::Did)
+            .column_as(entity::raw_operation::Column::BlockNumber.max(), "latest_block")
+            .group_by(entity::raw_operation::Column::Did)
+            .order_by_desc(Expr::col(Alias::new("latest_block")))
+            .into_model::<DidProjection>()
+            .all(&self.tx)
+            .await?;
+        result
+            .into_iter()
+            .map(|model| {
+                let suffix = HexStr::from(model.did);
+                CanonicalPrismDid::from_suffix(suffix).map_err(|e| e.into())
+            })
+            .collect()
+    }
 }
 
 #[async_trait::async_trait]
@@ -191,4 +218,9 @@ impl DltCursorStore for PostgresDb {
         tx.commit().await?;
         Ok(())
     }
+}
+
+#[derive(FromQueryResult)]
+struct DidProjection {
+    did: Vec<u8>,
 }

@@ -9,8 +9,8 @@ use oura::utils::{ChainWellKnownInfo, Utils, WithUtils};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
-use super::{DltSource, PublishedAtalaObject};
-use crate::store::{DltCursor, DltCursorStore};
+use super::{DltCursor, DltSource, PublishedAtalaObject};
+use crate::store::DltCursorStore;
 use crate::utils::codec::HexStr;
 use crate::utils::StdError;
 
@@ -142,6 +142,7 @@ impl NetworkIdentifier {
 pub struct OuraN2NSource<Store: DltCursorStore + Send + 'static> {
     with_utils: WithUtils<Config>,
     store: Store,
+    cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
 }
 
 impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> {
@@ -194,24 +195,32 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
         };
         let utils = Utils::new(chain.chain_wellknown_info());
         let with_utils = WithUtils::new(config, Arc::new(utils));
-        Self { with_utils, store }
+        let (cursor_tx, _) = tokio::sync::watch::channel::<Option<DltCursor>>(None);
+        Self {
+            with_utils,
+            store,
+            cursor_tx,
+        }
+    }
+
+    pub fn cursor_receiver(&self) -> tokio::sync::watch::Receiver<Option<DltCursor>> {
+        self.cursor_tx.subscribe()
     }
 }
 
 impl<Store: DltCursorStore + Send> DltSource for OuraN2NSource<Store> {
     fn receiver(self) -> Result<Receiver<PublishedAtalaObject>, String> {
         let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedAtalaObject>(1024);
-        let (cursor_tx, cursor_rx) = tokio::sync::watch::channel::<Option<DltCursor>>(None);
+
+        let cursor_persist_worker = CursorPersistWorker {
+            cursor_rx: self.cursor_tx.subscribe(),
+            store: self.store,
+        };
 
         let oura_stream_worker = OuraStreamWorker {
             with_utils: self.with_utils,
-            cursor_tx,
+            cursor_tx: self.cursor_tx,
             event_tx,
-        };
-
-        let cursor_persist_worker = CursorPersistWorker {
-            cursor_rx,
-            store: self.store,
         };
 
         oura_stream_worker.spawn();
@@ -230,12 +239,33 @@ struct OuraStreamWorker {
 impl OuraStreamWorker {
     fn spawn(self) -> std::thread::JoinHandle<Result<(), StdError>> {
         std::thread::spawn(move || loop {
+            let with_utils = self.build_with_util();
             log::info!("Bootstraping oura pipeline thread");
-            let (_, oura_rx) = self.with_utils.bootstrap().map_err(|e| e.to_string())?;
+            let (_, oura_rx) = with_utils.bootstrap().map_err(|e| e.to_string())?;
             let exit_err = self.stream_loop(oura_rx);
             log::error!("Oura pipeline terminated. Retry in 10 seconds. ({})", exit_err);
             std::thread::sleep(std::time::Duration::from_secs(10));
         })
+    }
+
+    /// Construct WithUtils instance from the last event sent to persist worker.
+    fn build_with_util(&self) -> WithUtils<Config> {
+        let owned_with_utils = self.with_utils.clone();
+        let rx = self.cursor_tx.subscribe();
+        let prev_cursor = rx.borrow();
+        let prev_intersect = prev_cursor
+            .as_ref()
+            .map(|c| oura::sources::IntersectArg::Point(PointArg(c.slot, HexStr::from(&c.block_hash).to_string())));
+        let intersect = prev_intersect
+            .map(Some)
+            .unwrap_or_else(|| owned_with_utils.inner.intersect.clone());
+        WithUtils {
+            inner: Config {
+                intersect,
+                ..owned_with_utils.inner
+            },
+            ..owned_with_utils
+        }
     }
 
     fn stream_loop(&self, receiver: StageReceiver) -> StdError {
@@ -244,8 +274,9 @@ impl OuraStreamWorker {
             let received_event = receiver.recv_timeout(timeout);
             let handle_result = match received_event {
                 Ok(event) => {
+                    let handle_result = self.handle_atala_event(event.clone());
                     self.persist_cursor(&event);
-                    self.handle_atala_event(event.clone())
+                    handle_result
                 }
                 Err(e) => Err(e.into()),
             };

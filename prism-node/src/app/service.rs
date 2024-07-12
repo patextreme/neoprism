@@ -1,4 +1,4 @@
-use prism_core::did::{PrismDid, PrismDidLike};
+use prism_core::did::{CanonicalPrismDid, PrismDid, PrismDidLike};
 use prism_core::protocol::resolver::{resolve, ResolutionDebug, ResolutionResult};
 use prism_core::store::OperationStore;
 use prism_storage::PostgresDb;
@@ -20,5 +20,12 @@ impl DidService {
         let operations = tx.get_operations_by_did(&canonical_did).await?;
         tx.commit().await?;
         Ok(resolve(operations))
+    }
+
+    pub async fn get_all_dids(&self) -> anyhow::Result<Vec<CanonicalPrismDid>> {
+        let tx = self.db.begin().await?;
+        let dids = tx.get_all_dids().await?;
+        tx.commit().await?;
+        Ok(dids)
     }
 }

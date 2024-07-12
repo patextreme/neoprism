@@ -7,6 +7,12 @@ use crate::proto::AtalaObject;
 pub mod cardano;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DltCursor {
+    pub slot: u64,
+    pub block_hash: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlockMetadata {
     /// Cardano slot number
     pub slot_number: u64,
