@@ -102,8 +102,10 @@ fn DidDocumentCardContainer(did_state: DidState) -> Element {
                 }
             }
             div { class: "divider divider-neutral", "Public Keys" }
-            for k in keys {
-                {k}
+            div { class: "flex flex-row gap-2",
+                for k in keys {
+                    {k}
+                }
             }
             div { class: "divider divider-neutral", "Services" }
             for s in services {
@@ -133,11 +135,13 @@ fn DidDocumentPublicKeyCard(pk: PublicKey) -> Element {
         },
     };
     rsx! {
-        ul { class: "py-2",
-            li { "ID: {pk.id}" }
-            li { "Usage: {usage}" }
-            li { "Curve: {curve}" }
-            li { "PublicKey: 0x{public_key_hex}" }
+        div { class: "card bg-base-200 w-96 shadow-xl",
+            div { class: "card-body",
+                h2 { class: "card-title", "{pk.id}" }
+                div { class: "badge badge-outline", "usage: {usage}" }
+                div { class: "badge badge-primary badge-outline", "curve: {curve}" }
+                p { class: "font-mono break-words", "0x{public_key_hex}" }
+            }
         }
     }
 }
