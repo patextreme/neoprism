@@ -8,7 +8,7 @@ use crate::proto::SignedAtalaOperation;
 type OperationList = VecDeque<(OperationMetadata, SignedAtalaOperation)>;
 pub type ResolutionDebug = Vec<(SignedAtalaOperation, Option<ProcessError>)>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ResolutionResult {
     Ok(DidState),
     NotFound,

@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 async-trait = { workspace = true }
-env_logger = { workspace = true }
 log = { workspace = true }
 prism-core = { path = "../prism-core" }
 prost = { workspace = true }

@@ -18,7 +18,7 @@ pub fn html_page(body: String) -> String {
     format!(
         r#"
 <!DOCTYPE html>
-<html data-theme="retro">
+<html data-theme="dark">
 
 <head>
   <meta charset="utf-8">
@@ -32,7 +32,7 @@ pub fn html_page(body: String) -> String {
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
 
-<body class="font-mono">
+<body>
   {body}
 </body>
 

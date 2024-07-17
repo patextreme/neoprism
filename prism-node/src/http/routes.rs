@@ -7,13 +7,28 @@ use crate::AppState;
 
 #[get("/")]
 pub async fn index() -> Redirect {
-    let redirect_uri = uri!(resolver());
+    let redirect_uri = uri!(resolver(Option::<String>::None));
     Redirect::temporary(redirect_uri)
 }
 
-#[get("/resolver")]
-pub async fn resolver() -> SsrPage {
-    SsrPage(views::resolver::ResolverPage())
+#[get("/resolver?<did>")]
+pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
+    let result = match did.as_ref() {
+        Some(did) => {
+            let result = state
+                .did_service
+                .resolve_did(&did)
+                .await
+                .map_err(|e| e.to_string())
+                .map(|(result, debug)| {
+                    let debug: Vec<_> = debug.into_iter().map(|(k, v)| (k, v.map(|e| e.to_string()))).collect();
+                    (result, debug)
+                });
+            Some(result)
+        }
+        None => None,
+    };
+    SsrPage(views::resolver::ResolverPage(did, result))
 }
 
 #[get("/explorer")]
@@ -26,20 +41,11 @@ pub mod hx {
     use rocket::form::Form;
     use rocket::{post, State};
 
-    use crate::http::contract::form::{HxRpcForm, ResolveDidForm};
+    use crate::http::contract::form::HxRpcForm;
     use crate::http::contract::hx::HxRpc;
     use crate::http::response::SsrComponent;
     use crate::http::views;
     use crate::AppState;
-
-    #[post("/hx/did-resolutions", data = "<form>")]
-    pub async fn resolve_did(form: Form<ResolveDidForm>, state: &State<AppState>) -> SsrComponent {
-        let result = state.did_service.resolve_did(&form.did).await;
-        match result {
-            Ok((result, debug)) => SsrComponent(views::resolver::ResolutionResultDisplay(result, debug)),
-            Err(e) => SsrComponent(views::resolver::ResolutionErrorDisplay(e.to_string())),
-        }
-    }
 
     #[post("/hx/rpc", data = "<form>")]
     pub async fn rpc(form: Form<HxRpcForm>, state: &State<AppState>) -> SsrComponent {

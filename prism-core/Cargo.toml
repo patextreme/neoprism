@@ -26,7 +26,6 @@ uriparse = { workspace = true }
 # crypto
 ed25519-dalek = { workspace = true }
 k256 = { workspace = true, features = ["arithmetic", "ecdsa"] }
-rand = { workspace = true }
 ring = { workspace = true }
 x25519-dalek = { workspace = true }
 # cardano

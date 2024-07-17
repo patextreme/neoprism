@@ -250,7 +250,7 @@ impl OuraStreamWorker {
 
     /// Construct WithUtils instance from the last event sent to persist worker.
     fn build_with_util(&self) -> WithUtils<Config> {
-        let owned_with_utils = self.with_utils.clone();
+        let mut owned_with_utils = self.with_utils.clone();
         let rx = self.cursor_tx.subscribe();
         let prev_cursor = rx.borrow();
         let prev_intersect = prev_cursor
@@ -259,13 +259,8 @@ impl OuraStreamWorker {
         let intersect = prev_intersect
             .map(Some)
             .unwrap_or_else(|| owned_with_utils.inner.intersect.clone());
-        WithUtils {
-            inner: Config {
-                intersect,
-                ..owned_with_utils.inner
-            },
-            ..owned_with_utils
-        }
+        owned_with_utils.inner.intersect = intersect;
+        owned_with_utils
     }
 
     fn stream_loop(&self, receiver: StageReceiver) -> StdError {
