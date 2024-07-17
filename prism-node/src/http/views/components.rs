@@ -18,6 +18,6 @@ pub fn NavBar() -> Element {
 #[component]
 pub fn PageTitle(title: String) -> Element {
     rsx! {
-        div { class: "text-center text-3xl py-5", {title} }
+        div { class: "text-center text-3xl font-bold py-5", {title} }
     }
 }

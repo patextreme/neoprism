@@ -11,7 +11,7 @@ use crate::http::views::escape_html_rpc;
 pub fn ExplorerPage(cursor: Option<DltCursor>, dids: Vec<CanonicalPrismDid>) -> Element {
     rsx! {
         NavBar {}
-        PageTitle { title: "Block Explorer".to_string() }
+        PageTitle { title: "Operation Explorer".to_string() }
         DltCursorStat { cursor }
         DidList { dids }
     }
@@ -49,7 +49,8 @@ pub fn DidList(dids: Vec<CanonicalPrismDid>) -> Element {
     let rpc_uri = uri!(crate::http::routes::hx::rpc());
     let rpc = escape_html_rpc(&HxRpc::GetExplorerDidList {});
     rsx! {
-        div { class: "my-2",
+        div {
+            class: "my-2",
             "hx-post": "{rpc_uri}",
             "hx-vals": "{rpc}",
             "hx-trigger": "load delay:5s",
