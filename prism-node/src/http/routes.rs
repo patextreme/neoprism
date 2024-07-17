@@ -39,18 +39,13 @@ pub async fn explorer(state: &State<AppState>) -> SsrPage {
 }
 pub mod hx {
     use rocket::form::Form;
-    use rocket::{post, uri, State};
+    use rocket::{post, State};
 
-    use crate::http::contract::form::{HxRpcForm, ResolveDidForm};
+    use crate::http::contract::form::HxRpcForm;
     use crate::http::contract::hx::HxRpc;
-    use crate::http::response::{HxRedirect, SsrComponent};
+    use crate::http::response::SsrComponent;
     use crate::http::views;
     use crate::AppState;
-
-    #[post("/hx/did-resolutions", data = "<form>")]
-    pub fn resolve_did(form: Form<ResolveDidForm>) -> HxRedirect<'static> {
-        HxRedirect(uri!(super::resolver(Some(form.did.clone()))))
-    }
 
     #[post("/hx/rpc", data = "<form>")]
     pub async fn rpc(form: Form<HxRpcForm>, state: &State<AppState>) -> SsrComponent {

@@ -14,8 +14,8 @@ pub type ResolutionDebug = Vec<(SignedAtalaOperation, Option<String>)>;
 
 pub fn ResolverPage(resolution_result: Option<Result<(ResolutionResult, ResolutionDebug), String>>) -> Element {
     let content = match resolution_result {
-        Some(Ok((result, debug))) => rsx! { ResolutionResultDisplay { result, debug: Rc::new(debug) } },
-        Some(Err(e)) => rsx! { ResolutionErrorDisplay { message: e } },
+        Some(Ok((result, debug))) => rsx! { ResolutionResultSection { result, debug: Rc::new(debug) } },
+        Some(Err(e)) => rsx! { ResolutionErrorSection { message: e } },
         None => None,
     };
     rsx! {
@@ -28,11 +28,12 @@ pub fn ResolverPage(resolution_result: Option<Result<(ResolutionResult, Resoluti
 
 #[component]
 fn SearchBox() -> Element {
-    let resolve_uri = uri!(crate::http::routes::hx::resolve_did);
+    let resolve_uri = uri!(crate::http::routes::resolver(Option::<String>::None));
     rsx! {
         form {
             class: "flex flex-row flex-wrap justify-center gap-2 py-2",
-            "hx-post": "{resolve_uri}",
+            action: "{resolve_uri}",
+            method: "get",
             input {
                 class: "input input-bordered input-primary w-9/12 lg:w-6/12",
                 r#type: "text",
@@ -46,9 +47,14 @@ fn SearchBox() -> Element {
 }
 
 #[component]
-fn ResolutionResultDisplay(result: ResolutionResult, debug: Rc<ResolutionDebug>) -> Element {
+fn ResolutionErrorSection(message: String) -> Element {
+    rsx! { p { class: "text-lg", "{message}" } }
+}
+
+#[component]
+fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>) -> Element {
     let did_doc = match result {
-        ResolutionResult::Ok(did_state) => rsx! { DidDocumentDisplay { did_state } },
+        ResolutionResult::Ok(did_state) => rsx! { DidDocumentCardGroup { did_state } },
         ResolutionResult::NotFound => rsx! { p { class: "text-lg", "DID not found" } },
     };
     let debug = debug.iter().map(|(operation, error)| {
@@ -57,7 +63,7 @@ fn ResolutionResultDisplay(result: ResolutionResult, debug: Rc<ResolutionDebug>)
         rsx! {
             div { class: "flex flex-col gap-2 py-3",
                 p { "{operation_str}" }
-                p { "{error_str}" }
+                p { "Error: {error_str}" }
             }
         }
     });
@@ -71,7 +77,7 @@ fn ResolutionResultDisplay(result: ResolutionResult, debug: Rc<ResolutionDebug>)
 }
 
 #[component]
-fn DidDocumentDisplay(did_state: DidState) -> Element {
+fn DidDocumentCardGroup(did_state: DidState) -> Element {
     let contexts = did_state.context.into_iter().map(|c| {
         rsx! { li { "{c}" } }
     });
@@ -127,9 +133,4 @@ fn DidDocumentDisplay(did_state: DidState) -> Element {
             }
         }
     }
-}
-
-#[component]
-fn ResolutionErrorDisplay(message: String) -> Element {
-    rsx! { p { class: "text-lg", "{message}" } }
 }

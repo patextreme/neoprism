@@ -82,13 +82,7 @@ fn init_endpoints() -> AdHoc {
         let file_server = FileServer::from(cli.assets.clone());
         rocket.mount("/assets", file_server).mount(
             "/",
-            rocket::routes!(
-                routes::explorer,
-                routes::hx::resolve_did,
-                routes::hx::rpc,
-                routes::index,
-                routes::resolver,
-            ),
+            rocket::routes!(routes::explorer, routes::hx::rpc, routes::index, routes::resolver,),
         )
     })
 }
