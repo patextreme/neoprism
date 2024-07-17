@@ -48,6 +48,10 @@ pub fn DltCursorStat(cursor: Option<DltCursor>) -> Element {
 pub fn DidList(dids: Vec<CanonicalPrismDid>) -> Element {
     let rpc_uri = uri!(crate::http::routes::hx::rpc());
     let rpc = escape_html_rpc(&HxRpc::GetExplorerDidList {});
+    let did_elems = dids.iter().map(|did| {
+        let uri = uri!(crate::http::routes::resolver(Some(did.to_string())));
+        rsx! { a { class: "link", href: "{uri}", "{did}" } }
+    });
     rsx! {
         div {
             class: "my-2",
@@ -56,8 +60,8 @@ pub fn DidList(dids: Vec<CanonicalPrismDid>) -> Element {
             "hx-trigger": "load delay:5s",
             "hx-swap": "outerHTML",
             ul {
-                for did in dids {
-                    li { "{did}" }
+                for elem in did_elems {
+                    li { {elem} }
                 }
             }
         }

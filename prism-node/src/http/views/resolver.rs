@@ -12,7 +12,10 @@ use crate::http::views::components::{NavBar, PageTitle};
 
 pub type ResolutionDebug = Vec<(SignedAtalaOperation, Option<String>)>;
 
-pub fn ResolverPage(resolution_result: Option<Result<(ResolutionResult, ResolutionDebug), String>>) -> Element {
+pub fn ResolverPage(
+    did: Option<String>,
+    resolution_result: Option<Result<(ResolutionResult, ResolutionDebug), String>>,
+) -> Element {
     let content = match resolution_result {
         Some(Ok((result, debug))) => rsx! { ResolutionResultSection { result, debug: Rc::new(debug) } },
         Some(Err(e)) => rsx! { ResolutionErrorSection { message: e } },
@@ -21,13 +24,13 @@ pub fn ResolverPage(resolution_result: Option<Result<(ResolutionResult, Resoluti
     rsx! {
         NavBar {}
         PageTitle { title: "DID Resolver".to_string() }
-        SearchBox {}
+        SearchBox { did }
         {content}
     }
 }
 
 #[component]
-fn SearchBox() -> Element {
+fn SearchBox(did: Option<String>) -> Element {
     let resolve_uri = uri!(crate::http::routes::resolver(Option::<String>::None));
     rsx! {
         form {
@@ -39,6 +42,7 @@ fn SearchBox() -> Element {
                 r#type: "text",
                 name: "did",
                 placeholder: "Enter Prism DID",
+                value: did,
                 required: true
             }
             button { class: "btn btn-primary", r#type: "submit", "Resolve" }

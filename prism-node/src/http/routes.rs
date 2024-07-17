@@ -13,7 +13,7 @@ pub async fn index() -> Redirect {
 
 #[get("/resolver?<did>")]
 pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
-    let result = match did {
+    let result = match did.as_ref() {
         Some(did) => {
             let result = state
                 .did_service
@@ -28,7 +28,7 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
         }
         None => None,
     };
-    SsrPage(views::resolver::ResolverPage(result))
+    SsrPage(views::resolver::ResolverPage(did, result))
 }
 
 #[get("/explorer")]
