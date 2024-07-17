@@ -1,18 +1,28 @@
+use std::rc::Rc;
+
 use dioxus::prelude::*;
 use prism_core::crypto::EncodeVec;
 use prism_core::did::DidState;
-use prism_core::protocol::resolver::{ResolutionDebug, ResolutionResult};
+use prism_core::proto::SignedAtalaOperation;
+use prism_core::protocol::resolver::ResolutionResult;
 use prism_core::utils::codec::HexStr;
 use rocket::uri;
 
 use crate::http::views::components::{NavBar, PageTitle};
 
-pub fn ResolverPage() -> Element {
+pub type ResolutionDebug = Vec<(SignedAtalaOperation, Option<String>)>;
+
+pub fn ResolverPage(resolution_result: Option<Result<(ResolutionResult, ResolutionDebug), String>>) -> Element {
+    let content = match resolution_result {
+        Some(Ok((result, debug))) => rsx! { ResolutionResultDisplay { result, debug: Rc::new(debug) } },
+        Some(Err(e)) => rsx! { ResolutionErrorDisplay { message: e } },
+        None => None,
+    };
     rsx! {
         NavBar {}
         PageTitle { title: "DID Resolver".to_string() }
         SearchBox {}
-        div { id: "resolution-result" }
+        {content}
     }
 }
 
@@ -23,24 +33,25 @@ fn SearchBox() -> Element {
         form {
             class: "flex flex-row flex-wrap justify-center gap-2 py-2",
             "hx-post": "{resolve_uri}",
-            "hx-target": "#resolution-result",
             input {
                 class: "input input-bordered input-primary w-9/12 lg:w-6/12",
                 r#type: "text",
                 name: "did",
-                placeholder: "Enter Prism DID"
+                placeholder: "Enter Prism DID",
+                required: true
             }
             button { class: "btn btn-primary", r#type: "submit", "Resolve" }
         }
     }
 }
 
-pub fn ResolutionResultDisplay(resolution_result: ResolutionResult, debug: ResolutionDebug) -> Element {
-    let did_doc = match resolution_result {
+#[component]
+fn ResolutionResultDisplay(result: ResolutionResult, debug: Rc<ResolutionDebug>) -> Element {
+    let did_doc = match result {
         ResolutionResult::Ok(did_state) => rsx! { DidDocumentDisplay { did_state } },
         ResolutionResult::NotFound => rsx! { p { class: "text-lg", "DID not found" } },
     };
-    let debug = debug.into_iter().map(|(operation, error)| {
+    let debug = debug.iter().map(|(operation, error)| {
         let operation_str = format!("{:?}", operation);
         let error_str = format!("{:?}", error);
         rsx! {
@@ -118,6 +129,7 @@ fn DidDocumentDisplay(did_state: DidState) -> Element {
     }
 }
 
-pub fn ResolutionErrorDisplay(message: String) -> Element {
+#[component]
+fn ResolutionErrorDisplay(message: String) -> Element {
     rsx! { p { class: "text-lg", "{message}" } }
 }

@@ -3,7 +3,7 @@ use rocket::uri;
 
 #[component]
 pub fn NavBar() -> Element {
-    let resolver_uri = uri!(crate::http::routes::resolver).to_string();
+    let resolver_uri = uri!(crate::http::routes::resolver(Option::<String>::None)).to_string();
     let explorer_uri = uri!(crate::http::routes::explorer).to_string();
     rsx! {
         div { class: "navbar bg-neutral text-neutral-content",
