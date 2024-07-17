@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use dioxus::prelude::*;
 use prism_core::crypto::EncodeVec;
+use prism_core::did::operation::PublicKey;
 use prism_core::did::DidState;
 use prism_core::proto::SignedAtalaOperation;
 use prism_core::protocol::resolver::ResolutionResult;
@@ -58,7 +59,7 @@ fn ResolutionErrorSection(message: String) -> Element {
 #[component]
 fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>) -> Element {
     let did_doc = match result {
-        ResolutionResult::Ok(did_state) => rsx! { DidDocumentCardGroup { did_state } },
+        ResolutionResult::Ok(did_state) => rsx! { DidDocumentCardContainer { did_state } },
         ResolutionResult::NotFound => rsx! { p { class: "text-lg", "DID not found" } },
     };
     let debug = debug.iter().map(|(operation, error)| {
@@ -81,40 +82,13 @@ fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>)
 }
 
 #[component]
-fn DidDocumentCardGroup(did_state: DidState) -> Element {
+fn DidDocumentCardContainer(did_state: DidState) -> Element {
     let contexts = did_state.context.into_iter().map(|c| {
         rsx! { li { "{c}" } }
     });
     let mut keys = did_state.public_keys;
     keys.sort_by_key(|i| i.id.to_string());
-    let keys = keys.into_iter().map(|pk| {
-        let usage = format!("{:?}", pk.usage());
-        let curve = match &pk.data {
-            prism_core::did::operation::PublicKeyData::Master { .. } => "secp256k1",
-            prism_core::did::operation::PublicKeyData::Other { data, .. } => match data {
-                prism_core::did::operation::SupportedPublicKey::Secp256k1(_) => "secp256k1",
-                prism_core::did::operation::SupportedPublicKey::Ed25519(_) => "Ed25519",
-                prism_core::did::operation::SupportedPublicKey::X25519(_) => "X25519",
-            },
-        };
-        let public_key = match pk.data {
-            prism_core::did::operation::PublicKeyData::Master { data } => data.encode_vec(),
-            prism_core::did::operation::PublicKeyData::Other { data, .. } => match data {
-                prism_core::did::operation::SupportedPublicKey::Secp256k1(k) => k.encode_vec(),
-                prism_core::did::operation::SupportedPublicKey::Ed25519(k) => k.encode_vec(),
-                prism_core::did::operation::SupportedPublicKey::X25519(k) => k.encode_vec(),
-            },
-        };
-        let public_key = HexStr::from(public_key);
-        rsx! {
-            ul { class: "py-2",
-                li { "ID: {pk.id}" }
-                li { "Usage: {usage}" }
-                li { "Curve: {curve}" }
-                li { "PublicKey: 0x{public_key}" }
-            }
-        }
-    });
+    let keys = keys.into_iter().map(|pk| rsx! { DidDocumentPublicKeyCard { pk } });
     let services = did_state.services.into_iter().map(|svc| {
         let svc_str = format!("{:?}", svc);
         rsx! { p { "{svc_str}" } }
@@ -135,6 +109,35 @@ fn DidDocumentCardGroup(did_state: DidState) -> Element {
             for s in services {
                 {s}
             }
+        }
+    }
+}
+
+#[component]
+fn DidDocumentPublicKeyCard(pk: PublicKey) -> Element {
+    let usage = format!("{:?}", pk.usage());
+    let curve = match &pk.data {
+        prism_core::did::operation::PublicKeyData::Master { .. } => "secp256k1",
+        prism_core::did::operation::PublicKeyData::Other { data, .. } => match data {
+            prism_core::did::operation::SupportedPublicKey::Secp256k1(_) => "secp256k1",
+            prism_core::did::operation::SupportedPublicKey::Ed25519(_) => "Ed25519",
+            prism_core::did::operation::SupportedPublicKey::X25519(_) => "X25519",
+        },
+    };
+    let public_key_hex: HexStr = match pk.data {
+        prism_core::did::operation::PublicKeyData::Master { data } => data.encode_vec().into(),
+        prism_core::did::operation::PublicKeyData::Other { data, .. } => match data {
+            prism_core::did::operation::SupportedPublicKey::Secp256k1(k) => k.encode_vec().into(),
+            prism_core::did::operation::SupportedPublicKey::Ed25519(k) => k.encode_vec().into(),
+            prism_core::did::operation::SupportedPublicKey::X25519(k) => k.encode_vec().into(),
+        },
+    };
+    rsx! {
+        ul { class: "py-2",
+            li { "ID: {pk.id}" }
+            li { "Usage: {usage}" }
+            li { "Curve: {curve}" }
+            li { "PublicKey: 0x{public_key_hex}" }
         }
     }
 }
