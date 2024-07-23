@@ -50,7 +50,7 @@ pub fn DidList(dids: Vec<CanonicalPrismDid>) -> Element {
     let rpc = escape_html_rpc(&HxRpc::GetExplorerDidList {});
     let did_elems = dids.iter().map(|did| {
         let uri = uri!(crate::http::routes::resolver(Some(did.to_string())));
-        rsx! { a { class: "link", href: "{uri}", "{did}" } }
+        rsx! { a { class: "link font-mono", href: "{uri}", "{did}" } }
     });
     rsx! {
         div {
