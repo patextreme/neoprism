@@ -9,7 +9,7 @@ use prism_core::protocol::resolver::ResolutionResult;
 use prism_core::utils::codec::HexStr;
 use rocket::uri;
 
-use crate::http::views::components::{NavBar, PageTitle};
+use crate::http::views::components::{NavBar, PageContent, PageTitle};
 
 pub type ResolutionDebug = Vec<(SignedAtalaOperation, Option<String>)>;
 
@@ -25,8 +25,10 @@ pub fn ResolverPage(
     rsx! {
         NavBar {}
         PageTitle { title: "DID Resolver".to_string() }
-        SearchBox { did }
-        {content}
+        PageContent {
+            SearchBox { did }
+            {content}
+        }
     }
 }
 
@@ -63,20 +65,18 @@ fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>)
         ResolutionResult::NotFound => rsx! { p { class: "text-lg", "DID not found" } },
     };
     let debug = debug.iter().map(|(operation, error)| {
-        let operation_str = format!("{:?}", operation);
-        let error_str = format!("{:?}", error);
         rsx! {
-            div { class: "flex flex-col gap-2 py-3",
-                p { "{operation_str}" }
-                p { "Error: {error_str}" }
+            div { class: "flex flex-col gap-2 py-3 bg-base-300",
+                p { class: "font-mono", "{operation:?}" }
+                p { "Error: {error:?}" }
             }
         }
     });
     rsx! {
         {did_doc},
         div { class: "divider divider-neutral", "Operation Debug" }
-        for dbg in debug {
-            {dbg}
+        for d in debug {
+            {d}
         }
     }
 }
@@ -153,16 +153,14 @@ fn DidDocumentPublicKeyCard(pk: PublicKey) -> Element {
 
 #[component]
 fn DidDocumentServiceCard(svc: Service) -> Element {
-    let svc_type = format!("{:?}", svc.r#type);
-    let svc_endpoint = format!("{:?}", svc.service_endpoints);
     rsx! {
         div { class: "card bg-base-200 w-96 shadow-xl",
             div { class: "card-body",
                 h2 { class: "card-title", "ID: {svc.id}" }
                 p { class: "font-bold", "service type" }
-                p { class: "bg-base-300 font-mono break-words", "{svc_type}" }
+                p { class: "bg-base-300 font-mono break-words", "{svc.r#type:?}" }
                 p { class: "font-bold", "service endpoint" }
-                p { class: "bg-base-300 font-mono break-words", "{svc_endpoint}" }
+                p { class: "bg-base-300 font-mono break-words", "{svc.service_endpoints:?}" }
             }
         }
     }

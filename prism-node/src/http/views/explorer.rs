@@ -5,15 +5,17 @@ use prism_core::utils::codec::HexStr;
 use rocket::uri;
 
 use crate::http::contract::hx::HxRpc;
-use crate::http::views::components::{NavBar, PageTitle};
+use crate::http::views::components::{NavBar, PageContent, PageTitle};
 use crate::http::views::escape_html_rpc;
 
 pub fn ExplorerPage(cursor: Option<DltCursor>, dids: Vec<CanonicalPrismDid>) -> Element {
     rsx! {
         NavBar {}
         PageTitle { title: "Operation Explorer".to_string() }
-        DltCursorStat { cursor }
-        DidList { dids }
+        PageContent {
+            DltCursorStat { cursor }
+            DidList { dids }
+        }
     }
 }
 
