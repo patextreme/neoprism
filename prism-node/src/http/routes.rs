@@ -21,7 +21,10 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
                 .await
                 .map_err(|e| e.to_string())
                 .map(|(result, debug)| {
-                    let debug: Vec<_> = debug.into_iter().map(|(k, v)| (k, v.map(|e| e.to_string()))).collect();
+                    let debug: Vec<_> = debug
+                        .into_iter()
+                        .map(|(meta, op, e)| (meta, op, e.map(|e| e.to_string())))
+                        .collect();
                     (result, debug)
                 });
             Some(result)

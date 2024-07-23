@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use prism_core::crypto::EncodeVec;
 use prism_core::did::operation::{PublicKey, Service};
 use prism_core::did::DidState;
+use prism_core::dlt::OperationMetadata;
 use prism_core::proto::SignedAtalaOperation;
 use prism_core::protocol::resolver::ResolutionResult;
 use prism_core::utils::codec::HexStr;
@@ -11,7 +12,7 @@ use rocket::uri;
 
 use crate::http::views::components::{NavBar, PageContent, PageTitle};
 
-pub type ResolutionDebug = Vec<(SignedAtalaOperation, Option<String>)>;
+pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Option<String>)>;
 
 pub fn ResolverPage(
     did: Option<String>,
@@ -64,9 +65,19 @@ fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>)
         ResolutionResult::Ok(did_state) => rsx! { DidDocumentCardContainer { did_state } },
         ResolutionResult::NotFound => rsx! { p { class: "text-lg", "DID not found" } },
     };
-    let debug = debug.iter().map(|(operation, error)| {
+    let debug = debug.iter().map(|(meta, operation, error)| {
+        let block_meta = &meta.block_metadata;
         rsx! {
-            div { class: "flex flex-col gap-2 py-3 bg-base-300",
+            div { class: "flex flex-col gap-2 my-3 bg-base-300",
+                p { class: "font-mono",
+                    "Time: {block_meta.cbt:?}"
+                    br {}
+                    "Slot: {block_meta.slot_number}"
+                    br {}
+                    "Block: {block_meta.block_number}"
+                    br {}
+                    "Absn, Osn: ({block_meta.absn}, {meta.osn})"
+                }
                 p { class: "font-mono", "{operation:?}" }
                 p { "Error: {error:?}" }
             }
