@@ -16,7 +16,7 @@ pub mod operation;
 static CANONICAL_SUFFIX_RE: OnceLock<Regex> = OnceLock::new();
 static LONG_FORM_SUFFIX_RE: OnceLock<Regex> = OnceLock::new();
 
-#[enum_dispatch(PrismDidLike, Display)]
+#[enum_dispatch(PrismDidLike)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PrismDid {
     Canonical(CanonicalPrismDid),
@@ -68,6 +68,15 @@ impl PrismDidLike for LongFormPrismDid {
 impl From<LongFormPrismDid> for CanonicalPrismDid {
     fn from(did: LongFormPrismDid) -> Self {
         Self { suffix: did.suffix }
+    }
+}
+
+impl std::fmt::Display for PrismDid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PrismDid::Canonical(did) => did.fmt(f),
+            PrismDid::LongForm(did) => did.fmt(f),
+        }
     }
 }
 

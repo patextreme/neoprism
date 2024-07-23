@@ -17,7 +17,7 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
         Some(did) => {
             let result = state
                 .did_service
-                .resolve_did(&did)
+                .resolve_did(did)
                 .await
                 .map_err(|e| e.to_string())
                 .map(|(result, debug)| {

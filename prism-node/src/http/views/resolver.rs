@@ -11,6 +11,7 @@ use prism_core::utils::codec::HexStr;
 use rocket::uri;
 
 use crate::http::views::components::{NavBar, PageContent, PageTitle};
+use crate::http::views::format_datetime;
 
 pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Option<String>)>;
 
@@ -67,19 +68,22 @@ fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>)
     };
     let debug = debug.iter().map(|(meta, operation, error)| {
         let block_meta = &meta.block_metadata;
+        let cbt = format_datetime(&block_meta.cbt);
         rsx! {
             div { class: "flex flex-col gap-2 my-3 bg-base-300",
                 p { class: "font-mono",
-                    "Time: {block_meta.cbt:?}"
+                    "Cardano Block Time: {cbt}"
                     br {}
                     "Slot: {block_meta.slot_number}"
                     br {}
                     "Block: {block_meta.block_number}"
                     br {}
-                    "Absn, Osn: ({block_meta.absn}, {meta.osn})"
+                    "Atala Block Sequence Number: {block_meta.absn}"
+                    br {}
+                    "Operation Sequence Number: {meta.osn}"
                 }
                 p { class: "font-mono", "{operation:?}" }
-                p { "Error: {error:?}" }
+                p { class: "font-mono", "Error: {error:?}" }
             }
         }
     });

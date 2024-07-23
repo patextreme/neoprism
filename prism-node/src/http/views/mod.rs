@@ -1,17 +1,24 @@
+use time::OffsetDateTime;
+
 use super::contract::hx::HxRpc;
 
 pub mod components;
 pub mod explorer;
 pub mod resolver;
 
-pub fn escape_html_json(json: &serde_json::Value) -> String {
+fn escape_html_json(json: &serde_json::Value) -> String {
     let s = serde_json::to_string(&json).unwrap_or_default();
     html_escape::encode_safe(&s).into()
 }
 
-pub fn escape_html_rpc(rpc: &HxRpc) -> String {
+fn escape_html_rpc(rpc: &HxRpc) -> String {
     let json = serde_json::json!({"rpc": rpc});
     escape_html_json(&json)
+}
+
+fn format_datetime(dt: &OffsetDateTime) -> String {
+    dt.format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default()
 }
 
 pub fn html_page(body: String) -> String {
