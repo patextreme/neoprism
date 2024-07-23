@@ -53,7 +53,7 @@ fn init_database() -> AdHoc {
 }
 
 fn init_state() -> AdHoc {
-    AdHoc::on_ignite("Inject AppState", |rocket| async move {
+    AdHoc::on_ignite("AppState Setup", |rocket| async move {
         let cli = rocket.state::<CliArgs>().expect("No CLI arguments provided");
         let db = rocket.state::<PostgresDb>().expect("No PostgresDb provided");
         let did_service = DidService::new(db);
@@ -77,7 +77,7 @@ fn init_state() -> AdHoc {
 }
 
 fn init_endpoints() -> AdHoc {
-    AdHoc::on_ignite("Inject endpoints", |rocket| async move {
+    AdHoc::on_ignite("Endpoints Setup", |rocket| async move {
         let cli = rocket.state::<CliArgs>().expect("No CLI arguments provided");
         let file_server = FileServer::from(cli.assets.clone());
         rocket.mount("/assets", file_server).mount(

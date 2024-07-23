@@ -543,8 +543,8 @@ pub enum ServiceTypeParsingError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceType {
-    Single(ServiceTypeName),
-    Multiple(Vec<ServiceTypeName>),
+    Value(ServiceTypeName),
+    List(Vec<ServiceTypeName>),
 }
 
 impl ServiceType {
@@ -569,12 +569,12 @@ impl ServiceType {
 
             let names: Result<Vec<ServiceTypeName>, _> = list.iter().map(|i| ServiceTypeName::from_str(i)).collect();
 
-            return Ok(Self::Multiple(names?));
+            return Ok(Self::List(names?));
         }
 
         // try parse as single string
         let name = ServiceTypeName::from_str(service_type)?;
-        Ok(Self::Single(name))
+        Ok(Self::Value(name))
     }
 }
 
@@ -614,8 +614,8 @@ pub enum ServiceEndpointParsingError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceEndpoint {
-    Single(ServiceEndpointValue),
-    Multiple(Vec<ServiceEndpointValue>),
+    Value(ServiceEndpointValue),
+    List(Vec<ServiceEndpointValue>),
 }
 
 impl ServiceEndpoint {
@@ -630,7 +630,7 @@ impl ServiceEndpoint {
         // try parse as json object
         let parsed_map = serde_json::from_str(service_endpoint);
         if let Ok(json) = parsed_map {
-            return Ok(Self::Single(ServiceEndpointValue::Json(json)));
+            return Ok(Self::Value(ServiceEndpointValue::Json(json)));
         }
 
         // try parse as json array
@@ -642,25 +642,25 @@ impl ServiceEndpoint {
 
             let endpoints: Result<Vec<ServiceEndpointValue>, _> =
                 list.into_iter().map(ServiceEndpointValue::try_from).collect();
-            return Ok(Self::Multiple(endpoints?));
+            return Ok(Self::List(endpoints?));
         }
 
         // try parse as single string
-        Ok(Self::Single(ServiceEndpointValue::from_str(service_endpoint)?))
+        Ok(Self::Value(ServiceEndpointValue::from_str(service_endpoint)?))
     }
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum ServiceEndpointValueParsingError {
     #[error("Fail to parse '{uri}' as a URI")]
-    InvalidURI { uri: String },
+    InvalidUri { uri: String },
     #[error("ServiceEndpoint is not a URI string nor JSON object. Got {0}.")]
-    InvalidJSONType(serde_json::Value),
+    InvalidJsonType(serde_json::Value),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceEndpointValue {
-    URI(String),
+    Uri(String),
     Json(serde_json::Map<String, serde_json::Value>),
 }
 
@@ -669,9 +669,9 @@ impl FromStr for ServiceEndpointValue {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if is_uri(s) {
-            Ok(Self::URI(s.to_owned()))
+            Ok(Self::Uri(s.to_owned()))
         } else {
-            Err(ServiceEndpointValueParsingError::InvalidURI { uri: s.to_string() })
+            Err(ServiceEndpointValueParsingError::InvalidUri { uri: s.to_string() })
         }
     }
 }
@@ -683,7 +683,7 @@ impl TryFrom<serde_json::Value> for ServiceEndpointValue {
         match value {
             serde_json::Value::String(s) => Self::from_str(&s),
             serde_json::Value::Object(map) => Ok(Self::Json(map)),
-            _ => Err(ServiceEndpointValueParsingError::InvalidJSONType(value)),
+            _ => Err(ServiceEndpointValueParsingError::InvalidJsonType(value)),
         }
     }
 }

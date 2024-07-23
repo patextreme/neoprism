@@ -6,7 +6,7 @@ use crate::dlt::OperationMetadata;
 use crate::proto::SignedAtalaOperation;
 
 type OperationList = VecDeque<(OperationMetadata, SignedAtalaOperation)>;
-pub type ResolutionDebug = Vec<(SignedAtalaOperation, Option<ProcessError>)>;
+pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResolutionResult {
@@ -27,9 +27,9 @@ pub fn resolve(mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>) -
 
     // Iterate all remaning operations and apply new state
     while let Some((metadata, operation)) = operations.pop_front() {
-        let (new_ctx, error) = state_ctx.process(operation.clone(), metadata);
+        let (new_ctx, error) = state_ctx.process(operation.clone(), metadata.clone());
         state_ctx = new_ctx;
-        debug.push((operation, error));
+        debug.push((metadata, operation, error));
     }
 
     (ResolutionResult::Ok(state_ctx.finalize()), debug)
@@ -38,15 +38,15 @@ pub fn resolve(mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>) -
 fn init_state_ops(operations: &mut OperationList) -> (Option<DidStateProcessingContext>, ResolutionDebug) {
     let mut debug = Vec::with_capacity(operations.len());
     while let Some((metadata, operation)) = operations.pop_front() {
-        let result = DidStateProcessingContext::new(operation.clone(), metadata);
+        let result = DidStateProcessingContext::new(operation.clone(), metadata.clone());
         match result {
             Ok(state_ctx) => {
-                debug.push((operation, None));
+                debug.push((metadata, operation, None));
                 return (Some(state_ctx), debug);
             }
             Err(e) => {
                 log::debug!("unable to initialize DIDState from operation: {:?}", e);
-                debug.push((operation, Some(e)));
+                debug.push((metadata, operation, Some(e)));
             }
         }
     }

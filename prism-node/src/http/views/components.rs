@@ -21,3 +21,10 @@ pub fn PageTitle(title: String) -> Element {
         div { class: "text-center text-3xl font-bold py-5", {title} }
     }
 }
+
+#[component]
+pub fn PageContent(children: Element) -> Element {
+    rsx! {
+        div { class: "px-4", {children} }
+    }
+}

@@ -2,16 +2,18 @@ use std::rc::Rc;
 
 use dioxus::prelude::*;
 use prism_core::crypto::EncodeVec;
-use prism_core::did::operation::PublicKey;
+use prism_core::did::operation::{PublicKey, Service};
 use prism_core::did::DidState;
+use prism_core::dlt::OperationMetadata;
 use prism_core::proto::SignedAtalaOperation;
 use prism_core::protocol::resolver::ResolutionResult;
 use prism_core::utils::codec::HexStr;
 use rocket::uri;
 
-use crate::http::views::components::{NavBar, PageTitle};
+use crate::http::views::components::{NavBar, PageContent, PageTitle};
+use crate::http::views::format_datetime;
 
-pub type ResolutionDebug = Vec<(SignedAtalaOperation, Option<String>)>;
+pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Option<String>)>;
 
 pub fn ResolverPage(
     did: Option<String>,
@@ -25,8 +27,10 @@ pub fn ResolverPage(
     rsx! {
         NavBar {}
         PageTitle { title: "DID Resolver".to_string() }
-        SearchBox { did }
-        {content}
+        PageContent {
+            SearchBox { did }
+            {content}
+        }
     }
 }
 
@@ -62,21 +66,32 @@ fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>)
         ResolutionResult::Ok(did_state) => rsx! { DidDocumentCardContainer { did_state } },
         ResolutionResult::NotFound => rsx! { p { class: "text-lg", "DID not found" } },
     };
-    let debug = debug.iter().map(|(operation, error)| {
-        let operation_str = format!("{:?}", operation);
-        let error_str = format!("{:?}", error);
+    let debug = debug.iter().map(|(meta, operation, error)| {
+        let block_meta = &meta.block_metadata;
+        let cbt = format_datetime(&block_meta.cbt);
         rsx! {
-            div { class: "flex flex-col gap-2 py-3",
-                p { "{operation_str}" }
-                p { "Error: {error_str}" }
+            div { class: "flex flex-col gap-2 my-3 bg-base-300",
+                p { class: "font-mono",
+                    "Cardano Block Time: {cbt}"
+                    br {}
+                    "Slot: {block_meta.slot_number}"
+                    br {}
+                    "Block: {block_meta.block_number}"
+                    br {}
+                    "Atala Block Sequence Number: {block_meta.absn}"
+                    br {}
+                    "Operation Sequence Number: {meta.osn}"
+                }
+                p { class: "font-mono", "{operation:?}" }
+                p { class: "font-mono", "Error: {error:?}" }
             }
         }
     });
     rsx! {
         {did_doc},
         div { class: "divider divider-neutral", "Operation Debug" }
-        for dbg in debug {
-            {dbg}
+        for d in debug {
+            {d}
         }
     }
 }
@@ -86,13 +101,15 @@ fn DidDocumentCardContainer(did_state: DidState) -> Element {
     let contexts = did_state.context.into_iter().map(|c| {
         rsx! { li { "{c}" } }
     });
+
     let mut keys = did_state.public_keys;
     keys.sort_by_key(|i| i.id.to_string());
     let keys = keys.into_iter().map(|pk| rsx! { DidDocumentPublicKeyCard { pk } });
-    let services = did_state.services.into_iter().map(|svc| {
-        let svc_str = format!("{:?}", svc);
-        rsx! { p { "{svc_str}" } }
-    });
+
+    let mut services = did_state.services;
+    services.sort_by_key(|i| i.id.to_string());
+    let services = services.into_iter().map(|s| rsx! { DidDocumentServiceCard { svc: s } });
+
     rsx! {
         div {
             div { class: "divider divider-neutral", "Contexts" }
@@ -108,8 +125,10 @@ fn DidDocumentCardContainer(did_state: DidState) -> Element {
                 }
             }
             div { class: "divider divider-neutral", "Services" }
-            for s in services {
-                {s}
+            div { class: "flex flex-row gap-2",
+                for s in services {
+                    {s}
+                }
             }
         }
     }
@@ -137,11 +156,36 @@ fn DidDocumentPublicKeyCard(pk: PublicKey) -> Element {
     rsx! {
         div { class: "card bg-base-200 w-96 shadow-xl",
             div { class: "card-body",
-                h2 { class: "card-title", "{pk.id}" }
+                h2 { class: "card-title", "ID: {pk.id}" }
                 div { class: "badge badge-outline", "usage: {usage}" }
                 div { class: "badge badge-primary badge-outline", "curve: {curve}" }
-                p { class: "font-mono break-words", "0x{public_key_hex}" }
+                p { class: "font-bold", "key data" }
+                p { class: "bg-base-300 font-mono break-words", "0x{public_key_hex}" }
             }
+        }
+    }
+}
+
+#[component]
+fn DidDocumentServiceCard(svc: Service) -> Element {
+    rsx! {
+        div { class: "card bg-base-200 w-96 shadow-xl",
+            div { class: "card-body",
+                h2 { class: "card-title", "ID: {svc.id}" }
+                p { class: "font-bold", "service type" }
+                p { class: "bg-base-300 font-mono break-words", "{svc.r#type:?}" }
+                p { class: "font-bold", "service endpoint" }
+                p { class: "bg-base-300 font-mono break-words", "{svc.service_endpoints:?}" }
+            }
+        }
+    }
+}
+
+#[component]
+fn DidDocumentContextCard(ctx: String) -> Element {
+    rsx! {
+        div { class: "card bg-base-200 w-96 shadow-xl",
+            div { class: "card-body", h2 { class: "card-title font-mono", "{ctx}" } }
         }
     }
 }

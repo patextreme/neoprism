@@ -5,15 +5,17 @@ use prism_core::utils::codec::HexStr;
 use rocket::uri;
 
 use crate::http::contract::hx::HxRpc;
-use crate::http::views::components::{NavBar, PageTitle};
+use crate::http::views::components::{NavBar, PageContent, PageTitle};
 use crate::http::views::escape_html_rpc;
 
 pub fn ExplorerPage(cursor: Option<DltCursor>, dids: Vec<CanonicalPrismDid>) -> Element {
     rsx! {
         NavBar {}
         PageTitle { title: "Operation Explorer".to_string() }
-        DltCursorStat { cursor }
-        DidList { dids }
+        PageContent {
+            DltCursorStat { cursor }
+            DidList { dids }
+        }
     }
 }
 
@@ -50,7 +52,7 @@ pub fn DidList(dids: Vec<CanonicalPrismDid>) -> Element {
     let rpc = escape_html_rpc(&HxRpc::GetExplorerDidList {});
     let did_elems = dids.iter().map(|did| {
         let uri = uri!(crate::http::routes::resolver(Some(did.to_string())));
-        rsx! { a { class: "link", href: "{uri}", "{did}" } }
+        rsx! { a { class: "link font-mono", href: "{uri}", "{did}" } }
     });
     rsx! {
         div {

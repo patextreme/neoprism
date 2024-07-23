@@ -19,4 +19,5 @@ prism-storage = { path = "../prism-storage" }
 rocket = { workspace = true, features = ["json"] }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+time = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
