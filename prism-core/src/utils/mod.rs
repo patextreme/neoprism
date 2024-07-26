@@ -1,12 +1,14 @@
 use std::collections::BTreeSet;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 use regex::Regex;
 
 pub mod codec;
 pub mod hash;
 
-static URI_FRAGMENT_RE: OnceLock<Regex> = OnceLock::new();
+static URI_FRAGMENT_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^([A-Za-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9A-Fa-f]{2})*$").expect("URI regex is invalid")
+});
 
 /// Check if the given slice contains unique items.
 ///
@@ -68,10 +70,7 @@ pub fn is_uri(s: &str) -> bool {
 /// assert_eq!(is_uri_fragment("hello#"), false);
 /// ```
 pub fn is_uri_fragment(s: &str) -> bool {
-    let regex = URI_FRAGMENT_RE.get_or_init(|| {
-        Regex::new(r"^([A-Za-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9A-Fa-f]{2})*$").expect("URI regex is invalid")
-    });
-    regex.is_match(s)
+    URI_FRAGMENT_RE.is_match(s)
 }
 
 pub type StdError = Box<dyn std::error::Error + Send + Sync>;

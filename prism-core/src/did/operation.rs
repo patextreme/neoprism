@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 use regex::Regex;
 
@@ -16,6 +16,9 @@ use crate::proto::{self, CreateDidOperation, DeactivateDidOperation, UpdateDidAc
 use crate::protocol::ProtocolParameter;
 use crate::utils::hash::Sha256Digest;
 use crate::utils::{is_slice_unique, is_uri, is_uri_fragment};
+
+static SERVICE_TYPE_NAME_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$").expect("ServiceTypeName regex is invalid"));
 
 #[derive(Debug, thiserror::Error)]
 pub enum GetDidFromOperation {
@@ -578,8 +581,6 @@ impl ServiceType {
     }
 }
 
-static SERVICE_TYPE_NAME_RE: OnceLock<Regex> = OnceLock::new();
-
 #[derive(Debug, thiserror::Error)]
 #[error("The string {0} is not a valid serviceType name")]
 pub struct ServiceTypeNameParsingError(String);
@@ -591,10 +592,7 @@ impl FromStr for ServiceTypeName {
     type Err = ServiceTypeNameParsingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let regex = SERVICE_TYPE_NAME_RE.get_or_init(|| {
-            Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$").expect("ServiceTypeName regex is invalid")
-        });
-        if regex.is_match(s) {
+        if SERVICE_TYPE_NAME_RE.is_match(s) {
             Ok(Self(s.to_owned()))
         } else {
             Err(ServiceTypeNameParsingError(s.to_owned()))

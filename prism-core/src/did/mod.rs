@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 use enum_dispatch::enum_dispatch;
 use prost::Message;
@@ -13,8 +13,10 @@ use crate::utils::hash::{sha256, Sha256Digest};
 
 pub mod operation;
 
-static CANONICAL_SUFFIX_RE: OnceLock<Regex> = OnceLock::new();
-static LONG_FORM_SUFFIX_RE: OnceLock<Regex> = OnceLock::new();
+static CANONICAL_SUFFIX_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^([0-9a-f]{64}$)").expect("CANONICAL_SUFFIX_RE regex is invalid"));
+static LONG_FORM_SUFFIX_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^([0-9a-f]{64}):([A-Za-z0-9_-]+$)").expect("LONG_FORM_SUFFIX_RE regex is invalid"));
 
 #[enum_dispatch(PrismDidLike)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -173,19 +175,13 @@ impl FromStr for PrismDid {
     /// assert!(matches!(did, PrismDid::Canonical(_)));
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let canonical_did_re = CANONICAL_SUFFIX_RE
-            .get_or_init(|| Regex::new(r"^([0-9a-f]{64}$)").expect("CANONICAL_SUFFIX_RE regex is invalid"));
-        let long_form_did_re = LONG_FORM_SUFFIX_RE.get_or_init(|| {
-            Regex::new(r"^([0-9a-f]{64}):([A-Za-z0-9_-]+$)").expect("LONG_FORM_SUFFIX_RE regex is invalid")
-        });
-
         if !s.starts_with("did:prism:") {
             Err(DidParsingError::InvalidPrefix)?
         }
         let (_, s) = s.split_at("did:prism:".len());
 
-        let canonical_match = canonical_did_re.captures(s);
-        let long_form_match = long_form_did_re.captures(s);
+        let canonical_match = CANONICAL_SUFFIX_RE.captures(s);
+        let long_form_match = LONG_FORM_SUFFIX_RE.captures(s);
 
         match (canonical_match, long_form_match) {
             (None, Some(long_form_match)) => {
