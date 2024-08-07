@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 use prism_core::did::CanonicalPrismDid;
+use prism_core::dlt::cardano::NetworkIdentifier;
 use prism_core::dlt::DltCursor;
 use prism_core::utils::codec::HexStr;
 use rocket::uri;
@@ -8,9 +9,13 @@ use crate::http::contract::hx::HxRpc;
 use crate::http::views::components::{NavBar, PageContent, PageTitle};
 use crate::http::views::escape_html_rpc;
 
-pub fn ExplorerPage(cursor: Option<DltCursor>, dids: Vec<CanonicalPrismDid>) -> Element {
+pub fn ExplorerPage(
+    cursor: Option<DltCursor>,
+    dids: Vec<CanonicalPrismDid>,
+    network: Option<NetworkIdentifier>,
+) -> Element {
     rsx! {
-        NavBar {}
+        NavBar { network }
         PageTitle { title: "Operation Explorer".to_string() }
         PageContent {
             DltCursorStat { cursor }

@@ -6,6 +6,7 @@ use oura::pipelining::{SourceProvider, StageReceiver};
 use oura::sources::n2n::Config;
 use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
 use oura::utils::{ChainWellKnownInfo, Utils, WithUtils};
+use strum::VariantArray;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
@@ -120,14 +121,26 @@ mod model {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
 pub enum NetworkIdentifier {
+    #[strum(serialize = "mainnet")]
     Mainnet,
+    #[strum(serialize = "preprod")]
+    Preprod,
+    #[strum(serialize = "preview")]
+    Preview,
 }
 
 impl NetworkIdentifier {
+    pub fn variants() -> &'static [Self] {
+        Self::VARIANTS
+    }
+
     fn magic_args(&self) -> MagicArg {
         let chain_magic = match self {
             NetworkIdentifier::Mainnet => MagicArg::from_str("mainnet"),
+            NetworkIdentifier::Preprod => MagicArg::from_str("preprod"),
+            NetworkIdentifier::Preview => MagicArg::from_str("preview"),
         };
         chain_magic.expect("The chain magic value cannot be parsed")
     }
@@ -135,6 +148,8 @@ impl NetworkIdentifier {
     fn chain_wellknown_info(&self) -> ChainWellKnownInfo {
         match self {
             NetworkIdentifier::Mainnet => ChainWellKnownInfo::mainnet(),
+            NetworkIdentifier::Preprod => ChainWellKnownInfo::preprod(),
+            NetworkIdentifier::Preview => ChainWellKnownInfo::preview(),
         }
     }
 }
@@ -146,13 +161,15 @@ pub struct OuraN2NSource<Store: DltCursorStore + Send + 'static> {
 }
 
 impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> {
-    // 71482683 was about the slot that first AtalaBlock was observed on mainnet.
-    // How can we support multiple network and define genesis slot / block?
     pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
-        let intersect = oura::sources::IntersectArg::Point(PointArg(
-            71482683,
-            "f3fd56f7e390d4e45d06bb797d83b7814b1d32c2112bc997779e34de1579fa7d".to_string(),
-        ));
+        let intersect = match chain {
+            // 71482683 was about the slot that first AtalaBlock was observed on mainnet.
+            NetworkIdentifier::Mainnet => oura::sources::IntersectArg::Point(PointArg(
+                71482683,
+                "f3fd56f7e390d4e45d06bb797d83b7814b1d32c2112bc997779e34de1579fa7d".to_string(),
+            )),
+            _ => oura::sources::IntersectArg::Origin,
+        };
         Self::new(store, remote_addr, chain, intersect)
     }
 
@@ -184,7 +201,7 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
         #[allow(deprecated)]
         let config = Config {
             address: AddressArg(oura::sources::BearerKind::Tcp, remote_addr.to_string()),
-            magic: Some(NetworkIdentifier::Mainnet.magic_args()),
+            magic: Some(chain.magic_args()),
             since: None,
             intersect: Some(intersect),
             well_known: None,

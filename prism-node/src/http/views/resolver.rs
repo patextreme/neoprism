@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use prism_core::crypto::EncodeVec;
 use prism_core::did::operation::{PublicKey, Service};
 use prism_core::did::DidState;
+use prism_core::dlt::cardano::NetworkIdentifier;
 use prism_core::dlt::OperationMetadata;
 use prism_core::proto::SignedAtalaOperation;
 use prism_core::protocol::resolver::ResolutionResult;
@@ -18,6 +19,7 @@ pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Option<
 pub fn ResolverPage(
     did: Option<String>,
     resolution_result: Option<Result<(ResolutionResult, ResolutionDebug), String>>,
+    network: Option<NetworkIdentifier>,
 ) -> Element {
     let content = match resolution_result {
         Some(Ok((result, debug))) => rsx! { ResolutionResultSection { result, debug: Rc::new(debug) } },
@@ -25,7 +27,7 @@ pub fn ResolverPage(
         None => None,
     };
     rsx! {
-        NavBar {}
+        NavBar { network }
         PageTitle { title: "DID Resolver".to_string() }
         PageContent {
             SearchBox { did }

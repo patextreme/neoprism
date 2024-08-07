@@ -13,6 +13,7 @@ pub async fn index() -> Redirect {
 
 #[get("/resolver?<did>")]
 pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
+    let network = state.network.clone();
     let result = match did.as_ref() {
         Some(did) => {
             let result = state
@@ -31,14 +32,15 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
         }
         None => None,
     };
-    SsrPage(views::resolver::ResolverPage(did, result))
+    SsrPage(views::resolver::ResolverPage(did, result, network))
 }
 
 #[get("/explorer")]
 pub async fn explorer(state: &State<AppState>) -> SsrPage {
     let cursor = state.cursor_rx.as_ref().and_then(|rx| rx.borrow().to_owned());
     let dids = state.did_service.get_all_dids().await.unwrap(); // FIXME: unwrap
-    SsrPage(views::explorer::ExplorerPage(cursor, dids))
+    let network = state.network.clone();
+    SsrPage(views::explorer::ExplorerPage(cursor, dids, network))
 }
 pub mod hx {
     use rocket::form::Form;
