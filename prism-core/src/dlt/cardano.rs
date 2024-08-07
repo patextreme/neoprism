@@ -121,7 +121,7 @@ mod model {
     }
 }
 
-#[derive(Debug, Clone, strum::Display, strum::EnumString, strum::VariantArray)]
+#[derive(Debug, Clone, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
 pub enum NetworkIdentifier {
     #[strum(serialize = "mainnet")]
     Mainnet,

@@ -21,6 +21,7 @@ mod http;
 struct AppState {
     did_service: DidService,
     cursor_rx: Option<tokio::sync::watch::Receiver<Option<DltCursor>>>,
+    network: Option<NetworkIdentifier>,
 }
 
 pub fn build_rocket() -> Rocket<Build> {
@@ -59,19 +60,30 @@ fn init_state() -> AdHoc {
         let did_service = DidService::new(db);
 
         let mut cursor_rx = None;
+        let mut network = None;
         if let Some(address) = &cli.cardano {
-            log::info!("Starting DLT sync worker with cardano address {}", address);
-            let network = cli.network.as_ref().unwrap_or(&NetworkIdentifier::Mainnet);
-            let source = OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, network)
+            let network_identifier = cli.network.to_owned().unwrap_or(NetworkIdentifier::Mainnet);
+
+            log::info!(
+                "Starting DLT sync worker on {} from cardano address {}",
+                network_identifier,
+                address
+            );
+            let source = OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, &network_identifier)
                 .await
                 .expect("Failed to create DLT source");
 
             cursor_rx = Some(source.cursor_receiver());
+            network = Some(network_identifier);
             let sync_app = DltSyncWorker::new(db.clone(), source);
             tokio::spawn(sync_app.run());
         }
 
-        let state = AppState { did_service, cursor_rx };
+        let state = AppState {
+            did_service,
+            cursor_rx,
+            network,
+        };
         rocket.manage(state)
     })
 }

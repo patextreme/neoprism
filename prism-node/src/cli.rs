@@ -51,7 +51,7 @@ mod parser {
 
     pub fn parse_network_identifier(s: &str) -> Result<NetworkIdentifier, String> {
         let values = NetworkIdentifier::variants()
-            .into_iter()
+            .iter()
             .map(|i| i.to_string())
             .collect::<Vec<_>>()
             .join(", ");
