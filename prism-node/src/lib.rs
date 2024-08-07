@@ -61,10 +61,10 @@ fn init_state() -> AdHoc {
         let mut cursor_rx = None;
         if let Some(address) = &cli.cardano {
             log::info!("Starting DLT sync worker with cardano address {}", address);
-            let source =
-                OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, &NetworkIdentifier::Mainnet)
-                    .await
-                    .expect("Failed to create DLT source");
+            let network = cli.network.as_ref().unwrap_or(&NetworkIdentifier::Mainnet);
+            let source = OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, network)
+                .await
+                .expect("Failed to create DLT source");
 
             cursor_rx = Some(source.cursor_receiver());
             let sync_app = DltSyncWorker::new(db.clone(), source);
