@@ -9,6 +9,7 @@ pub mod proto {
 pub mod crypto;
 pub mod did;
 pub mod dlt;
+pub mod macros;
 pub mod prelude;
 pub mod protocol;
 pub mod store;
