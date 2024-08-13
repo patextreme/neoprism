@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! location {
     () => {
-        crate::util::Location {
+        crate::utils::Location {
             file: file!(),
             line: line!(),
         }
