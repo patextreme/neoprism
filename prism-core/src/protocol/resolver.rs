@@ -25,7 +25,7 @@ pub fn resolve(mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>) -
         return (ResolutionResult::NotFound, debug);
     };
 
-    // Iterate all remaning operations and apply new state
+    // Iterate all remaining operations and apply new state
     while let Some((metadata, operation)) = operations.pop_front() {
         let (new_ctx, error) = state_ctx.process(operation.clone(), metadata.clone());
         state_ctx = new_ctx;
