@@ -115,7 +115,7 @@ pub enum DidParsingError {
     #[error("Invalid suffix length: {0}")]
     InvalidSuffixLength(String),
     #[error("Invalid suffix: {0}")]
-    InvalidSuffix(#[from] crate::utils::codec::DecodeError),
+    InvalidSuffix(#[from] crate::utils::codec::Error),
     #[error("Does not starts with 'did:prism:'")]
     InvalidPrefix,
     #[error("Unrecognized suffix format for Prism DID: {0}")]

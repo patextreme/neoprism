@@ -2,13 +2,26 @@ use std::str::FromStr;
 
 use base64::Engine;
 
-#[derive(Debug, thiserror::Error)]
-#[error("Unable to decode {0} string repr to bytes. {1}")]
-pub struct DecodeError(&'static str, String);
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+pub enum Error {
+    #[display("unable to hex decode '{value}' to type {type_name}")]
+    DecodeHex {
+        source: hex::FromHexError,
+        type_name: &'static str,
+        value: String,
+    },
+    #[display("unable to base64 decode '{value}' to type {type_name}")]
+    DecodeBase64 {
+        source: base64::DecodeError,
+        type_name: &'static str,
+        value: String,
+    },
+}
 
 /// # Example
 /// ```
 /// use prism_core::utils::codec::HexStr;
+///
 /// let b = b"hello world";
 /// let hexstr = HexStr::from(b);
 /// assert!(hexstr.to_string() == "68656c6c6f20776f726c64");
@@ -29,11 +42,26 @@ impl<B: AsRef<[u8]>> From<B> for HexStr {
     }
 }
 
+/// # Example
+/// ```
+/// use std::str::FromStr;
+/// use prism_core::utils::codec::{HexStr, Error};
+///
+/// let hexstr = HexStr::from_str("68656c6c6f20776f726c64").unwrap();
+/// assert_eq!(hexstr, HexStr::from(b"hello world"));
+///
+/// let err = HexStr::from_str("invalid").err().unwrap();
+/// assert!(matches!(err, Error::DecodeHex { .. }));
+/// ```
 impl FromStr for HexStr {
-    type Err = DecodeError;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|e| DecodeError(std::any::type_name::<Self>(), e.to_string()))?;
+        let bytes = hex::decode(s).map_err(|e| Error::DecodeHex {
+            source: e,
+            type_name: std::any::type_name::<Self>(),
+            value: s.to_string(),
+        })?;
         Ok(bytes.as_slice().into())
     }
 }
@@ -41,6 +69,7 @@ impl FromStr for HexStr {
 /// # Example
 /// ```
 /// use prism_core::utils::codec::Base64UrlStr;
+///
 /// let b = b"hello world";
 /// let b64 = Base64UrlStr::from(b);
 /// assert!(b64.to_string() == "aGVsbG8gd29ybGQ=");
@@ -62,14 +91,27 @@ impl<B: AsRef<[u8]>> From<B> for Base64UrlStr {
     }
 }
 
+/// # Example
+/// ```
+/// use std::str::FromStr;
+/// use prism_core::utils::codec::{Base64UrlStr, Error};
+///
+/// let b64 = Base64UrlStr::from_str("aGVsbG8gd29ybGQ=").unwrap();
+/// assert_eq!(b64, Base64UrlStr::from(b"hello world"));
+///
+/// let err = Base64UrlStr::from_str("invalid").err().unwrap();
+/// assert!(matches!(err, Error::DecodeBase64 { .. }));
+/// ```
 impl FromStr for Base64UrlStr {
-    type Err = DecodeError;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let engine = base64::engine::general_purpose::URL_SAFE;
-        let bytes = engine
-            .decode(s.as_bytes())
-            .map_err(|e| DecodeError(std::any::type_name::<Self>(), e.to_string()))?;
+        let bytes = engine.decode(s.as_bytes()).map_err(|e| Error::DecodeBase64 {
+            source: e,
+            type_name: std::any::type_name::<Self>(),
+            value: s.to_string(),
+        })?;
         Ok(bytes.as_slice().into())
     }
 }
@@ -77,6 +119,7 @@ impl FromStr for Base64UrlStr {
 /// # Example
 /// ```
 /// use prism_core::utils::codec::Base64UrlStrNoPad;
+///
 /// let b = b"hello world";
 /// let b64 = Base64UrlStrNoPad::from(b);
 /// assert!(b64.to_string() == "aGVsbG8gd29ybGQ");
@@ -98,14 +141,27 @@ impl<B: AsRef<[u8]>> From<B> for Base64UrlStrNoPad {
     }
 }
 
+/// # Example
+/// ```
+/// use std::str::FromStr;
+/// use prism_core::utils::codec::{Base64UrlStrNoPad, Error};
+///
+/// let b64 = Base64UrlStrNoPad::from_str("aGVsbG8gd29ybGQ").unwrap();
+/// assert_eq!(b64, Base64UrlStrNoPad::from(b"hello world"));
+///
+/// let err = Base64UrlStrNoPad::from_str("invalid").err().unwrap();
+/// assert!(matches!(err, Error::DecodeBase64 { .. }));
+/// ```
 impl FromStr for Base64UrlStrNoPad {
-    type Err = DecodeError;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let engine = base64::engine::general_purpose::URL_SAFE_NO_PAD;
-        let bytes = engine
-            .decode(s.as_bytes())
-            .map_err(|e| DecodeError(std::any::type_name::<Self>(), e.to_string()))?;
+        let bytes = engine.decode(s.as_bytes()).map_err(|e| Error::DecodeBase64 {
+            source: e,
+            type_name: std::any::type_name::<Self>(),
+            value: s.to_string(),
+        })?;
         Ok(bytes.as_slice().into())
     }
 }

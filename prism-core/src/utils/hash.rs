@@ -1,6 +1,6 @@
 use ring::digest;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::AsRef)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::From)]
 pub struct Sha256Digest([u8; 32]);
 
 impl Sha256Digest {

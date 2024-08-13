@@ -61,7 +61,7 @@ mod model {
         #[error("hex conversion error: {source}")]
         HexDecodeError {
             #[from]
-            source: crate::utils::codec::DecodeError,
+            source: crate::utils::codec::Error,
             backtrace: Backtrace,
         },
         #[error("protobuf decode error: {source}")]
