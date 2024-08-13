@@ -4,7 +4,7 @@ use k256::ecdsa::signature::Verifier;
 use k256::elliptic_curve::sec1::{EncodedPoint, ToEncodedPoint};
 use k256::Secp256k1;
 
-use super::{EncodeArray, EncodeVec, ToPublicKey, ToPublicKeyError, Verifiable};
+use super::{EncodeArray, EncodeVec, Error, ToPublicKey, Verifiable};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Secp256k1PublicKey(k256::PublicKey);
@@ -44,7 +44,7 @@ impl Verifiable for Secp256k1PublicKey {
 }
 
 impl<T: AsRef<[u8]>> ToPublicKey<Secp256k1PublicKey> for T {
-    fn to_public_key(&self) -> Result<Secp256k1PublicKey, ToPublicKeyError> {
+    fn to_public_key(&self) -> Result<Secp256k1PublicKey, Error> {
         Ok(Secp256k1PublicKey(k256::PublicKey::from_sec1_bytes(self.as_ref())?))
     }
 }

@@ -7,7 +7,7 @@ use super::{CanonicalPrismDid, DidParsingError};
 use crate::crypto::ed25519::Ed25519PublicKey;
 use crate::crypto::secp256k1::Secp256k1PublicKey;
 use crate::crypto::x25519::X25519PublicKey;
-use crate::crypto::{ToPublicKey, ToPublicKeyError};
+use crate::crypto::{Error, ToPublicKey};
 use crate::prelude::{AtalaOperation, SignedAtalaOperation};
 use crate::proto::atala_operation::Operation;
 use crate::proto::public_key::KeyData;
@@ -409,7 +409,7 @@ pub enum SupportedPublicKeyError {
     #[error(transparent)]
     Parse {
         #[from]
-        source: ToPublicKeyError,
+        source: Error,
     },
     #[error("Unsupported curve {curve}")]
     UnsupportedCurve { curve: String },
@@ -437,7 +437,7 @@ impl SupportedPublicKey {
         }
     }
 
-    fn convert_secp256k1(key_data: &KeyData) -> Result<Secp256k1PublicKey, ToPublicKeyError> {
+    fn convert_secp256k1(key_data: &KeyData) -> Result<Secp256k1PublicKey, Error> {
         let pk = match key_data {
             KeyData::EcKeyData(k) => {
                 let mut data = Vec::with_capacity(65);
@@ -451,7 +451,7 @@ impl SupportedPublicKey {
         Ok(pk)
     }
 
-    fn convert_ed25519(key_data: &KeyData) -> Result<Ed25519PublicKey, ToPublicKeyError> {
+    fn convert_ed25519(key_data: &KeyData) -> Result<Ed25519PublicKey, Error> {
         let pk = match key_data {
             KeyData::EcKeyData(k) => k.x.to_public_key()?,
             KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
@@ -459,7 +459,7 @@ impl SupportedPublicKey {
         Ok(pk)
     }
 
-    fn convert_x25519(key_data: &KeyData) -> Result<X25519PublicKey, ToPublicKeyError> {
+    fn convert_x25519(key_data: &KeyData) -> Result<X25519PublicKey, Error> {
         let pk = match key_data {
             KeyData::EcKeyData(k) => k.x.to_public_key()?,
             KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
