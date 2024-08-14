@@ -14,7 +14,7 @@ impl DidService {
 
     pub async fn resolve_did(&self, did: &str) -> anyhow::Result<(ResolutionResult, ResolutionDebug)> {
         let did: PrismDid = did.parse()?;
-        let canonical_did = did.to_canonical();
+        let canonical_did = did.into_canonical();
 
         let tx = self.db.begin().await?;
         let operations = tx.get_operations_by_did(&canonical_did).await?;
