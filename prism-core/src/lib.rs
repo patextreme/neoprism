@@ -9,7 +9,7 @@ pub mod proto {
 pub mod crypto;
 pub mod did;
 pub mod dlt;
-mod error;
+pub mod error;
 mod macros;
 pub mod prelude;
 pub mod protocol;

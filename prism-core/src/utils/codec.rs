@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use base64::Engine;
 
-#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+#[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum Error {
     #[display("unable to hex decode '{value}' to type {type_name}")]
     DecodeHex {

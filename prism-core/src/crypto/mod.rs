@@ -16,15 +16,16 @@ pub trait Verifiable {
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum Error {
-    #[from(ignore)]
     #[display("expected {key_type} key size to be {expected}, got size {actual}")]
     InvalidKeySize {
         expected: usize,
         actual: usize,
         key_type: &'static str,
     },
+    #[from]
     #[display("unable to parse Ed25519 key")]
     Ed25519KeyParsing { source: ed25519_dalek::SignatureError },
+    #[from]
     #[display("unable to parse secp256k1 key")]
     Secp256k1KeyParsing { source: ::k256::elliptic_curve::Error },
 }

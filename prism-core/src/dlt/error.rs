@@ -1,6 +1,6 @@
 use crate::error::StdError;
 
-#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+#[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum MetadataReadError {
     #[display("metadata is not a valid json on block {block_hash:?} tx {tx_idx:?}")]
     InvalidJsonType {

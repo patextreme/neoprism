@@ -9,6 +9,7 @@ use crate::crypto::ed25519::Ed25519PublicKey;
 use crate::crypto::secp256k1::Secp256k1PublicKey;
 use crate::crypto::x25519::X25519PublicKey;
 use crate::crypto::{Error as CryptoError, ToPublicKey};
+use crate::error::StdError;
 use crate::prelude::{AtalaOperation, SignedAtalaOperation};
 use crate::proto::atala_operation::Operation;
 use crate::proto::public_key::KeyData;
@@ -145,7 +146,7 @@ pub enum UpdateOperationParsingError {
     #[error(transparent)]
     InvalidDidId(#[from] DidError),
     #[error("Invalid previous operation hash: {0}")]
-    InvalidPreviousOperationHash(String),
+    InvalidPreviousOperationHash(StdError),
     #[error("Update action is malformed: {0}")]
     MalformedUpdateAction(String),
     #[error(transparent)]
@@ -178,7 +179,7 @@ impl UpdateOperation {
 
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
-            .map_err(UpdateOperationParsingError::InvalidPreviousOperationHash)?;
+            .map_err(|e| UpdateOperationParsingError::InvalidPreviousOperationHash(e.into()))?;
 
         let actions = operation
             .actions
@@ -289,7 +290,7 @@ pub enum DeactivateOperationParsingError {
     #[error("Invalid did id: {0}")]
     InvalidDidId(#[from] DidError),
     #[error("Invalid previous operation hash: {0}")]
-    InvalidPreviousOperationHash(String),
+    InvalidPreviousOperationHash(StdError),
 }
 
 #[derive(Debug, Clone)]
@@ -302,7 +303,7 @@ impl DeactivateOperation {
     pub fn parse(operation: &DeactivateDidOperation) -> Result<Self, DeactivateOperationParsingError> {
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
-            .map_err(DeactivateOperationParsingError::InvalidPreviousOperationHash)?;
+            .map_err(|e| DeactivateOperationParsingError::InvalidPreviousOperationHash(e.into()))?;
 
         Ok(Self {
             id,

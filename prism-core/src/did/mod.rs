@@ -88,12 +88,16 @@ impl CanonicalPrismDid {
     }
 
     pub fn from_suffix_str(suffix: &str) -> Result<Self, Error> {
-        let suffix = HexStr::from_str(suffix)?;
+        let suffix = HexStr::from_str(suffix).map_err(|e| Error::DidSuffixInvalidStr {
+            source: e,
+            suffix: suffix.to_string(),
+        })?;
         Self::from_suffix(suffix)
     }
 
     pub fn from_suffix(suffix: HexStr) -> Result<Self, Error> {
-        let suffix = Sha256Digest::from_bytes(&suffix.to_bytes()).map_err(Error::InvalidSuffixLength)?;
+        let suffix = Sha256Digest::from_bytes(&suffix.to_bytes())
+            .map_err(|e| Error::DidSuffixInvalidHex { source: e, suffix })?;
         Ok(Self { suffix })
     }
 }
@@ -107,10 +111,8 @@ impl LongFormPrismDid {
                 let encoded_state = Base64UrlStrNoPad::from(bytes);
                 Ok(Self { suffix, encoded_state })
             }
-            None => Err(Error::OperationMissing),
-            Some(_) => Err(Error::InvalidOperationType(
-                "operation type must be CreateDid when deriving a DID".into(),
-            )),
+            None => Err(Error::OperationMissingFromAtalaObject),
+            Some(_) => Err(Error::LongFormDidNotFromCreateOperation),
         }
     }
 }
@@ -132,7 +134,7 @@ impl FromStr for PrismDid {
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if !s.starts_with("did:prism:") {
-            Err(Error::InvalidPrefix)?
+            Err(Error::DidPrefixInvalidStr(s.to_string()))?
         }
         let (_, s) = s.split_at("did:prism:".len());
 
@@ -141,34 +143,40 @@ impl FromStr for PrismDid {
 
         match (canonical_match, long_form_match) {
             (None, Some(long_form_match)) => {
-                let suffix: HexStr = long_form_match
-                    .get(1)
-                    .expect("Regex did not match this group")
-                    .as_str()
-                    .parse()?;
-                let encoded_state: Base64UrlStrNoPad = long_form_match
-                    .get(2)
-                    .expect("Regex did not match this group")
-                    .as_str()
-                    .parse()?;
-                let operation = AtalaOperation::decode(encoded_state.to_bytes().as_slice())?;
+                let match_group_1 = long_form_match.get(1).expect("Regex did not match this group").as_str();
+                let match_group_2 = long_form_match.get(2).expect("Regex did not match this group").as_str();
+                let suffix: HexStr = match_group_1.parse().map_err(|e| Error::DidSuffixInvalidStr {
+                    source: e,
+                    suffix: match_group_1.to_string(),
+                })?;
+                let encoded_state: Base64UrlStrNoPad =
+                    match_group_2.parse().map_err(|e| Error::DidEncodedStateInvalidStr {
+                        source: e,
+                        encoded_state: match_group_2.to_string(),
+                    })?;
+                let operation = AtalaOperation::decode(encoded_state.to_bytes().as_slice()).map_err(|e| {
+                    Error::DidEncodedStateInvalidProto {
+                        source: e,
+                        did: s.to_string(),
+                    }
+                })?;
                 let did = LongFormPrismDid::from_operation(&operation)?;
                 if did.suffix_hex() == suffix {
                     Ok(did.into())
                 } else {
-                    Err(Error::UnmatchEncodedStateSuffix)
+                    Err(Error::DidSuffixEncodedStateUnmatched(s.to_string()))
                 }
             }
             (Some(canonical_match), None) => {
-                let suffix: HexStr = canonical_match
-                    .get(1)
-                    .expect("Regex did not match this group")
-                    .as_str()
-                    .parse()?;
+                let match_group_1 = canonical_match.get(1).expect("Regex did not match this group").as_str();
+                let suffix: HexStr = match_group_1.parse().map_err(|e| Error::DidSuffixInvalidStr {
+                    source: e,
+                    suffix: match_group_1.to_string(),
+                })?;
                 let did = CanonicalPrismDid::from_suffix(suffix)?;
                 Ok(did.into())
             }
-            _ => Err(Error::UnrecognizedSuffixFormat(s.to_string())),
+            _ => Err(Error::DidSyntaxInvalid(s.to_string())),
         }
     }
 }
