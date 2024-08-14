@@ -11,7 +11,10 @@ use crate::proto::AtalaOperation;
 use crate::utils::codec::{Base64UrlStrNoPad, HexStr};
 use crate::utils::hash::{sha256, Sha256Digest};
 
+mod error;
 pub mod operation;
+
+pub use error::Error;
 
 static CANONICAL_SUFFIX_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^([0-9a-f]{64}$)").expect("CANONICAL_SUFFIX_RE regex is invalid"));
@@ -79,44 +82,24 @@ impl PrismDidLike for LongFormPrismDid {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum DidParsingError {
-    #[error("Invalid operation type: {0}")]
-    InvalidOperationType(String),
-    #[error("Operation does not exist")]
-    OperationMissing,
-    #[error("Invalid suffix length: {0}")]
-    InvalidSuffixLength(String),
-    #[error("Invalid suffix: {0}")]
-    InvalidSuffix(#[from] crate::utils::codec::Error),
-    #[error("Does not starts with 'did:prism:'")]
-    InvalidPrefix,
-    #[error("Unrecognized suffix format for Prism DID: {0}")]
-    UnrecognizedSuffixFormat(String),
-    #[error("Fail to convert encoded state to AtalaOperation")]
-    InvalidEncodedState(#[from] prost::DecodeError),
-    #[error("Encoded state does not match DID suffix")]
-    UnmatchEncodedStateSuffix,
-}
-
 impl CanonicalPrismDid {
-    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, DidParsingError> {
+    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, Error> {
         Ok(LongFormPrismDid::from_operation(operation)?.into_canonical())
     }
 
-    pub fn from_suffix_str(suffix: &str) -> Result<Self, DidParsingError> {
+    pub fn from_suffix_str(suffix: &str) -> Result<Self, Error> {
         let suffix = HexStr::from_str(suffix)?;
         Self::from_suffix(suffix)
     }
 
-    pub fn from_suffix(suffix: HexStr) -> Result<Self, DidParsingError> {
-        let suffix = Sha256Digest::from_bytes(&suffix.to_bytes()).map_err(DidParsingError::InvalidSuffixLength)?;
+    pub fn from_suffix(suffix: HexStr) -> Result<Self, Error> {
+        let suffix = Sha256Digest::from_bytes(&suffix.to_bytes()).map_err(Error::InvalidSuffixLength)?;
         Ok(Self { suffix })
     }
 }
 
 impl LongFormPrismDid {
-    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, DidParsingError> {
+    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, Error> {
         match operation.operation {
             Some(Operation::CreateDid(_)) => {
                 let bytes = operation.encode_to_vec();
@@ -124,8 +107,8 @@ impl LongFormPrismDid {
                 let encoded_state = Base64UrlStrNoPad::from(bytes);
                 Ok(Self { suffix, encoded_state })
             }
-            None => Err(DidParsingError::OperationMissing),
-            Some(_) => Err(DidParsingError::InvalidOperationType(
+            None => Err(Error::OperationMissing),
+            Some(_) => Err(Error::InvalidOperationType(
                 "operation type must be CreateDid when deriving a DID".into(),
             )),
         }
@@ -133,7 +116,7 @@ impl LongFormPrismDid {
 }
 
 impl FromStr for PrismDid {
-    type Err = DidParsingError;
+    type Err = Error;
 
     /// # Example
     /// ```
@@ -149,7 +132,7 @@ impl FromStr for PrismDid {
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if !s.starts_with("did:prism:") {
-            Err(DidParsingError::InvalidPrefix)?
+            Err(Error::InvalidPrefix)?
         }
         let (_, s) = s.split_at("did:prism:".len());
 
@@ -173,7 +156,7 @@ impl FromStr for PrismDid {
                 if did.suffix_hex() == suffix {
                     Ok(did.into())
                 } else {
-                    Err(DidParsingError::UnmatchEncodedStateSuffix)
+                    Err(Error::UnmatchEncodedStateSuffix)
                 }
             }
             (Some(canonical_match), None) => {
@@ -185,7 +168,7 @@ impl FromStr for PrismDid {
                 let did = CanonicalPrismDid::from_suffix(suffix)?;
                 Ok(did.into())
             }
-            _ => Err(DidParsingError::UnrecognizedSuffixFormat(s.to_string())),
+            _ => Err(Error::UnrecognizedSuffixFormat(s.to_string())),
         }
     }
 }

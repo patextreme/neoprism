@@ -3,11 +3,12 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
-use super::{CanonicalPrismDid, DidParsingError};
+use super::error::Error as DidError;
+use super::CanonicalPrismDid;
 use crate::crypto::ed25519::Ed25519PublicKey;
 use crate::crypto::secp256k1::Secp256k1PublicKey;
 use crate::crypto::x25519::X25519PublicKey;
-use crate::crypto::{Error, ToPublicKey};
+use crate::crypto::{Error as CryptoError, ToPublicKey};
 use crate::prelude::{AtalaOperation, SignedAtalaOperation};
 use crate::proto::atala_operation::Operation;
 use crate::proto::public_key::KeyData;
@@ -23,7 +24,7 @@ static SERVICE_TYPE_NAME_RE: LazyLock<Regex> =
 #[derive(Debug, thiserror::Error)]
 pub enum GetDidFromOperation {
     #[error("Unable to parse Did from operation: {0}")]
-    DidParseError(#[from] DidParsingError),
+    DidParseError(#[from] DidError),
     #[error("Operation is empty")]
     EmptyOperation,
 }
@@ -142,7 +143,7 @@ impl CreateOperation {
 #[derive(Debug, thiserror::Error)]
 pub enum UpdateOperationParsingError {
     #[error(transparent)]
-    InvalidDidId(#[from] DidParsingError),
+    InvalidDidId(#[from] DidError),
     #[error("Invalid previous operation hash: {0}")]
     InvalidPreviousOperationHash(String),
     #[error("Update action is malformed: {0}")]
@@ -286,7 +287,7 @@ impl UpdateOperationAction {
 #[derive(Debug, thiserror::Error)]
 pub enum DeactivateOperationParsingError {
     #[error("Invalid did id: {0}")]
-    InvalidDidId(#[from] DidParsingError),
+    InvalidDidId(#[from] DidError),
     #[error("Invalid previous operation hash: {0}")]
     InvalidPreviousOperationHash(String),
 }
@@ -409,7 +410,7 @@ pub enum SupportedPublicKeyError {
     #[error(transparent)]
     Parse {
         #[from]
-        source: Error,
+        source: CryptoError,
     },
     #[error("Unsupported curve {curve}")]
     UnsupportedCurve { curve: String },
@@ -437,7 +438,7 @@ impl SupportedPublicKey {
         }
     }
 
-    fn convert_secp256k1(key_data: &KeyData) -> Result<Secp256k1PublicKey, Error> {
+    fn convert_secp256k1(key_data: &KeyData) -> Result<Secp256k1PublicKey, CryptoError> {
         let pk = match key_data {
             KeyData::EcKeyData(k) => {
                 let mut data = Vec::with_capacity(65);
@@ -451,7 +452,7 @@ impl SupportedPublicKey {
         Ok(pk)
     }
 
-    fn convert_ed25519(key_data: &KeyData) -> Result<Ed25519PublicKey, Error> {
+    fn convert_ed25519(key_data: &KeyData) -> Result<Ed25519PublicKey, CryptoError> {
         let pk = match key_data {
             KeyData::EcKeyData(k) => k.x.to_public_key()?,
             KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
@@ -459,7 +460,7 @@ impl SupportedPublicKey {
         Ok(pk)
     }
 
-    fn convert_x25519(key_data: &KeyData) -> Result<X25519PublicKey, Error> {
+    fn convert_x25519(key_data: &KeyData) -> Result<X25519PublicKey, CryptoError> {
         let pk = match key_data {
             KeyData::EcKeyData(k) => k.x.to_public_key()?,
             KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,

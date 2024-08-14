@@ -3,7 +3,7 @@
 use std::backtrace::Backtrace;
 
 use prism_core::did::operation::{get_did_from_signed_operation, GetDidFromOperation};
-use prism_core::did::DidParsingError;
+use prism_core::did::Error as DidError;
 use prism_core::dlt::{BlockMetadata, DltCursor, OperationMetadata};
 use prism_core::prelude::*;
 use prism_core::proto::SignedAtalaOperation;
@@ -40,7 +40,7 @@ pub enum Error {
     #[error("{source}")]
     DidParsing {
         #[from]
-        source: DidParsingError,
+        source: DidError,
         backtrace: Backtrace,
     },
 }

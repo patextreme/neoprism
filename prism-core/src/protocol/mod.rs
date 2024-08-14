@@ -43,7 +43,7 @@ impl Default for ProtocolParameter {
 #[derive(Debug, thiserror::Error)]
 pub enum ProcessError {
     #[error("Unable to derive Did from operation")]
-    DidConversionError(#[from] did::DidParsingError),
+    DidConversionError(#[from] did::Error),
     #[error("Operation is empty")]
     EmptyOperation,
     #[error("Unexpected operation type: {0}")]
