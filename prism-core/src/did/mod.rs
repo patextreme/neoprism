@@ -134,7 +134,7 @@ impl FromStr for PrismDid {
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if !s.starts_with("did:prism:") {
-            Err(Error::DidPrefixInvalidStr(s.to_string()))?
+            Err(Error::DidSyntaxInvalid { did: s.to_string() })?
         }
         let (_, s) = s.split_at("did:prism:".len());
 
@@ -164,7 +164,10 @@ impl FromStr for PrismDid {
                 if did.suffix_hex() == suffix {
                     Ok(did.into())
                 } else {
-                    Err(Error::DidSuffixEncodedStateUnmatched(s.to_string()))
+                    Err(Error::DidSuffixEncodedStateUnmatched {
+                        did: s.to_string(),
+                        expected_did: did.into_canonical(),
+                    })
                 }
             }
             (Some(canonical_match), None) => {
@@ -176,7 +179,7 @@ impl FromStr for PrismDid {
                 let did = CanonicalPrismDid::from_suffix(suffix)?;
                 Ok(did.into())
             }
-            _ => Err(Error::DidSyntaxInvalid(s.to_string())),
+            _ => Err(Error::DidSyntaxInvalid { did: s.to_string() }),
         }
     }
 }

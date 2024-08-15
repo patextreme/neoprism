@@ -1,3 +1,4 @@
+use super::CanonicalPrismDid;
 use crate::error::InvalidInputSizeError;
 use crate::utils::codec::HexStr;
 
@@ -7,8 +8,6 @@ pub enum Error {
     LongFormDidNotFromCreateOperation,
     #[display("operation does not exist in AtalaOperation")]
     OperationMissingFromAtalaObject,
-    #[display("did {_0} does not start with did:prism:")]
-    DidPrefixInvalidStr(#[error(not(source))] String),
     #[display("did suffix {suffix} has invalid length")]
     DidSuffixInvalidHex {
         source: InvalidInputSizeError,
@@ -26,8 +25,15 @@ pub enum Error {
     },
     #[display("did suffix {did} cannot be decoded into protobuf message")]
     DidEncodedStateInvalidProto { source: prost::DecodeError, did: String },
-    #[display("unrecognized did pattern {_0}")]
-    DidSyntaxInvalid(#[error(not(source))] String),
-    #[display("encoded state and did suffix do not match for {_0}")]
-    DidSuffixEncodedStateUnmatched(#[error(not(source))] String),
+    #[display("unrecognized did pattern {did}")]
+    DidSyntaxInvalid {
+        #[error(not(source))]
+        did: String,
+    },
+    #[display("encoded state and did suffix do not match for {did} (expected {expected_did})")]
+    DidSuffixEncodedStateUnmatched {
+        #[error(not(source))]
+        did: String,
+        expected_did: CanonicalPrismDid,
+    },
 }

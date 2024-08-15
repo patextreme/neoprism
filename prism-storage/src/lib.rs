@@ -2,7 +2,7 @@
 
 use std::backtrace::Backtrace;
 
-use prism_core::did::operation::{get_did_from_signed_operation, GetDidFromOperation};
+use prism_core::did::operation::get_did_from_signed_operation;
 use prism_core::did::Error as DidError;
 use prism_core::dlt::{BlockMetadata, DltCursor, OperationMetadata};
 use prism_core::prelude::*;
@@ -25,12 +25,6 @@ pub enum Error {
         source: sea_orm::DbErr,
         backtrace: Backtrace,
     },
-    #[error("Unable to get Did from atala operation")]
-    DidFromAtalaOperation {
-        #[from]
-        source: GetDidFromOperation,
-        backtrace: Backtrace,
-    },
     #[error("Unable to decode to protobuf message. {source}")]
     ProtobufDecode {
         #[from]
@@ -38,7 +32,7 @@ pub enum Error {
         backtrace: Backtrace,
     },
     #[error("{source}")]
-    DidParsing {
+    Did {
         #[from]
         source: DidError,
         backtrace: Backtrace,

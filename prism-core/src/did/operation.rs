@@ -22,30 +22,20 @@ use crate::utils::{is_slice_unique, is_uri, is_uri_fragment};
 static SERVICE_TYPE_NAME_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$").expect("ServiceTypeName regex is invalid"));
 
-#[derive(Debug, thiserror::Error)]
-pub enum GetDidFromOperation {
-    #[error("Unable to parse Did from operation: {0}")]
-    DidParseError(#[from] DidError),
-    #[error("Operation is empty")]
-    EmptyOperation,
-}
-
-pub fn get_did_from_operation(atala_operation: &AtalaOperation) -> Result<CanonicalPrismDid, GetDidFromOperation> {
+pub fn get_did_from_operation(atala_operation: &AtalaOperation) -> Result<CanonicalPrismDid, DidError> {
     match &atala_operation.operation {
         Some(Operation::CreateDid(_)) => Ok(CanonicalPrismDid::from_operation(atala_operation)?),
         Some(Operation::UpdateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::DeactivateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::ProtocolVersionUpdate(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?),
-        None => Err(GetDidFromOperation::EmptyOperation),
+        None => Err(DidError::OperationMissingFromAtalaObject),
     }
 }
 
-pub fn get_did_from_signed_operation(
-    signed_operation: &SignedAtalaOperation,
-) -> Result<CanonicalPrismDid, GetDidFromOperation> {
+pub fn get_did_from_signed_operation(signed_operation: &SignedAtalaOperation) -> Result<CanonicalPrismDid, DidError> {
     match &signed_operation.operation {
         Some(operation) => get_did_from_operation(operation),
-        None => Err(GetDidFromOperation::EmptyOperation),
+        None => Err(DidError::OperationMissingFromAtalaObject),
     }
 }
 
