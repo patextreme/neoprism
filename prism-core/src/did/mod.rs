@@ -2,6 +2,7 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 
 use enum_dispatch::enum_dispatch;
+use error::DidSyntaxError;
 use prost::Message;
 use regex::Regex;
 
@@ -11,7 +12,7 @@ use crate::proto::AtalaOperation;
 use crate::utils::codec::{Base64UrlStrNoPad, HexStr};
 use crate::utils::hash::{sha256, Sha256Digest};
 
-mod error;
+pub mod error;
 pub mod operation;
 
 pub use error::Error;
@@ -88,7 +89,7 @@ impl CanonicalPrismDid {
     }
 
     pub fn from_suffix_str(suffix: &str) -> Result<Self, Error> {
-        let suffix = HexStr::from_str(suffix).map_err(|e| Error::DidSuffixInvalidStr {
+        let suffix = HexStr::from_str(suffix).map_err(|e| DidSyntaxError::DidSuffixInvalidStr {
             source: e,
             suffix: suffix.to_string(),
         })?;
@@ -97,7 +98,7 @@ impl CanonicalPrismDid {
 
     pub fn from_suffix(suffix: HexStr) -> Result<Self, Error> {
         let suffix = Sha256Digest::from_bytes(&suffix.to_bytes())
-            .map_err(|e| Error::DidSuffixInvalidHex { source: e, suffix })?;
+            .map_err(|e| DidSyntaxError::DidSuffixInvalidHex { source: e, suffix })?;
         Ok(Self { suffix })
     }
 }
@@ -134,7 +135,7 @@ impl FromStr for PrismDid {
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if !s.starts_with("did:prism:") {
-            Err(Error::DidSyntaxInvalid { did: s.to_string() })?
+            Err(DidSyntaxError::DidSyntaxInvalid { did: s.to_string() })?
         }
         let (_, s) = s.split_at("did:prism:".len());
 
@@ -145,17 +146,19 @@ impl FromStr for PrismDid {
             (None, Some(long_form_match)) => {
                 let match_group_1 = long_form_match.get(1).expect("Regex did not match this group").as_str();
                 let match_group_2 = long_form_match.get(2).expect("Regex did not match this group").as_str();
-                let suffix: HexStr = match_group_1.parse().map_err(|e| Error::DidSuffixInvalidStr {
+                let suffix: HexStr = match_group_1.parse().map_err(|e| DidSyntaxError::DidSuffixInvalidStr {
                     source: e,
                     suffix: match_group_1.to_string(),
                 })?;
                 let encoded_state: Base64UrlStrNoPad =
-                    match_group_2.parse().map_err(|e| Error::DidEncodedStateInvalidStr {
-                        source: e,
-                        encoded_state: match_group_2.to_string(),
-                    })?;
+                    match_group_2
+                        .parse()
+                        .map_err(|e| DidSyntaxError::DidEncodedStateInvalidStr {
+                            source: e,
+                            encoded_state: match_group_2.to_string(),
+                        })?;
                 let operation = AtalaOperation::decode(encoded_state.to_bytes().as_slice()).map_err(|e| {
-                    Error::DidEncodedStateInvalidProto {
+                    DidSyntaxError::DidEncodedStateInvalidProto {
                         source: e,
                         did: s.to_string(),
                     }
@@ -164,22 +167,22 @@ impl FromStr for PrismDid {
                 if did.suffix_hex() == suffix {
                     Ok(did.into())
                 } else {
-                    Err(Error::DidSuffixEncodedStateUnmatched {
+                    Err(DidSyntaxError::DidSuffixEncodedStateUnmatched {
                         did: s.to_string(),
                         expected_did: did.into_canonical(),
-                    })
+                    })?
                 }
             }
             (Some(canonical_match), None) => {
                 let match_group_1 = canonical_match.get(1).expect("Regex did not match this group").as_str();
-                let suffix: HexStr = match_group_1.parse().map_err(|e| Error::DidSuffixInvalidStr {
+                let suffix: HexStr = match_group_1.parse().map_err(|e| DidSyntaxError::DidSuffixInvalidStr {
                     source: e,
                     suffix: match_group_1.to_string(),
                 })?;
                 let did = CanonicalPrismDid::from_suffix(suffix)?;
                 Ok(did.into())
             }
-            _ => Err(Error::DidSyntaxInvalid { did: s.to_string() }),
+            _ => Err(DidSyntaxError::DidSyntaxInvalid { did: s.to_string() })?,
         }
     }
 }

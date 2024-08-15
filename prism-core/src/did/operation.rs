@@ -3,13 +3,17 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
-use super::error::Error as DidError;
+use super::error::{
+    CreateOperationError, Error as DidError, PublicKeyError, PublicKeyIdError, ServiceEndpointError, ServiceError,
+    ServiceIdError, ServiceTypeError,
+};
 use super::CanonicalPrismDid;
 use crate::crypto::ed25519::Ed25519PublicKey;
 use crate::crypto::secp256k1::Secp256k1PublicKey;
 use crate::crypto::x25519::X25519PublicKey;
 use crate::crypto::{Error as CryptoError, ToPublicKey};
-use crate::error::StdError;
+use crate::error::{InvalidInputSizeError, StdError};
+use crate::location;
 use crate::prelude::{AtalaOperation, SignedAtalaOperation};
 use crate::proto::atala_operation::Operation;
 use crate::proto::public_key::KeyData;
@@ -39,24 +43,6 @@ pub fn get_did_from_signed_operation(signed_operation: &SignedAtalaOperation) ->
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum CreateOperationParsingError {
-    #[error("Missing did_data in create operation")]
-    MissingDidData,
-    #[error(transparent)]
-    InvalidPublicKey(#[from] PublicKeyParsingError),
-    #[error(transparent)]
-    InvalidService(#[from] ServiceParsingError),
-    #[error("Too many public keys")]
-    TooManyPublicKeys,
-    #[error("No master key found")]
-    NoMasterKey,
-    #[error("Too many services")]
-    TooManyServices,
-    #[error("Duplicate context")]
-    DuplicateContext,
-}
-
 #[derive(Debug, Clone)]
 pub struct CreateOperation {
     pub public_keys: Vec<PublicKey>,
@@ -65,12 +51,9 @@ pub struct CreateOperation {
 }
 
 impl CreateOperation {
-    pub fn parse(
-        param: &ProtocolParameter,
-        operation: &CreateDidOperation,
-    ) -> Result<Self, CreateOperationParsingError> {
+    pub fn parse(param: &ProtocolParameter, operation: &CreateDidOperation) -> Result<Self, CreateOperationError> {
         let Some(did_data) = &operation.did_data else {
-            Err(CreateOperationParsingError::MissingDidData)?
+            Err(CreateOperationError::MissingDidData)?
         };
 
         let public_keys = did_data
@@ -99,34 +82,45 @@ impl CreateOperation {
     fn validate_public_key_list(
         param: &ProtocolParameter,
         public_keys: &[PublicKey],
-    ) -> Result<(), CreateOperationParsingError> {
+    ) -> Result<(), CreateOperationError> {
         if public_keys.len() > param.max_public_keys {
-            Err(CreateOperationParsingError::TooManyPublicKeys)?
+            Err(CreateOperationError::TooManyPublicKeys {
+                source: InvalidInputSizeError::TooBig {
+                    limit: param.max_public_keys,
+                    actual: public_keys.len(),
+                    type_name: std::any::type_name_of_val(public_keys),
+                    location: location!(),
+                },
+            })?
         }
 
         if !public_keys.iter().any(|i| i.usage() == KeyUsage::MasterKey) {
-            Err(CreateOperationParsingError::NoMasterKey)?
+            Err(CreateOperationError::MissingMasterKey)?
         }
 
         Ok(())
     }
 
-    fn validate_service_list(
-        param: &ProtocolParameter,
-        services: &[Service],
-    ) -> Result<(), CreateOperationParsingError> {
+    fn validate_service_list(param: &ProtocolParameter, services: &[Service]) -> Result<(), CreateOperationError> {
         if services.len() > param.max_services {
-            return Err(CreateOperationParsingError::TooManyServices);
+            return Err(CreateOperationError::TooManyServices {
+                source: InvalidInputSizeError::TooBig {
+                    limit: param.max_public_keys,
+                    actual: services.len(),
+                    type_name: std::any::type_name_of_val(services),
+                    location: location!(),
+                },
+            });
         }
 
         Ok(())
     }
 
-    fn validate_context_list(contexts: &[String]) -> Result<(), CreateOperationParsingError> {
+    fn validate_context_list(contexts: &[String]) -> Result<(), CreateOperationError> {
         if is_slice_unique(contexts) {
             Ok(())
         } else {
-            Err(CreateOperationParsingError::DuplicateContext)?
+            Err(CreateOperationError::DuplicateContext)?
         }
     }
 }
@@ -140,13 +134,13 @@ pub enum UpdateOperationParsingError {
     #[error("Update action is malformed: {0}")]
     MalformedUpdateAction(String),
     #[error(transparent)]
-    PublicKeyParsingError(#[from] PublicKeyParsingError),
+    PublicKeyParsingError(#[from] PublicKeyError),
     #[error(transparent)]
-    ServiceParsingError(#[from] ServiceParsingError),
+    ServiceParsingError(#[from] ServiceError),
     #[error(transparent)]
-    ServiceTypeParsingError(#[from] ServiceTypeParsingError),
+    ServiceTypeParsingError(#[from] ServiceTypeError),
     #[error(transparent)]
-    ServiceEndpointParsingError(#[from] ServiceEndpointParsingError),
+    ServiceEndpointParsingError(#[from] ServiceEndpointError),
     #[error("Empty update action")]
     EmptyUpdateAction,
 }
@@ -306,18 +300,27 @@ impl DeactivateOperation {
 pub struct PublicKeyId(String);
 
 impl PublicKeyId {
-    pub fn parse(id: &str, max_length: usize) -> Result<Self, String> {
-        let is_fragment = is_uri_fragment(id);
-        let is_non_empty = !id.is_empty();
-        let is_within_max_size = id.len() <= max_length;
-        if is_fragment && is_non_empty && is_within_max_size {
-            Ok(Self(id.to_owned()))
-        } else {
-            Err(format!(
-                "Public key id must be non-empty URI fragment with max length of {}. Got {}",
-                max_length, id
-            ))
+    pub fn parse(id: &str, max_length: usize) -> Result<Self, PublicKeyIdError> {
+        if id.is_empty() {
+            return Err(PublicKeyIdError::Empty);
         }
+
+        if id.len() > max_length {
+            return Err(PublicKeyIdError::TooLong {
+                source: InvalidInputSizeError::TooBig {
+                    limit: max_length,
+                    actual: id.len(),
+                    type_name: std::any::type_name::<Self>(),
+                    location: location!(),
+                },
+            });
+        }
+
+        if !is_uri_fragment(id) {
+            return Err(PublicKeyIdError::InvalidUriFragment);
+        }
+
+        Ok(Self(id.to_owned()))
     }
 
     pub fn as_str(&self) -> &str {
@@ -329,37 +332,32 @@ impl PublicKeyId {
 pub struct ServiceId(String);
 
 impl ServiceId {
-    pub fn parse(id: &str, max_length: usize) -> Result<Self, String> {
-        let is_fragment = is_uri_fragment(id);
-        let is_non_empty = !id.is_empty();
-        let is_within_max_size = id.len() <= max_length;
-        if is_fragment && is_non_empty && is_within_max_size {
-            Ok(Self(id.to_owned()))
-        } else {
-            Err(format!(
-                "Service id must be non-empty URI fragment with max length of {}. Got {}",
-                max_length, id
-            ))
+    pub fn parse(id: &str, max_length: usize) -> Result<Self, ServiceIdError> {
+        if id.is_empty() {
+            return Err(ServiceIdError::Empty);
         }
+
+        if id.len() > max_length {
+            return Err(ServiceIdError::TooLong {
+                source: InvalidInputSizeError::TooBig {
+                    limit: max_length,
+                    actual: id.len(),
+                    type_name: std::any::type_name::<Self>(),
+                    location: location!(),
+                },
+            });
+        }
+
+        if !is_uri_fragment(id) {
+            return Err(ServiceIdError::InvalidUriFragment);
+        }
+
+        Ok(Self(id.to_owned()))
     }
 
     pub fn as_str(&self) -> &str {
         &self.0
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum PublicKeyParsingError {
-    #[error("Invalid key id: {0}")]
-    InvalidKeyId(String),
-    #[error("Missing key_data on key id {0:?}")]
-    MissingKeyData(PublicKeyId),
-    #[error("Unknown key usage on key id {0:?}")]
-    UnknownKeyUsage(PublicKeyId),
-    #[error("Unable to parse key_data on key id {id:?}: {msg}")]
-    KeyDataParseError { id: PublicKeyId, msg: String },
-    #[error("Master key must have type of secp256k1. (id {0:?}) ")]
-    InvalidMasterKeyType(PublicKeyId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -369,19 +367,22 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn parse(public_key: &proto::PublicKey, param: &ProtocolParameter) -> Result<Self, PublicKeyParsingError> {
-        let id = PublicKeyId::parse(&public_key.id, param.max_id_size).map_err(PublicKeyParsingError::InvalidKeyId)?;
-        let usage = KeyUsage::parse(&public_key.usage()).ok_or(PublicKeyParsingError::UnknownKeyUsage(id.clone()))?;
+    pub fn parse(public_key: &proto::PublicKey, param: &ProtocolParameter) -> Result<Self, PublicKeyError> {
+        let id = PublicKeyId::parse(&public_key.id, param.max_id_size).map_err(|e| PublicKeyError::InvalidKeyId {
+            source: e,
+            id: public_key.id.to_string(),
+        })?;
+        let usage = KeyUsage::parse(&public_key.usage()).ok_or(PublicKeyError::UnknownKeyUsage { id: id.clone() })?;
         let Some(key_data) = &public_key.key_data else {
-            Err(PublicKeyParsingError::MissingKeyData(id))?
+            Err(PublicKeyError::MissingKeyData { id: id.clone() })?
         };
-        let pk = SupportedPublicKey::from_key_data(key_data).map_err(|e| PublicKeyParsingError::KeyDataParseError {
+        let pk = SupportedPublicKey::from_key_data(key_data).map_err(|e| PublicKeyError::Crypto {
+            source: e,
             id: id.clone(),
-            msg: e.to_string(),
         })?;
         let data = match (usage, pk) {
             (KeyUsage::MasterKey, SupportedPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
-            (KeyUsage::MasterKey, _) => Err(PublicKeyParsingError::InvalidMasterKeyType(id.clone()))?,
+            (KeyUsage::MasterKey, _) => Err(PublicKeyError::MasterKeyNotSecp256k1 { id: id.clone() })?,
             (usage, pk) => PublicKeyData::Other { data: pk, usage },
         };
 
@@ -396,17 +397,6 @@ impl PublicKey {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum SupportedPublicKeyError {
-    #[error(transparent)]
-    Parse {
-        #[from]
-        source: CryptoError,
-    },
-    #[error("Unsupported curve {curve}")]
-    UnsupportedCurve { curve: String },
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SupportedPublicKey {
     Secp256k1(Secp256k1PublicKey),
@@ -415,7 +405,7 @@ pub enum SupportedPublicKey {
 }
 
 impl SupportedPublicKey {
-    pub fn from_key_data(key_data: &KeyData) -> Result<Self, SupportedPublicKeyError> {
+    pub fn from_key_data(key_data: &KeyData) -> Result<Self, CryptoError> {
         let curve_name: &str = match key_data {
             KeyData::EcKeyData(k) => &k.curve,
             KeyData::CompressedEcKeyData(k) => &k.curve,
@@ -425,7 +415,7 @@ impl SupportedPublicKey {
             "secp256k1" => Ok(Self::Secp256k1(Self::convert_secp256k1(key_data)?)),
             "ed25519" => Ok(Self::Ed25519(Self::convert_ed25519(key_data)?)),
             "x25519" => Ok(Self::X25519(Self::convert_x25519(key_data)?)),
-            c => Err(SupportedPublicKeyError::UnsupportedCurve { curve: c.to_string() }),
+            c => Err(CryptoError::UnsupportedCurve { curve: c.to_string() }),
         }
     }
 
@@ -492,16 +482,6 @@ impl KeyUsage {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum ServiceParsingError {
-    #[error("Invalid service id: {0}")]
-    InvalidServiceId(String),
-    #[error(transparent)]
-    InvalidServiceType(#[from] ServiceTypeParsingError),
-    #[error(transparent)]
-    InvalidServiceEndpoint(#[from] ServiceEndpointParsingError),
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Service {
     pub id: ServiceId,
@@ -510,11 +490,21 @@ pub struct Service {
 }
 
 impl Service {
-    pub fn parse(service: &proto::Service, param: &ProtocolParameter) -> Result<Self, ServiceParsingError> {
-        let id = ServiceId::parse(&service.id, param.max_id_size).map_err(ServiceParsingError::InvalidServiceId)?;
-        let r#type = ServiceType::parse(&service.r#type, param).map_err(ServiceParsingError::InvalidServiceType)?;
-        let service_endpoints = ServiceEndpoint::parse(&service.service_endpoint, param)
-            .map_err(ServiceParsingError::InvalidServiceEndpoint)?;
+    pub fn parse(service: &proto::Service, param: &ProtocolParameter) -> Result<Self, ServiceError> {
+        let id = ServiceId::parse(&service.id, param.max_id_size).map_err(|e| ServiceError::InvalidServiceId {
+            source: e,
+            id: service.id.to_string(),
+        })?;
+        let r#type = ServiceType::parse(&service.r#type, param).map_err(|e| ServiceError::InvalidServiceType {
+            source: e,
+            type_name: service.r#type.to_string(),
+        })?;
+        let service_endpoints = ServiceEndpoint::parse(&service.service_endpoint, param).map_err(|e| {
+            ServiceError::InvalidServiceEndpoint {
+                source: e,
+                endpoint: service.service_endpoint.to_string(),
+            }
+        })?;
 
         Ok(Self {
             id,
@@ -524,18 +514,6 @@ impl Service {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum ServiceTypeParsingError {
-    #[error(transparent)]
-    InvalidValue(#[from] ServiceTypeNameParsingError),
-    #[error("Service type string must not exceed {limit} characters. Got {actual}.")]
-    TooLong { limit: usize, actual: usize },
-    #[error("Service type must not be an empty array")]
-    EmptyList,
-    #[error("Service type does not conform to the ABNF rule")]
-    NotConformToABNF,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceType {
     Value(ServiceTypeName),
@@ -543,11 +521,10 @@ pub enum ServiceType {
 }
 
 impl ServiceType {
-    pub fn parse(service_type: &str, param: &ProtocolParameter) -> Result<Self, ServiceTypeParsingError> {
+    pub fn parse(service_type: &str, param: &ProtocolParameter) -> Result<Self, ServiceTypeError> {
         if service_type.len() > param.max_type_size {
-            Err(ServiceTypeParsingError::TooLong {
+            Err(ServiceTypeError::ExceedMaxSize {
                 limit: param.max_type_size,
-                actual: service_type.len(),
             })?
         }
 
@@ -555,11 +532,11 @@ impl ServiceType {
         let parsed: Result<Vec<String>, _> = serde_json::from_str(service_type);
         if let Ok(list) = parsed {
             if list.is_empty() {
-                Err(ServiceTypeParsingError::EmptyList)?
+                Err(ServiceTypeError::Empty)?
             }
 
-            if service_type != serde_json::to_string(&list).expect("Serializing Vec<String> to JSON must not fail!") {
-                Err(ServiceTypeParsingError::NotConformToABNF)?
+            if service_type != serde_json::to_string(&list).expect("serializing Vec<String> to JSON must not fail!") {
+                Err(ServiceTypeError::InvalidSyntax)?
             }
 
             let names: Result<Vec<ServiceTypeName>, _> = list.iter().map(|i| ServiceTypeName::from_str(i)).collect();
@@ -573,33 +550,19 @@ impl ServiceType {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-#[error("The string {0} is not a valid serviceType name")]
-pub struct ServiceTypeNameParsingError(String);
-
 #[derive(Debug, Clone, PartialEq, Eq, derive_more::Display)]
 pub struct ServiceTypeName(String);
 
 impl FromStr for ServiceTypeName {
-    type Err = ServiceTypeNameParsingError;
+    type Err = ServiceTypeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if SERVICE_TYPE_NAME_RE.is_match(s) {
             Ok(Self(s.to_owned()))
         } else {
-            Err(ServiceTypeNameParsingError(s.to_owned()))
+            Err(Self::Err::InvalidSyntax)
         }
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ServiceEndpointParsingError {
-    #[error(transparent)]
-    InvalidValue(#[from] ServiceEndpointValueParsingError),
-    #[error("Service endpoint string must not exceed {limit} characters. Got {actual}.")]
-    TooLong { limit: usize, actual: usize },
-    #[error("Service endpoint must not be an empty array")]
-    EmptyList,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -609,11 +572,10 @@ pub enum ServiceEndpoint {
 }
 
 impl ServiceEndpoint {
-    pub fn parse(service_endpoint: &str, param: &ProtocolParameter) -> Result<Self, ServiceEndpointParsingError> {
+    pub fn parse(service_endpoint: &str, param: &ProtocolParameter) -> Result<Self, ServiceEndpointError> {
         if service_endpoint.len() > param.max_service_endpoint_size {
-            Err(ServiceEndpointParsingError::TooLong {
+            Err(ServiceEndpointError::ExceedMaxSize {
                 limit: param.max_service_endpoint_size,
-                actual: service_endpoint.len(),
             })?
         }
 
@@ -627,7 +589,7 @@ impl ServiceEndpoint {
         let parsed_array = serde_json::from_str::<Vec<serde_json::Value>>(service_endpoint);
         if let Ok(list) = parsed_array {
             if list.is_empty() {
-                Err(ServiceEndpointParsingError::EmptyList)?
+                Err(ServiceEndpointError::Empty)?
             }
 
             let endpoints: Result<Vec<ServiceEndpointValue>, _> =
@@ -640,14 +602,6 @@ impl ServiceEndpoint {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum ServiceEndpointValueParsingError {
-    #[error("Fail to parse '{uri}' as a URI")]
-    InvalidUri { uri: String },
-    #[error("ServiceEndpoint is not a URI string nor JSON object. Got {0}.")]
-    InvalidJsonType(serde_json::Value),
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceEndpointValue {
     Uri(String),
@@ -655,25 +609,25 @@ pub enum ServiceEndpointValue {
 }
 
 impl FromStr for ServiceEndpointValue {
-    type Err = ServiceEndpointValueParsingError;
+    type Err = ServiceEndpointError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if is_uri(s) {
             Ok(Self::Uri(s.to_owned()))
         } else {
-            Err(ServiceEndpointValueParsingError::InvalidUri { uri: s.to_string() })
+            Err(ServiceEndpointError::InvalidSyntax)
         }
     }
 }
 
 impl TryFrom<serde_json::Value> for ServiceEndpointValue {
-    type Error = ServiceEndpointValueParsingError;
+    type Error = ServiceEndpointError;
 
     fn try_from(value: serde_json::Value) -> Result<Self, Self::Error> {
         match value {
             serde_json::Value::String(s) => Self::from_str(&s),
             serde_json::Value::Object(map) => Ok(Self::Json(map)),
-            _ => Err(ServiceEndpointValueParsingError::InvalidJsonType(value)),
+            _ => Err(ServiceEndpointError::InvalidSyntax),
         }
     }
 }

@@ -5,6 +5,7 @@ use crate::crypto::Verifiable;
 use crate::did::operation::{
     CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId, UpdateOperation, UpdateOperationAction,
 };
+use crate::did::Error as DidError;
 use crate::dlt::OperationMetadata;
 use crate::proto::{
     CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation, SignedAtalaOperation,
@@ -57,7 +58,7 @@ impl OperationProcessor for V1Processor {
         operation: CreateDidOperation,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
-        let parsed_operation = CreateOperation::parse(&self.parameters, &operation)?;
+        let parsed_operation = CreateOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();

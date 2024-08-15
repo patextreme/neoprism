@@ -34,7 +34,7 @@ impl Sha256Digest {
     /// ```
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, InvalidInputSizeError> {
         if bytes.len() != 32 {
-            Err(InvalidInputSizeError {
+            Err(InvalidInputSizeError::NotExact {
                 expected: 32,
                 actual: bytes.len(),
                 type_name: std::any::type_name::<Self>(),

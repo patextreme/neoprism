@@ -4,8 +4,8 @@ use enum_dispatch::enum_dispatch;
 
 use self::v1::V1Processor;
 use crate::did::operation::{
-    CreateOperationParsingError, DeactivateOperationParsingError, PublicKey, PublicKeyId, Service, ServiceEndpoint,
-    ServiceId, ServiceType, UpdateOperationParsingError,
+    DeactivateOperationParsingError, PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType,
+    UpdateOperationParsingError,
 };
 use crate::did::{self, CanonicalPrismDid, DidState};
 use crate::dlt::OperationMetadata;
@@ -43,15 +43,13 @@ impl Default for ProtocolParameter {
 #[derive(Debug, thiserror::Error)]
 pub enum ProcessError {
     #[error("Unable to derive Did from operation")]
-    DidConversionError(#[from] did::Error),
+    DidOperation(#[from] did::Error),
     #[error("Operation is empty")]
     EmptyOperation,
     #[error("Unexpected operation type: {0}")]
     UnexpectedOperationType(String),
     #[error("The conflict with the exisint DID state: {0}")]
     DidStateConflict(String),
-    #[error("Create operation cannot be parsed: {0}")]
-    CreateOperationParseError(#[from] CreateOperationParsingError),
     #[error("Update operation cannot be parsed: {0}")]
     UpdateOperationParseError(#[from] UpdateOperationParsingError),
     #[error("Deactivate operation cannot be parsed: {0}")]

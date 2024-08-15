@@ -14,11 +14,20 @@ pub enum Error {
     DltConnection { source: StdError, location: Location },
 }
 
-#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
-#[display("unexpected input size: expected {expected} but got {actual} for type {type_name} {location}")]
-pub struct InvalidInputSizeError {
-    pub expected: usize,
-    pub actual: usize,
-    pub type_name: &'static str,
-    pub location: Location,
+#[derive(Debug, derive_more::Display, derive_more::Error)]
+pub enum InvalidInputSizeError {
+    #[display("expected input size of {expected} but got {actual} for type {type_name} {location}")]
+    NotExact {
+        expected: usize,
+        actual: usize,
+        type_name: &'static str,
+        location: Location,
+    },
+    #[display("input size has a limit of {limit} but got {actual} for type {type_name} {location}")]
+    TooBig {
+        limit: usize,
+        actual: usize,
+        type_name: &'static str,
+        location: Location,
+    },
 }

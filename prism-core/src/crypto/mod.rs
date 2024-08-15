@@ -28,6 +28,8 @@ pub enum Error {
     #[from]
     #[display("unable to parse secp256k1 key")]
     Secp256k1KeyParsing { source: ::k256::elliptic_curve::Error },
+    #[display("unsupported curve {curve}")]
+    UnsupportedCurve { curve: String },
 }
 
 pub trait ToPublicKey<Pk> {
