@@ -2702,7 +2702,6 @@ dependencies = [
  "serde",
  "serde_json",
  "strum 0.26.3",
- "thiserror",
  "time",
  "tokio",
  "uriparse",
