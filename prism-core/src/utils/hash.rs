@@ -1,6 +1,9 @@
 use ring::digest;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::AsRef)]
+use crate::error::InvalidInputSizeError;
+use crate::location;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::From)]
 pub struct Sha256Digest([u8; 32]);
 
 impl Sha256Digest {
@@ -29,9 +32,14 @@ impl Sha256Digest {
     /// let digest = Sha256Digest::from_bytes(&vec![42u8; 31]);
     /// assert!(digest.is_err());
     /// ```
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, InvalidInputSizeError> {
         if bytes.len() != 32 {
-            return Err(format!("Expected 32 bytes, got {} bytes", bytes.len()));
+            Err(InvalidInputSizeError::NotExact {
+                expected: 32,
+                actual: bytes.len(),
+                type_name: std::any::type_name::<Self>(),
+                location: location!(),
+            })?
         }
 
         let mut digest = [0u8; 32];

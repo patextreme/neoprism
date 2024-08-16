@@ -24,7 +24,19 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
                 .map(|(result, debug)| {
                     let debug: Vec<_> = debug
                         .into_iter()
-                        .map(|(meta, op, e)| (meta, op, e.map(|e| e.to_string())))
+                        .map(|(meta, op, e)| {
+                            let maybe_report = e
+                                .map(|e| {
+                                    let report = std::error::Report::new(e).pretty(true).show_backtrace(true);
+                                    report
+                                        .to_string()
+                                        .split("\n")
+                                        .map(|i| i.to_string())
+                                        .collect::<Vec<_>>()
+                                })
+                                .unwrap_or_default();
+                            (meta, op, maybe_report)
+                        })
                         .collect();
                     (result, debug)
                 });

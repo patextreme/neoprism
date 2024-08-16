@@ -34,7 +34,7 @@ where
                 }
 
                 let insert_result = tx
-                    .insert(
+                    .insert_operation(
                         signed_operation,
                         OperationMetadata {
                             block_metadata: block_metadata.clone(),

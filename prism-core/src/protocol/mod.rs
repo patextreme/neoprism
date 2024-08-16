@@ -1,13 +1,11 @@
 use std::rc::Rc;
 
 use enum_dispatch::enum_dispatch;
+use error::{DidStateConflictError, ProcessError};
 
 use self::v1::V1Processor;
-use crate::did::operation::{
-    CreateOperationParsingError, DeactivateOperationParsingError, PublicKey, PublicKeyId, Service, ServiceEndpoint,
-    ServiceId, ServiceType, UpdateOperationParsingError,
-};
-use crate::did::{self, CanonicalPrismDid, DidState};
+use crate::did::operation::{PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType};
+use crate::did::{CanonicalPrismDid, DidState};
 use crate::dlt::OperationMetadata;
 use crate::proto::atala_operation::Operation;
 use crate::proto::{
@@ -16,6 +14,7 @@ use crate::proto::{
 };
 use crate::utils::hash::Sha256Digest;
 
+pub mod error;
 pub mod resolver;
 mod v1;
 
@@ -38,26 +37,6 @@ impl Default for ProtocolParameter {
             max_service_endpoint_size: 300,
         }
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ProcessError {
-    #[error("Unable to derive Did from operation")]
-    DidConversionError(#[from] did::DidParsingError),
-    #[error("Operation is empty")]
-    EmptyOperation,
-    #[error("Unexpected operation type: {0}")]
-    UnexpectedOperationType(String),
-    #[error("The conflict with the exisint DID state: {0}")]
-    DidStateConflict(String),
-    #[error("Create operation cannot be parsed: {0}")]
-    CreateOperationParseError(#[from] CreateOperationParsingError),
-    #[error("Update operation cannot be parsed: {0}")]
-    UpdateOperationParseError(#[from] UpdateOperationParsingError),
-    #[error("Deactivate operation cannot be parsed: {0}")]
-    DeactivateOperationParseError(#[from] DeactivateOperationParsingError),
-    #[error("Invalid signature: {0}")]
-    InvalidSignature(String),
 }
 
 #[derive(Debug, Clone)]
@@ -99,7 +78,7 @@ impl<T> Revocable<T> {
 
 type InternalMap<K, V> = im_rc::HashMap<K, Revocable<V>>;
 
-/// A struct optimized for mutating DID state as part of processing an operation.
+/// A struct optimized for mutating DID state when processing an operation.
 #[derive(Debug, Clone)]
 struct DidStateRc {
     did: Rc<CanonicalPrismDid>,
@@ -129,9 +108,13 @@ impl DidStateRc {
         self.last_operation_hash = Rc::new(last_operation_hash)
     }
 
-    fn add_public_key(&mut self, public_key: PublicKey, added_at: &OperationMetadata) -> Result<(), String> {
+    fn add_public_key(
+        &mut self,
+        public_key: PublicKey,
+        added_at: &OperationMetadata,
+    ) -> Result<(), DidStateConflictError> {
         if self.public_keys.contains_key(&public_key.id) {
-            Err(format!("Public key with id {} already exists", public_key.id))?
+            return Err(DidStateConflictError::AddPublicKeyWithExistingId { id: public_key.id });
         }
 
         let updated_map = self
@@ -141,22 +124,26 @@ impl DidStateRc {
         Ok(())
     }
 
-    fn revoke_public_key(&mut self, id: &PublicKeyId, revoke_at: &OperationMetadata) -> Result<(), String> {
+    fn revoke_public_key(
+        &mut self,
+        id: &PublicKeyId,
+        revoke_at: &OperationMetadata,
+    ) -> Result<(), DidStateConflictError> {
         let Some(public_key) = self.public_keys.get_mut(id) else {
-            Err(format!("Public key with id {:?} does not exist", id))?
+            Err(DidStateConflictError::RevokePublicKeyNotExists { id: id.clone() })?
         };
 
         if public_key.is_revoked() {
-            Err(format!("Public key with id {:?} is already revoked", id))?
+            Err(DidStateConflictError::RevokePublicKeyIsAlreadyRevoked { id: id.clone() })?
         }
 
         public_key.revoke(revoke_at);
         Ok(())
     }
 
-    fn add_service(&mut self, service: Service, added_at: &OperationMetadata) -> Result<(), String> {
+    fn add_service(&mut self, service: Service, added_at: &OperationMetadata) -> Result<(), DidStateConflictError> {
         if self.services.contains_key(&service.id) {
-            Err(format!("Service with id {:?} already exists", service.id))?
+            return Err(DidStateConflictError::AddServiceWithExistingId { id: service.id });
         }
 
         let updated_map = self
@@ -166,39 +153,43 @@ impl DidStateRc {
         Ok(())
     }
 
-    fn revoke_service(&mut self, id: &ServiceId, revoke_at: &OperationMetadata) -> Result<(), String> {
+    fn revoke_service(&mut self, id: &ServiceId, revoke_at: &OperationMetadata) -> Result<(), DidStateConflictError> {
         let Some(service) = self.services.get_mut(id) else {
-            Err(format!("Service with id {:?} does not exist", id))?
+            Err(DidStateConflictError::RevokeServiceNotExists { id: id.clone() })?
         };
 
         if service.is_revoked() {
-            Err(format!("Service with id {:?} is already revoked", id))?
+            Err(DidStateConflictError::RevokeServiceIsAlreadyRevoked { id: id.clone() })?
         }
 
         service.revoke(revoke_at);
         Ok(())
     }
 
-    fn update_service_type(&mut self, id: &ServiceId, new_type: ServiceType) -> Result<(), String> {
+    fn update_service_type(&mut self, id: &ServiceId, new_type: ServiceType) -> Result<(), DidStateConflictError> {
         let Some(service) = self.services.get_mut(id) else {
-            Err(format!("Service with id {:?} does not exist", id))?
+            Err(DidStateConflictError::UpdateServiceNotExists { id: id.clone() })?
         };
 
         if service.is_revoked() {
-            Err(format!("Service with id {:?} is revoked", id))?
+            Err(DidStateConflictError::UpdateServiceIsRevoked { id: id.clone() })?
         }
 
         service.get_mut().r#type = new_type;
         Ok(())
     }
 
-    fn update_service_endpoint(&mut self, id: &ServiceId, new_endpoint: ServiceEndpoint) -> Result<(), String> {
+    fn update_service_endpoint(
+        &mut self,
+        id: &ServiceId,
+        new_endpoint: ServiceEndpoint,
+    ) -> Result<(), DidStateConflictError> {
         let Some(service) = self.services.get_mut(id) else {
-            Err(format!("Service with id {:?} does not exist", id))?
+            Err(DidStateConflictError::UpdateServiceNotExists { id: id.clone() })?
         };
 
         if service.is_revoked() {
-            Err(format!("Service with id {:?} is revoked", id))?
+            Err(DidStateConflictError::UpdateServiceIsRevoked { id: id.clone() })?
         }
 
         service.get_mut().service_endpoints = new_endpoint;
@@ -239,7 +230,7 @@ struct DidStateProcessingContext {
 impl DidStateProcessingContext {
     fn new(signed_operation: SignedAtalaOperation, metadata: OperationMetadata) -> Result<Self, ProcessError> {
         let Some(operation) = &signed_operation.operation else {
-            Err(ProcessError::EmptyOperation)?
+            Err(ProcessError::SignedAtalaOperationMissingOperation)?
         };
 
         let did = CanonicalPrismDid::from_operation(operation)?;
@@ -254,10 +245,8 @@ impl DidStateProcessingContext {
                     processor,
                 })
             }
-            Some(_) => Err(ProcessError::UnexpectedOperationType(
-                "Operation type must be CreateDid".to_string(),
-            )),
-            None => Err(ProcessError::EmptyOperation),
+            Some(_) => Err(ProcessError::DidStateInitFromNonCreateOperation),
+            None => Err(ProcessError::SignedAtalaOperationMissingOperation),
         }
     }
 
@@ -272,13 +261,11 @@ impl DidStateProcessingContext {
         }
 
         let Some(operation) = signed_operation.operation else {
-            return (self, Some(ProcessError::EmptyOperation));
+            return (self, Some(ProcessError::SignedAtalaOperationMissingOperation));
         };
 
         let process_result = match operation.operation {
-            Some(Operation::CreateDid(_)) => Err(ProcessError::UnexpectedOperationType(
-                "Operation type cannot be CreateDid".to_string(),
-            )),
+            Some(Operation::CreateDid(_)) => Err(ProcessError::DidStateUpdateFromCreateOperation),
             Some(Operation::UpdateDid(op)) => self
                 .processor
                 .update_did(&self.state, op, metadata)
@@ -291,7 +278,7 @@ impl DidStateProcessingContext {
                 .processor
                 .protocol_version_update(op, metadata)
                 .map(|s| (None, Some(s))),
-            None => Err(ProcessError::EmptyOperation),
+            None => Err(ProcessError::SignedAtalaOperationMissingOperation),
         };
 
         match process_result {

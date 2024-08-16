@@ -3,6 +3,8 @@ use tokio::sync::mpsc::{self, Receiver, Sender};
 
 use crate::proto::AtalaObject;
 
+pub mod error;
+
 #[cfg(feature = "cardano")]
 pub mod cardano;
 

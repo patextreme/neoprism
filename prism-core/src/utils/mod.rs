@@ -73,4 +73,11 @@ pub fn is_uri_fragment(s: &str) -> bool {
     URI_FRAGMENT_RE.is_match(s)
 }
 
-pub type StdError = Box<dyn std::error::Error + Send + Sync>;
+/// Location of a particular point in the source code.
+/// Intended to use for debugging purposes.
+#[derive(Debug, Clone, derive_more::Display)]
+#[display("[at {}:{}]", file, line)]
+pub struct Location {
+    pub file: &'static str,
+    pub line: u32,
+}

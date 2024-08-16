@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+#![feature(error_reporter)]
 
 use app::service::DidService;
 use clap::Parser;

@@ -10,13 +10,13 @@ use strum::VariantArray;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
+use super::error::DltError;
 use super::{DltCursor, DltSource, PublishedAtalaObject};
+use crate::location;
 use crate::store::DltCursorStore;
 use crate::utils::codec::HexStr;
-use crate::utils::StdError;
 
 mod model {
-    use std::backtrace::Backtrace;
     use std::str::FromStr;
 
     use oura::model::{EventContext, MetadataRecord};
@@ -24,6 +24,7 @@ mod model {
     use serde::{Deserialize, Serialize};
     use time::OffsetDateTime;
 
+    use crate::dlt::error::MetadataReadError;
     use crate::dlt::{BlockMetadata, PublishedAtalaObject};
     use crate::proto::AtalaObject;
     use crate::utils::codec::HexStr;
@@ -56,68 +57,81 @@ mod model {
         pub v: u64,
     }
 
-    #[derive(Debug, thiserror::Error)]
-    pub enum ConversionError {
-        #[error("hex conversion error: {source}")]
-        HexDecodeError {
-            #[from]
-            source: crate::utils::codec::DecodeError,
-            backtrace: Backtrace,
-        },
-        #[error("protobuf decode error: {source}")]
-        ProtoDecodeError {
-            #[from]
-            source: prost::DecodeError,
-            backtrace: Backtrace,
-        },
-        #[error("time component range error: {source}")]
-        TimeRange {
-            #[from]
-            source: time::error::ComponentRange,
-            backtrace: Backtrace,
-        },
-        #[error("metadata malformed: {0}")]
-        MalformedMetadata(String),
-    }
-
     pub fn parse_oura_event(
         context: EventContext,
         metadata: MetadataRecord,
-    ) -> Result<PublishedAtalaObject, ConversionError> {
-        let hex_group = match metadata.content {
-            oura::model::MetadatumRendition::MapJson(json) => {
-                let meta = serde_json::from_value::<MetadataMapJson>(json)
-                    .map_err(|e| ConversionError::MalformedMetadata(e.to_string()))?;
-                meta.c
-            }
-            _ => Err(ConversionError::MalformedMetadata(
-                "Metadata is not a MapJson type".to_string(),
-            ))?,
-        };
-        let hex = hex_group.join("");
-        let bytes = HexStr::from_str(&hex)?.to_bytes();
-        let atala_object = AtalaObject::decode(bytes.as_slice())?;
-        let timestamp = context.timestamp.ok_or(ConversionError::MalformedMetadata(
-            "Timestamp must be present in Cardano metadata".to_string(),
-        ))? as i64;
-        let timestamp = OffsetDateTime::from_unix_timestamp(timestamp)?;
+    ) -> Result<PublishedAtalaObject, MetadataReadError> {
+        // parse metadata
+        let block_hash = context.block_hash;
+        let tx_idx = context.tx_idx;
+        let timestamp = context.timestamp.ok_or(MetadataReadError::MissingBlockProperty {
+            block_hash: block_hash.clone(),
+            tx_idx,
+            name: "timestamp",
+        })? as i64;
+        let timestamp =
+            OffsetDateTime::from_unix_timestamp(timestamp).map_err(|e| MetadataReadError::InvalidBlockTimestamp {
+                source: e,
+                block_hash: block_hash.clone(),
+                timestamp,
+                tx_idx,
+            })?;
         let block_metadata = BlockMetadata {
             cbt: timestamp,
-            absn: context.tx_idx.ok_or(ConversionError::MalformedMetadata(
-                "Transaction index must be present in Cardano metadata".to_string(),
-            ))? as u32,
-            block_number: context.block_number.ok_or(ConversionError::MalformedMetadata(
-                "Block number must be present in Cardano metadata".to_string(),
-            ))?,
-            slot_number: context.slot.ok_or(ConversionError::MalformedMetadata(
-                "Slot number must be present in Cardano metadata".to_string(),
-            ))?,
+            absn: context.tx_idx.ok_or(MetadataReadError::MissingBlockProperty {
+                block_hash: block_hash.clone(),
+                tx_idx,
+                name: "tx_idx",
+            })? as u32,
+            block_number: context.block_number.ok_or(MetadataReadError::MissingBlockProperty {
+                block_hash: block_hash.clone(),
+                tx_idx,
+                name: "block_number",
+            })?,
+            slot_number: context.slot.ok_or(MetadataReadError::MissingBlockProperty {
+                block_hash: block_hash.clone(),
+                tx_idx,
+                name: "slot",
+            })?,
         };
-        let published_atala_object = PublishedAtalaObject {
+
+        // parse atala_block
+        let hex_group = match metadata.content {
+            oura::model::MetadatumRendition::MapJson(json) => {
+                let meta = serde_json::from_value::<MetadataMapJson>(json).map_err(|e| {
+                    MetadataReadError::InvalidJsonType {
+                        source: e.into(),
+                        block_hash: block_hash.clone(),
+                        tx_idx,
+                    }
+                })?;
+                meta.c
+            }
+            _ => Err(MetadataReadError::InvalidJsonType {
+                source: "Metadata is not a MapJson type".to_string().into(),
+                block_hash: block_hash.clone(),
+                tx_idx,
+            })?,
+        };
+        let hex = hex_group.join("");
+        let bytes = HexStr::from_str(&hex)
+            .map_err(|e| MetadataReadError::AtalaBlockHexDecode {
+                source: e,
+                block_hash: block_hash.clone(),
+                tx_idx,
+            })?
+            .to_bytes();
+        let atala_object =
+            AtalaObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::AtalaBlockProtoDecode {
+                source: e,
+                block_hash,
+                tx_idx,
+            })?;
+
+        Ok(PublishedAtalaObject {
             block_metadata,
             atala_object,
-        };
-        Ok(published_atala_object)
+        })
     }
 }
 
@@ -254,11 +268,14 @@ struct OuraStreamWorker {
 }
 
 impl OuraStreamWorker {
-    fn spawn(self) -> std::thread::JoinHandle<Result<(), StdError>> {
+    fn spawn(self) -> std::thread::JoinHandle<Result<(), DltError>> {
         std::thread::spawn(move || loop {
             let with_utils = self.build_with_util();
             log::info!("Bootstraping oura pipeline thread");
-            let (_, oura_rx) = with_utils.bootstrap().map_err(|e| e.to_string())?;
+            let (_, oura_rx) = with_utils.bootstrap().map_err(|e| DltError {
+                source: e.to_string().into(),
+                location: location!(),
+            })?;
             let exit_err = self.stream_loop(oura_rx);
             log::error!("Oura pipeline terminated. Retry in 10 seconds. ({})", exit_err);
             std::thread::sleep(std::time::Duration::from_secs(10));
@@ -280,7 +297,7 @@ impl OuraStreamWorker {
         owned_with_utils
     }
 
-    fn stream_loop(&self, receiver: StageReceiver) -> StdError {
+    fn stream_loop(&self, receiver: StageReceiver) -> DltError {
         let timeout = std::time::Duration::from_secs(300);
         loop {
             let received_event = receiver.recv_timeout(timeout);
@@ -290,7 +307,10 @@ impl OuraStreamWorker {
                     self.persist_cursor(&event);
                     handle_result
                 }
-                Err(e) => Err(e.into()),
+                Err(e) => Err(DltError {
+                    source: e.to_string().into(),
+                    location: location!(),
+                }),
             };
             if let Err(e) = handle_result {
                 log::error!("Error handling event from oura source. {}", e);
@@ -316,7 +336,7 @@ impl OuraStreamWorker {
         let _ = self.cursor_tx.send(Some(cursor));
     }
 
-    fn handle_atala_event(&self, event: Event) -> Result<(), StdError> {
+    fn handle_atala_event(&self, event: Event) -> Result<(), DltError> {
         let EventData::Metadata(meta) = event.data else {
             return Ok(());
         };
@@ -333,8 +353,12 @@ impl OuraStreamWorker {
 
         let parsed_atala_object = self::model::parse_oura_event(context, meta);
         match parsed_atala_object {
-            Ok(atala_object) => self.event_tx.blocking_send(atala_object).map_err(|e| e.to_string())?,
+            Ok(atala_object) => self.event_tx.blocking_send(atala_object).map_err(|e| DltError {
+                source: e.to_string().into(),
+                location: location!(),
+            })?,
             Err(e) => {
+                // TODO: add debug level error report
                 log::warn!("Unable to parse oura event into AtalaObject. ({})", e);
             }
         }
@@ -349,7 +373,7 @@ struct CursorPersistWorker<Store: DltCursorStore> {
 }
 
 impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
-    fn spawn(mut self) -> JoinHandle<Result<(), StdError>> {
+    fn spawn(mut self) -> JoinHandle<Result<(), DltError>> {
         let delay_sec = 30;
         log::info!("Spawn cursor persist worker with {} seconds interval", delay_sec);
         tokio::spawn(async move {

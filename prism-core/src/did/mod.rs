@@ -2,6 +2,7 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 
 use enum_dispatch::enum_dispatch;
+use error::DidSyntaxError;
 use prost::Message;
 use regex::Regex;
 
@@ -11,7 +12,10 @@ use crate::proto::AtalaOperation;
 use crate::utils::codec::{Base64UrlStrNoPad, HexStr};
 use crate::utils::hash::{sha256, Sha256Digest};
 
+pub mod error;
 pub mod operation;
+
+pub use error::Error;
 
 static CANONICAL_SUFFIX_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^([0-9a-f]{64}$)").expect("CANONICAL_SUFFIX_RE regex is invalid"));
@@ -19,18 +23,26 @@ static LONG_FORM_SUFFIX_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^([0-9a-f]{64}):([A-Za-z0-9_-]+$)").expect("LONG_FORM_SUFFIX_RE regex is invalid"));
 
 #[enum_dispatch(PrismDidLike)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, derive_more::Debug, derive_more::Display)]
 pub enum PrismDid {
+    #[display("{_0}")]
+    #[debug("{_0}")]
     Canonical(CanonicalPrismDid),
+    #[display("{_0}")]
+    #[debug("{_0}")]
     LongForm(LongFormPrismDid),
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, derive_more::Debug, derive_more::Display)]
+#[display("did:{}:{}", self.method(), self.suffix_hex())]
+#[debug("did:{}:{}", self.method(), self.suffix_hex())]
 pub struct CanonicalPrismDid {
     pub suffix: Sha256Digest,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, derive_more::Debug, derive_more::Display)]
+#[display("did:{}:{}:{}", self.method(), self.suffix_hex(), self.encoded_state)]
+#[debug("did:{}:{}:{}", self.method(), self.suffix_hex(), self.encoded_state)]
 pub struct LongFormPrismDid {
     pub suffix: Sha256Digest,
     pub encoded_state: Base64UrlStrNoPad,
@@ -48,16 +60,16 @@ pub trait PrismDidLike {
         HexStr::from(self.suffix().as_bytes().to_owned())
     }
 
-    fn to_canonical(&self) -> CanonicalPrismDid {
-        CanonicalPrismDid {
-            suffix: self.suffix().clone(),
-        }
-    }
+    fn into_canonical(self) -> CanonicalPrismDid;
 }
 
 impl PrismDidLike for CanonicalPrismDid {
     fn suffix(&self) -> &Sha256Digest {
         &self.suffix
+    }
+
+    fn into_canonical(self) -> CanonicalPrismDid {
+        self
     }
 }
 
@@ -65,85 +77,34 @@ impl PrismDidLike for LongFormPrismDid {
     fn suffix(&self) -> &Sha256Digest {
         &self.suffix
     }
-}
 
-impl From<LongFormPrismDid> for CanonicalPrismDid {
-    fn from(did: LongFormPrismDid) -> Self {
-        Self { suffix: did.suffix }
+    fn into_canonical(self) -> CanonicalPrismDid {
+        CanonicalPrismDid { suffix: self.suffix }
     }
-}
-
-impl std::fmt::Display for PrismDid {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PrismDid::Canonical(did) => did.fmt(f),
-            PrismDid::LongForm(did) => did.fmt(f),
-        }
-    }
-}
-
-impl std::fmt::Display for CanonicalPrismDid {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "did:{}:{}", self.method(), self.suffix_hex())
-    }
-}
-
-impl std::fmt::Display for LongFormPrismDid {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "did:{}:{}:{}", self.method(), self.suffix_hex(), self.encoded_state)
-    }
-}
-
-impl std::fmt::Debug for CanonicalPrismDid {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
-impl std::fmt::Debug for LongFormPrismDid {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum DidParsingError {
-    #[error("Invalid operation type: {0}")]
-    InvalidOperationType(String),
-    #[error("Operation does not exist")]
-    OperationMissing,
-    #[error("Invalid suffix length: {0}")]
-    InvalidSuffixLength(String),
-    #[error("Invalid suffix: {0}")]
-    InvalidSuffix(#[from] crate::utils::codec::DecodeError),
-    #[error("Does not starts with 'did:prism:'")]
-    InvalidPrefix,
-    #[error("Unrecognized suffix format for Prism DID: {0}")]
-    UnrecognizedSuffixFormat(String),
-    #[error("Fail to convert encoded state to AtalaOperation")]
-    InvalidEncodedState(#[from] prost::DecodeError),
-    #[error("Encoded state does not match DID suffix")]
-    UnmatchEncodedStateSuffix,
 }
 
 impl CanonicalPrismDid {
-    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, DidParsingError> {
-        Ok(LongFormPrismDid::from_operation(operation)?.into())
+    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, Error> {
+        Ok(LongFormPrismDid::from_operation(operation)?.into_canonical())
     }
 
-    pub fn from_suffix_str(suffix: &str) -> Result<Self, DidParsingError> {
-        let suffix = HexStr::from_str(suffix)?;
+    pub fn from_suffix_str(suffix: &str) -> Result<Self, DidSyntaxError> {
+        let suffix = HexStr::from_str(suffix).map_err(|e| DidSyntaxError::DidSuffixInvalidStr {
+            source: e,
+            suffix: suffix.to_string(),
+        })?;
         Self::from_suffix(suffix)
     }
 
-    pub fn from_suffix(suffix: HexStr) -> Result<Self, DidParsingError> {
-        let suffix = Sha256Digest::from_bytes(&suffix.to_bytes()).map_err(DidParsingError::InvalidSuffixLength)?;
+    pub fn from_suffix(suffix: HexStr) -> Result<Self, DidSyntaxError> {
+        let suffix = Sha256Digest::from_bytes(&suffix.to_bytes())
+            .map_err(|e| DidSyntaxError::DidSuffixInvalidHex { source: e, suffix })?;
         Ok(Self { suffix })
     }
 }
 
 impl LongFormPrismDid {
-    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, DidParsingError> {
+    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, Error> {
         match operation.operation {
             Some(Operation::CreateDid(_)) => {
                 let bytes = operation.encode_to_vec();
@@ -151,16 +112,14 @@ impl LongFormPrismDid {
                 let encoded_state = Base64UrlStrNoPad::from(bytes);
                 Ok(Self { suffix, encoded_state })
             }
-            None => Err(DidParsingError::OperationMissing),
-            Some(_) => Err(DidParsingError::InvalidOperationType(
-                "operation type must be CreateDid when deriving a DID".into(),
-            )),
+            None => Err(Error::OperationMissingFromAtalaOperation),
+            Some(_) => Err(Error::LongFormDidNotFromCreateOperation),
         }
     }
 }
 
 impl FromStr for PrismDid {
-    type Err = DidParsingError;
+    type Err = Error;
 
     /// # Example
     /// ```
@@ -176,7 +135,7 @@ impl FromStr for PrismDid {
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if !s.starts_with("did:prism:") {
-            Err(DidParsingError::InvalidPrefix)?
+            Err(DidSyntaxError::DidSyntaxInvalid { did: s.to_string() })?
         }
         let (_, s) = s.split_at("did:prism:".len());
 
@@ -185,34 +144,45 @@ impl FromStr for PrismDid {
 
         match (canonical_match, long_form_match) {
             (None, Some(long_form_match)) => {
-                let suffix: HexStr = long_form_match
-                    .get(1)
-                    .expect("Regex did not match this group")
-                    .as_str()
-                    .parse()?;
-                let encoded_state: Base64UrlStrNoPad = long_form_match
-                    .get(2)
-                    .expect("Regex did not match this group")
-                    .as_str()
-                    .parse()?;
-                let operation = AtalaOperation::decode(encoded_state.to_bytes().as_slice())?;
+                let match_group_1 = long_form_match.get(1).expect("Regex did not match this group").as_str();
+                let match_group_2 = long_form_match.get(2).expect("Regex did not match this group").as_str();
+                let suffix: HexStr = match_group_1.parse().map_err(|e| DidSyntaxError::DidSuffixInvalidStr {
+                    source: e,
+                    suffix: match_group_1.to_string(),
+                })?;
+                let encoded_state: Base64UrlStrNoPad =
+                    match_group_2
+                        .parse()
+                        .map_err(|e| DidSyntaxError::DidEncodedStateInvalidStr {
+                            source: e,
+                            encoded_state: match_group_2.to_string(),
+                        })?;
+                let operation = AtalaOperation::decode(encoded_state.to_bytes().as_slice()).map_err(|e| {
+                    DidSyntaxError::DidEncodedStateInvalidProto {
+                        source: e,
+                        did: s.to_string(),
+                    }
+                })?;
                 let did = LongFormPrismDid::from_operation(&operation)?;
                 if did.suffix_hex() == suffix {
                     Ok(did.into())
                 } else {
-                    Err(DidParsingError::UnmatchEncodedStateSuffix)
+                    Err(DidSyntaxError::DidSuffixEncodedStateUnmatched {
+                        did: s.to_string(),
+                        expected_did: did.into_canonical(),
+                    })?
                 }
             }
             (Some(canonical_match), None) => {
-                let suffix: HexStr = canonical_match
-                    .get(1)
-                    .expect("Regex did not match this group")
-                    .as_str()
-                    .parse()?;
+                let match_group_1 = canonical_match.get(1).expect("Regex did not match this group").as_str();
+                let suffix: HexStr = match_group_1.parse().map_err(|e| DidSyntaxError::DidSuffixInvalidStr {
+                    source: e,
+                    suffix: match_group_1.to_string(),
+                })?;
                 let did = CanonicalPrismDid::from_suffix(suffix)?;
                 Ok(did.into())
             }
-            _ => Err(DidParsingError::UnrecognizedSuffixFormat(s.to_string())),
+            _ => Err(DidSyntaxError::DidSyntaxInvalid { did: s.to_string() })?,
         }
     }
 }

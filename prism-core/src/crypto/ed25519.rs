@@ -1,6 +1,4 @@
-use std::backtrace::Backtrace;
-
-use super::{EncodeArray, EncodeVec, ToPublicKey, ToPublicKeyError, Verifiable};
+use super::{EncodeArray, EncodeVec, Error, ToPublicKey, Verifiable};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ed25519PublicKey(ed25519_dalek::VerifyingKey);
@@ -27,13 +25,13 @@ impl Verifiable for Ed25519PublicKey {
 }
 
 impl<T: AsRef<[u8]>> ToPublicKey<Ed25519PublicKey> for T {
-    fn to_public_key(&self) -> Result<Ed25519PublicKey, ToPublicKeyError> {
+    fn to_public_key(&self) -> Result<Ed25519PublicKey, Error> {
         let slice = self.as_ref();
         let Some((key, _)) = slice.split_first_chunk::<32>() else {
-            Err(ToPublicKeyError::InvalidKeySize {
+            Err(Error::InvalidKeySize {
                 expected: 32,
                 actual: slice.len(),
-                backtrace: Backtrace::capture(),
+                key_type: std::any::type_name::<Ed25519PublicKey>(),
             })?
         };
         let key = ed25519_dalek::VerifyingKey::from_bytes(key)?;

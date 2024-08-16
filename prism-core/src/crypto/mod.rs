@@ -1,5 +1,3 @@
-use std::backtrace::Backtrace;
-
 pub mod ed25519;
 pub mod secp256k1;
 pub mod x25519;
@@ -16,28 +14,24 @@ pub trait Verifiable {
     fn verify(&self, message: &[u8], signature: &[u8]) -> bool;
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum ToPublicKeyError {
-    #[error("Invalid key size: expected {expected}, actual {actual}")]
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+pub enum Error {
+    #[display("expected {key_type} key size to be {expected}, got size {actual}")]
     InvalidKeySize {
         expected: usize,
         actual: usize,
-        backtrace: Backtrace,
+        key_type: &'static str,
     },
-    #[error("Ed25519 key is invalid. {source}")]
-    Ed25519Signature {
-        #[from]
-        source: ed25519_dalek::SignatureError,
-        backtrace: Backtrace,
-    },
-    #[error("Secp256k1 key is invalid. {source}")]
-    Secp256k1Signature {
-        #[from]
-        source: ::k256::elliptic_curve::Error,
-        backtrace: Backtrace,
-    },
+    #[from]
+    #[display("unable to parse Ed25519 key")]
+    Ed25519KeyParsing { source: ed25519_dalek::SignatureError },
+    #[from]
+    #[display("unable to parse secp256k1 key")]
+    Secp256k1KeyParsing { source: ::k256::elliptic_curve::Error },
+    #[display("unsupported curve {curve}")]
+    UnsupportedCurve { curve: String },
 }
 
 pub trait ToPublicKey<Pk> {
-    fn to_public_key(&self) -> Result<Pk, ToPublicKeyError>;
+    fn to_public_key(&self) -> Result<Pk, Error>;
 }
