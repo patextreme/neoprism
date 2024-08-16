@@ -8,7 +8,7 @@ pub enum Error {
     #[display("operation type provided when creating a long-form DID is not CreateDidOperation")]
     LongFormDidNotFromCreateOperation,
     #[display("operation does not exist in AtalaOperation")]
-    OperationMissingFromAtalaObject,
+    OperationMissingFromAtalaOperation,
     #[from]
     #[display("invalid did syntax")]
     InvalidDidSyntax { source: DidSyntaxError },

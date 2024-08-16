@@ -1,6 +1,8 @@
 use prost::Message;
 
-use super::{DidStateRc, OperationProcessor, OperationProcessorVariants, ProcessError, ProtocolParameter};
+use super::{
+    DidStateConflictError, DidStateRc, OperationProcessor, OperationProcessorVariants, ProcessError, ProtocolParameter,
+};
 use crate::crypto::Verifiable;
 use crate::did::operation::{
     CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId, UpdateOperation, UpdateOperationAction,
@@ -21,12 +23,10 @@ pub struct V1Processor {
 impl OperationProcessor for V1Processor {
     fn check_signature(&self, state: &DidStateRc, signed_operation: &SignedAtalaOperation) -> Result<(), ProcessError> {
         let key_id = PublicKeyId::parse(&signed_operation.signed_with, self.parameters.max_id_size)
-            .map_err(|e| ProcessError::InvalidSignature(format!("signed_with key-id is invalid ({})", e)))?;
+            .map_err(|e| ProcessError::SignedAtalaOperationInvalidSignedWith { source: e })?;
 
         let Some(pk) = state.public_keys.get(&key_id) else {
-            Err(ProcessError::InvalidSignature(
-                "signed_with is invalid (key not found)".to_string(),
-            ))?
+            Err(ProcessError::SignedAtalaOperationSignedWithKeyNotFound { id: key_id })?
         };
 
         match &pk.get().data {
@@ -35,18 +35,17 @@ impl OperationProcessor for V1Processor {
                 let message = signed_operation
                     .operation
                     .as_ref()
-                    .ok_or(ProcessError::EmptyOperation)?
+                    .ok_or(ProcessError::SignedAtalaOperationMissingOperation)?
                     .encode_to_vec();
 
                 if !data.verify(&message, signature) {
-                    Err(ProcessError::InvalidSignature(
-                        "signature did not pass verification".to_string(),
-                    ))?
+                    Err(ProcessError::SignedAtalaOperationInvalidSignature)?
                 }
             }
-            PublicKeyData::Other { .. } => Err(ProcessError::InvalidSignature(
-                "signed_with is invalid (key is not MasterKey)".to_string(),
-            ))?,
+            PublicKeyData::Other { usage, .. } => Err(ProcessError::SignedAtalaOperationSignedWithNonMasterKey {
+                id: key_id,
+                usage: usage.clone(),
+            })?,
         }
 
         Ok(())
@@ -65,14 +64,10 @@ impl OperationProcessor for V1Processor {
         candidate_state.with_context(parsed_operation.context);
         candidate_state.with_last_operation_hash(state.did.suffix.clone());
         for pk in parsed_operation.public_keys {
-            candidate_state
-                .add_public_key(pk, &metadata)
-                .map_err(ProcessError::DidStateConflict)?;
+            candidate_state.add_public_key(pk, &metadata)?;
         }
         for service in parsed_operation.services {
-            candidate_state
-                .add_service(service, &metadata)
-                .map_err(ProcessError::DidStateConflict)?;
+            candidate_state.add_service(service, &metadata)?;
         }
 
         CreateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
@@ -85,18 +80,16 @@ impl OperationProcessor for V1Processor {
         operation: UpdateDidOperation,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
-        let parsed_operation = UpdateOperation::parse(&self.parameters, &operation)?;
+        let parsed_operation = UpdateOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
         if parsed_operation.prev_operation_hash != *state.last_operation_hash {
-            Err(ProcessError::DidStateConflict(
-                "prev_operation_hash is invalid".to_string(),
-            ))?
+            Err(DidStateConflictError::UnmatchedPreviousOperationHash)?
         }
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
         candidate_state.with_last_operation_hash(sha256(operation.encode_to_vec()));
         for action in parsed_operation.actions {
-            apply_update_action(&mut candidate_state, action, &metadata).map_err(ProcessError::DidStateConflict)?;
+            apply_update_action(&mut candidate_state, action, &metadata)?;
         }
 
         UpdateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
@@ -109,26 +102,23 @@ impl OperationProcessor for V1Processor {
         operation: DeactivateDidOperation,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
-        let parsed_operation = DeactivateOperation::parse(&operation)?;
-
+        let parsed_operation = DeactivateOperation::parse(&operation).map_err(DidError::from)?;
         if parsed_operation.prev_operation_hash != *state.last_operation_hash {
-            Err(ProcessError::DidStateConflict(
-                "prev_operation_hash is invalid".to_string(),
-            ))?
+            Err(DidStateConflictError::UnmatchedPreviousOperationHash)?
         }
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
         candidate_state.with_last_operation_hash(sha256(operation.encode_to_vec()));
-        for (id, _) in &state.public_keys {
-            candidate_state
-                .revoke_public_key(id, &metadata)
-                .map_err(ProcessError::DidStateConflict)?;
+        for (id, pk) in &state.public_keys {
+            if !pk.is_revoked() {
+                candidate_state.revoke_public_key(id, &metadata)?;
+            }
         }
-        for (id, _) in &state.services {
-            candidate_state
-                .revoke_service(id, &metadata)
-                .map_err(ProcessError::DidStateConflict)?;
+        for (id, s) in &state.services {
+            if !s.is_revoked() {
+                candidate_state.revoke_service(id, &metadata)?;
+            }
         }
 
         DeactivateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
@@ -168,23 +158,23 @@ impl Validator<UpdateDidOperation> for UpdateDidValidator {
             .iter()
             .any(|(_, pk)| pk.get().usage() == KeyUsage::MasterKey);
         if !contains_master_key {
-            Err(ProcessError::DidStateConflict(
-                "At least one master key must exist after update".to_string(),
-            ))?
+            Err(DidStateConflictError::AfterUpdateMissingMasterKey)?
         }
 
         // check public key count does not exceed limit
         if state.public_keys.len() > param.max_public_keys {
-            Err(ProcessError::DidStateConflict(
-                "Public key count exceeds limit".to_string(),
-            ))?
+            Err(DidStateConflictError::AfterUpdatePublicKeyExceedLimit {
+                limit: param.max_public_keys,
+                actual: state.public_keys.len(),
+            })?
         }
 
         // check service count does not exeed limit
         if state.services.len() > param.max_services {
-            Err(ProcessError::DidStateConflict(
-                "Service count exceeds limit".to_string(),
-            ))?
+            Err(DidStateConflictError::AfterUpdateServiceExceedLimit {
+                limit: param.max_services,
+                actual: state.services.len(),
+            })?
         }
 
         Ok(())
@@ -201,7 +191,7 @@ fn apply_update_action(
     state: &mut DidStateRc,
     action: UpdateOperationAction,
     metadata: &OperationMetadata,
-) -> Result<(), String> {
+) -> Result<(), DidStateConflictError> {
     match action {
         UpdateOperationAction::AddKey(pk) => state.add_public_key(pk, metadata)?,
         UpdateOperationAction::RemoveKey(id) => state.revoke_public_key(&id, metadata)?,

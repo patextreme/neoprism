@@ -112,7 +112,7 @@ impl LongFormPrismDid {
                 let encoded_state = Base64UrlStrNoPad::from(bytes);
                 Ok(Self { suffix, encoded_state })
             }
-            None => Err(Error::OperationMissingFromAtalaObject),
+            None => Err(Error::OperationMissingFromAtalaOperation),
             Some(_) => Err(Error::LongFormDidNotFromCreateOperation),
         }
     }

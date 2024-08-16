@@ -32,14 +32,14 @@ pub fn get_did_from_operation(atala_operation: &AtalaOperation) -> Result<Canoni
         Some(Operation::UpdateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::DeactivateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::ProtocolVersionUpdate(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?),
-        None => Err(Error::OperationMissingFromAtalaObject),
+        None => Err(Error::OperationMissingFromAtalaOperation),
     }
 }
 
 pub fn get_did_from_signed_operation(signed_operation: &SignedAtalaOperation) -> Result<CanonicalPrismDid, Error> {
     match &signed_operation.operation {
         Some(operation) => get_did_from_operation(operation),
-        None => Err(Error::OperationMissingFromAtalaObject),
+        None => Err(Error::OperationMissingFromAtalaOperation),
     }
 }
 
