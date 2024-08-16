@@ -151,7 +151,7 @@ impl OperationStore for PostgresTransaction {
             .into_iter()
             .map(|model| {
                 let suffix = HexStr::from(model.did);
-                CanonicalPrismDid::from_suffix(suffix).map_err(|e| e.into())
+                CanonicalPrismDid::from_suffix(suffix).map_err(|e| DidError::from(e).into())
             })
             .collect()
     }

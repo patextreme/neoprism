@@ -4,8 +4,8 @@ use std::sync::LazyLock;
 use regex::Regex;
 
 use super::error::{
-    CreateOperationError, Error as DidError, PublicKeyError, PublicKeyIdError, ServiceEndpointError, ServiceError,
-    ServiceIdError, ServiceTypeError,
+    CreateOperationError, DidSyntaxError, Error as DidError, PublicKeyError, PublicKeyIdError, ServiceEndpointError,
+    ServiceError, ServiceIdError, ServiceTypeError, UpdateOperationError,
 };
 use super::CanonicalPrismDid;
 use crate::crypto::ed25519::Ed25519PublicKey;
@@ -125,26 +125,6 @@ impl CreateOperation {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum UpdateOperationParsingError {
-    #[error(transparent)]
-    InvalidDidId(#[from] DidError),
-    #[error("Invalid previous operation hash: {0}")]
-    InvalidPreviousOperationHash(StdError),
-    #[error("Update action is malformed: {0}")]
-    MalformedUpdateAction(String),
-    #[error(transparent)]
-    PublicKeyParsingError(#[from] PublicKeyError),
-    #[error(transparent)]
-    ServiceParsingError(#[from] ServiceError),
-    #[error(transparent)]
-    ServiceTypeParsingError(#[from] ServiceTypeError),
-    #[error(transparent)]
-    ServiceEndpointParsingError(#[from] ServiceEndpointError),
-    #[error("Empty update action")]
-    EmptyUpdateAction,
-}
-
 #[derive(Debug, Clone)]
 pub struct UpdateOperation {
     pub id: CanonicalPrismDid,
@@ -153,17 +133,14 @@ pub struct UpdateOperation {
 }
 
 impl UpdateOperation {
-    pub fn parse(
-        param: &ProtocolParameter,
-        operation: &UpdateDidOperation,
-    ) -> Result<Self, UpdateOperationParsingError> {
+    pub fn parse(param: &ProtocolParameter, operation: &UpdateDidOperation) -> Result<Self, UpdateOperationError> {
         if operation.actions.is_empty() {
-            Err(UpdateOperationParsingError::EmptyUpdateAction)?
+            Err(UpdateOperationError::EmptyAction)?
         }
 
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
-            .map_err(|e| UpdateOperationParsingError::InvalidPreviousOperationHash(e.into()))?;
+            .map_err(|e| UpdateOperationError::InvalidPreviousOperationHash { source: e })?;
 
         let actions = operation
             .actions
@@ -197,10 +174,7 @@ pub enum UpdateOperationAction {
 }
 
 impl UpdateOperationAction {
-    pub fn parse(
-        action: &UpdateDidAction,
-        param: &ProtocolParameter,
-    ) -> Result<Option<Self>, UpdateOperationParsingError> {
+    pub fn parse(action: &UpdateDidAction, param: &ProtocolParameter) -> Result<Option<Self>, UpdateOperationError> {
         let Some(action) = &action.action else {
             return Ok(None);
         };
@@ -211,16 +185,19 @@ impl UpdateOperationAction {
                     let parsed_key = PublicKey::parse(pk, param)?;
                     Self::AddKey(parsed_key)
                 }
-                None => Err(UpdateOperationParsingError::MalformedUpdateAction(
-                    "AddKey action must have key property".to_owned(),
-                ))?,
+                None => Err(UpdateOperationError::MissingUpdateActionData {
+                    action_type: std::any::type_name_of_val(add_key),
+                    field_name: "key",
+                })?,
             },
             Action::RemoveKey(remove_key) => {
                 let key_id = PublicKeyId::parse(&remove_key.key_id, param.max_id_size).map_err(|e| {
-                    UpdateOperationParsingError::MalformedUpdateAction(format!(
-                        "Public key id cannot be parsed ({})",
-                        e
-                    ))
+                    UpdateOperationError::InvalidPublicKey {
+                        source: PublicKeyError::InvalidKeyId {
+                            source: e,
+                            id: remove_key.key_id.clone(),
+                        },
+                    }
                 })?;
                 Self::RemoveKey(key_id)
             }
@@ -229,33 +206,56 @@ impl UpdateOperationAction {
                     let parsed_service = Service::parse(service, param)?;
                     Self::AddService(parsed_service)
                 }
-                None => Err(UpdateOperationParsingError::MalformedUpdateAction(
-                    "AddService action must have service property".to_owned(),
-                ))?,
+                None => Err(UpdateOperationError::MissingUpdateActionData {
+                    action_type: std::any::type_name_of_val(add_service),
+                    field_name: "service",
+                })?,
             },
             Action::RemoveService(remove_service) => {
-                let service_id = ServiceId::parse(&remove_service.service_id, param.max_id_size).map_err(|_| {
-                    UpdateOperationParsingError::MalformedUpdateAction("Service id cannot be parsed".to_string())
+                let service_id = ServiceId::parse(&remove_service.service_id, param.max_id_size).map_err(|e| {
+                    UpdateOperationError::InvalidService {
+                        source: ServiceError::InvalidServiceId {
+                            source: e,
+                            id: remove_service.service_id.clone(),
+                        },
+                    }
                 })?;
                 Self::RemoveService(service_id)
             }
             Action::UpdateService(update_service) => {
-                let service_id = ServiceId::parse(&update_service.service_id, param.max_id_size).map_err(|_| {
-                    UpdateOperationParsingError::MalformedUpdateAction("Service id cannot be parsed".to_string())
+                let service_id = ServiceId::parse(&update_service.service_id, param.max_id_size).map_err(|e| {
+                    UpdateOperationError::InvalidService {
+                        source: ServiceError::InvalidServiceId {
+                            source: e,
+                            id: update_service.service_id.clone(),
+                        },
+                    }
                 })?;
                 let service_type = match Some(update_service.r#type.clone()).filter(|i| !i.is_empty()) {
-                    Some(s) => Some(
-                        ServiceType::parse(&s, param).map_err(UpdateOperationParsingError::ServiceTypeParsingError)?,
-                    ),
+                    Some(s) => {
+                        Some(
+                            ServiceType::parse(&s, param).map_err(|e| UpdateOperationError::InvalidService {
+                                source: ServiceError::InvalidServiceType {
+                                    source: e,
+                                    type_name: update_service.r#type.clone(),
+                                },
+                            })?,
+                        )
+                    }
                     None => None,
                 };
-                let service_endpoints = match Some(update_service.service_endpoints.clone()).filter(|i| !i.is_empty()) {
-                    Some(s) => Some(
-                        ServiceEndpoint::parse(&s, param)
-                            .map_err(UpdateOperationParsingError::ServiceEndpointParsingError)?,
-                    ),
-                    None => None,
-                };
+                let service_endpoints =
+                    match Some(update_service.service_endpoints.clone()).filter(|i| !i.is_empty()) {
+                        Some(s) => Some(ServiceEndpoint::parse(&s, param).map_err(|e| {
+                            UpdateOperationError::InvalidService {
+                                source: ServiceError::InvalidServiceEndpoint {
+                                    source: e,
+                                    endpoint: update_service.service_endpoints.clone(),
+                                },
+                            }
+                        })?),
+                        None => None,
+                    };
                 Self::UpdateService {
                     id: service_id,
                     r#type: service_type,
@@ -273,6 +273,8 @@ impl UpdateOperationAction {
 pub enum DeactivateOperationParsingError {
     #[error("Invalid did id: {0}")]
     InvalidDidId(#[from] DidError),
+    #[error("Invalid did id: {0}")]
+    InvalidDidSyntax(#[from] DidSyntaxError),
     #[error("Invalid previous operation hash: {0}")]
     InvalidPreviousOperationHash(StdError),
 }

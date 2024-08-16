@@ -15,6 +15,8 @@ pub enum Error {
     #[from]
     #[display("error occurred in CreateOperation")]
     CreateOperation { source: CreateOperationError },
+    #[display("error occurred in UpdateOperation")]
+    UpdateOperation { source: UpdateOperationError },
 }
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
@@ -56,16 +58,38 @@ pub enum CreateOperationError {
     MissingMasterKey,
     #[from]
     #[display("invalid public key found in CreateOperation")]
-    InvalidPublicKey(PublicKeyError),
+    InvalidPublicKey { source: PublicKeyError },
     #[from]
     #[display("invalid service found in CreateOperation")]
-    InvalidService(ServiceError),
+    InvalidService { source: ServiceError },
     #[display("invalid input size for public keys")]
     TooManyPublicKeys { source: InvalidInputSizeError },
     #[display("invalid input size for services")]
     TooManyServices { source: InvalidInputSizeError },
     #[display("duplicate context found in CreateOperation")]
     DuplicateContext,
+}
+
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+pub enum UpdateOperationError {
+    #[display("update action does not exist in UpdateOperation")]
+    EmptyAction,
+    #[display("invalid previous operation hash in UpdateOperation")]
+    InvalidPreviousOperationHash { source: InvalidInputSizeError },
+    #[from]
+    #[display("id in UpdateOperation does not contain a valid did")]
+    InvalidDidSyntax { source: DidSyntaxError },
+    #[display("update action type '{action_type}' in UpdateOperation is missing a field '{field_name}'")]
+    MissingUpdateActionData {
+        action_type: &'static str,
+        field_name: &'static str,
+    },
+    #[from]
+    #[display("invalid public key found in CreateOperation")]
+    InvalidPublicKey { source: PublicKeyError },
+    #[from]
+    #[display("invalid service found in CreateOperation")]
+    InvalidService { source: ServiceError },
 }
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]

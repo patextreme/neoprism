@@ -88,7 +88,7 @@ impl CanonicalPrismDid {
         Ok(LongFormPrismDid::from_operation(operation)?.into_canonical())
     }
 
-    pub fn from_suffix_str(suffix: &str) -> Result<Self, Error> {
+    pub fn from_suffix_str(suffix: &str) -> Result<Self, DidSyntaxError> {
         let suffix = HexStr::from_str(suffix).map_err(|e| DidSyntaxError::DidSuffixInvalidStr {
             source: e,
             suffix: suffix.to_string(),
@@ -96,7 +96,7 @@ impl CanonicalPrismDid {
         Self::from_suffix(suffix)
     }
 
-    pub fn from_suffix(suffix: HexStr) -> Result<Self, Error> {
+    pub fn from_suffix(suffix: HexStr) -> Result<Self, DidSyntaxError> {
         let suffix = Sha256Digest::from_bytes(&suffix.to_bytes())
             .map_err(|e| DidSyntaxError::DidSuffixInvalidHex { source: e, suffix })?;
         Ok(Self { suffix })
