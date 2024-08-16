@@ -14,7 +14,7 @@ use rocket::uri;
 use crate::http::views::components::{NavBar, PageContent, PageTitle};
 use crate::http::views::format_datetime;
 
-pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Option<String>)>;
+pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Vec<String>)>;
 
 pub fn ResolverPage(
     did: Option<String>,
@@ -85,7 +85,13 @@ fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>)
                     "Operation Sequence Number: {meta.osn}"
                 }
                 p { class: "font-mono", "{operation:?}" }
-                p { class: "font-mono", "Error: {error:?}" }
+                p { class: "font-mono",
+                    "Error stack:"
+                    for e in error {
+                        br {}
+                        span { class: "ml-5", "{e}" }
+                    }
+                }
             }
         }
     });

@@ -4,7 +4,7 @@ use crate::did::operation::{KeyUsage, PublicKeyId, ServiceId};
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum ProcessError {
     #[from]
-    #[display("{source}")]
+    #[display("invalid did operation was processed")]
     DidOperationInvalid { source: DidError },
     #[display("did state initialization requires operation to be CreateOperation")]
     DidStateInitFromNonCreateOperation,
