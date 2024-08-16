@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 use regex::Regex;
 
 use super::error::{
-    CreateOperationError, DidSyntaxError, Error as DidError, PublicKeyError, PublicKeyIdError, ServiceEndpointError,
+    CreateOperationError, DeactivateOperationError, Error, PublicKeyError, PublicKeyIdError, ServiceEndpointError,
     ServiceError, ServiceIdError, ServiceTypeError, UpdateOperationError,
 };
 use super::CanonicalPrismDid;
@@ -12,7 +12,7 @@ use crate::crypto::ed25519::Ed25519PublicKey;
 use crate::crypto::secp256k1::Secp256k1PublicKey;
 use crate::crypto::x25519::X25519PublicKey;
 use crate::crypto::{Error as CryptoError, ToPublicKey};
-use crate::error::{InvalidInputSizeError, StdError};
+use crate::error::InvalidInputSizeError;
 use crate::location;
 use crate::prelude::{AtalaOperation, SignedAtalaOperation};
 use crate::proto::atala_operation::Operation;
@@ -26,20 +26,20 @@ use crate::utils::{is_slice_unique, is_uri, is_uri_fragment};
 static SERVICE_TYPE_NAME_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$").expect("ServiceTypeName regex is invalid"));
 
-pub fn get_did_from_operation(atala_operation: &AtalaOperation) -> Result<CanonicalPrismDid, DidError> {
+pub fn get_did_from_operation(atala_operation: &AtalaOperation) -> Result<CanonicalPrismDid, Error> {
     match &atala_operation.operation {
         Some(Operation::CreateDid(_)) => Ok(CanonicalPrismDid::from_operation(atala_operation)?),
         Some(Operation::UpdateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::DeactivateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::ProtocolVersionUpdate(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?),
-        None => Err(DidError::OperationMissingFromAtalaObject),
+        None => Err(Error::OperationMissingFromAtalaObject),
     }
 }
 
-pub fn get_did_from_signed_operation(signed_operation: &SignedAtalaOperation) -> Result<CanonicalPrismDid, DidError> {
+pub fn get_did_from_signed_operation(signed_operation: &SignedAtalaOperation) -> Result<CanonicalPrismDid, Error> {
     match &signed_operation.operation {
         Some(operation) => get_did_from_operation(operation),
-        None => Err(DidError::OperationMissingFromAtalaObject),
+        None => Err(Error::OperationMissingFromAtalaObject),
     }
 }
 
@@ -269,16 +269,6 @@ impl UpdateOperationAction {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum DeactivateOperationParsingError {
-    #[error("Invalid did id: {0}")]
-    InvalidDidId(#[from] DidError),
-    #[error("Invalid did id: {0}")]
-    InvalidDidSyntax(#[from] DidSyntaxError),
-    #[error("Invalid previous operation hash: {0}")]
-    InvalidPreviousOperationHash(StdError),
-}
-
 #[derive(Debug, Clone)]
 pub struct DeactivateOperation {
     pub id: CanonicalPrismDid,
@@ -286,10 +276,10 @@ pub struct DeactivateOperation {
 }
 
 impl DeactivateOperation {
-    pub fn parse(operation: &DeactivateDidOperation) -> Result<Self, DeactivateOperationParsingError> {
+    pub fn parse(operation: &DeactivateDidOperation) -> Result<Self, DeactivateOperationError> {
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
-            .map_err(|e| DeactivateOperationParsingError::InvalidPreviousOperationHash(e.into()))?;
+            .map_err(|e| DeactivateOperationError::InvalidPreviousOperationHash { source: e })?;
 
         Ok(Self {
             id,

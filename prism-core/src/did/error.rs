@@ -15,8 +15,12 @@ pub enum Error {
     #[from]
     #[display("error occurred in CreateOperation")]
     CreateOperation { source: CreateOperationError },
+    #[from]
     #[display("error occurred in UpdateOperation")]
     UpdateOperation { source: UpdateOperationError },
+    #[from]
+    #[display("error occurred in DeactivateOperation")]
+    DeactivateOperation { source: DeactivateOperationError },
 }
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
@@ -77,7 +81,7 @@ pub enum UpdateOperationError {
     #[display("invalid previous operation hash in UpdateOperation")]
     InvalidPreviousOperationHash { source: InvalidInputSizeError },
     #[from]
-    #[display("id in UpdateOperation does not contain a valid did")]
+    #[display("did provided in UpdateOperation is not valid")]
     InvalidDidSyntax { source: DidSyntaxError },
     #[display("update action type '{action_type}' in UpdateOperation is missing a field '{field_name}'")]
     MissingUpdateActionData {
@@ -90,6 +94,15 @@ pub enum UpdateOperationError {
     #[from]
     #[display("invalid service found in CreateOperation")]
     InvalidService { source: ServiceError },
+}
+
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+pub enum DeactivateOperationError {
+    #[display("invalid previous operation hash in DeactivateOperation")]
+    InvalidPreviousOperationHash { source: InvalidInputSizeError },
+    #[from]
+    #[display("did provided in DeactivateOperation is not valid")]
+    InvalidDidSyntax { source: DidSyntaxError },
 }
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]

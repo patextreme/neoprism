@@ -3,10 +3,8 @@ use std::rc::Rc;
 use enum_dispatch::enum_dispatch;
 
 use self::v1::V1Processor;
-use crate::did::error::UpdateOperationError;
-use crate::did::operation::{
-    DeactivateOperationParsingError, PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType,
-};
+use crate::did::error::{DeactivateOperationError, UpdateOperationError};
+use crate::did::operation::{PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType};
 use crate::did::{self, CanonicalPrismDid, DidState};
 use crate::dlt::OperationMetadata;
 use crate::proto::atala_operation::Operation;
@@ -53,7 +51,7 @@ pub enum ProcessError {
     #[error("Update operation cannot be parsed: {0}")]
     UpdateOperationParseError(#[from] UpdateOperationError),
     #[error("Deactivate operation cannot be parsed: {0}")]
-    DeactivateOperationParseError(#[from] DeactivateOperationParsingError),
+    DeactivateOperationParseError(#[from] DeactivateOperationError),
     #[error("Invalid signature: {0}")]
     InvalidSignature(String),
 }
