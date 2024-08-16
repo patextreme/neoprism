@@ -9,7 +9,14 @@ edition = "2021"
 # general
 async-trait = { workspace = true }
 base64 = { workspace = true }
-derive_more = { workspace = true, features = ["full"] }
+derive_more = { workspace = true, features = [
+  "as_ref",
+  "from",
+  "into",
+  "debug",
+  "display",
+  "error",
+] }
 enum_dispatch = { workspace = true }
 hex = { workspace = true }
 im-rc = { workspace = true }
