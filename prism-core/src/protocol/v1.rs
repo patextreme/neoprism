@@ -44,7 +44,7 @@ impl OperationProcessor for V1Processor {
             }
             PublicKeyData::Other { usage, .. } => Err(ProcessError::SignedAtalaOperationSignedWithNonMasterKey {
                 id: key_id,
-                usage: usage.clone(),
+                usage: *usage,
             })?,
         }
 

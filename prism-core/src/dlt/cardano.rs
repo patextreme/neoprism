@@ -10,10 +10,11 @@ use strum::VariantArray;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
+use super::error::DltError;
 use super::{DltCursor, DltSource, PublishedAtalaObject};
+use crate::location;
 use crate::store::DltCursorStore;
 use crate::utils::codec::HexStr;
-use crate::{location, Error};
 
 mod model {
     use std::str::FromStr;
@@ -267,11 +268,11 @@ struct OuraStreamWorker {
 }
 
 impl OuraStreamWorker {
-    fn spawn(self) -> std::thread::JoinHandle<Result<(), Error>> {
+    fn spawn(self) -> std::thread::JoinHandle<Result<(), DltError>> {
         std::thread::spawn(move || loop {
             let with_utils = self.build_with_util();
             log::info!("Bootstraping oura pipeline thread");
-            let (_, oura_rx) = with_utils.bootstrap().map_err(|e| Error::DltConnection {
+            let (_, oura_rx) = with_utils.bootstrap().map_err(|e| DltError {
                 source: e.to_string().into(),
                 location: location!(),
             })?;
@@ -296,7 +297,7 @@ impl OuraStreamWorker {
         owned_with_utils
     }
 
-    fn stream_loop(&self, receiver: StageReceiver) -> Error {
+    fn stream_loop(&self, receiver: StageReceiver) -> DltError {
         let timeout = std::time::Duration::from_secs(300);
         loop {
             let received_event = receiver.recv_timeout(timeout);
@@ -306,7 +307,7 @@ impl OuraStreamWorker {
                     self.persist_cursor(&event);
                     handle_result
                 }
-                Err(e) => Err(Error::DltConnection {
+                Err(e) => Err(DltError {
                     source: e.to_string().into(),
                     location: location!(),
                 }),
@@ -335,7 +336,7 @@ impl OuraStreamWorker {
         let _ = self.cursor_tx.send(Some(cursor));
     }
 
-    fn handle_atala_event(&self, event: Event) -> Result<(), Error> {
+    fn handle_atala_event(&self, event: Event) -> Result<(), DltError> {
         let EventData::Metadata(meta) = event.data else {
             return Ok(());
         };
@@ -352,13 +353,10 @@ impl OuraStreamWorker {
 
         let parsed_atala_object = self::model::parse_oura_event(context, meta);
         match parsed_atala_object {
-            Ok(atala_object) => self
-                .event_tx
-                .blocking_send(atala_object)
-                .map_err(|e| Error::DltConnection {
-                    source: e.to_string().into(),
-                    location: location!(),
-                })?,
+            Ok(atala_object) => self.event_tx.blocking_send(atala_object).map_err(|e| DltError {
+                source: e.to_string().into(),
+                location: location!(),
+            })?,
             Err(e) => {
                 // TODO: add debug level error report
                 log::warn!("Unable to parse oura event into AtalaObject. ({})", e);
@@ -375,7 +373,7 @@ struct CursorPersistWorker<Store: DltCursorStore> {
 }
 
 impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
-    fn spawn(mut self) -> JoinHandle<Result<(), Error>> {
+    fn spawn(mut self) -> JoinHandle<Result<(), DltError>> {
         let delay_sec = 30;
         log::info!("Spawn cursor persist worker with {} seconds interval", delay_sec);
         tokio::spawn(async move {

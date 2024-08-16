@@ -15,5 +15,3 @@ pub mod prelude;
 pub mod protocol;
 pub mod store;
 pub mod utils;
-
-pub use error::Error;
