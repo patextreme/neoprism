@@ -11,7 +11,7 @@ pub trait OperationStore {
         did: &CanonicalPrismDid,
     ) -> Result<Vec<(OperationMetadata, SignedAtalaOperation)>, Self::Error>;
 
-    async fn insert(
+    async fn insert_operation(
         &self,
         signed_operation: SignedAtalaOperation,
         metadata: OperationMetadata,

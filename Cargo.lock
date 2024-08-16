@@ -2741,12 +2741,12 @@ name = "prism-storage"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "derive_more",
  "log",
  "prism-core",
  "prost",
  "sea-orm",
  "sea-query",
- "thiserror",
  "time",
  "tokio",
 ]

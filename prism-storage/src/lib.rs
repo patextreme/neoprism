@@ -1,7 +1,6 @@
 #![feature(error_generic_member_access)]
 
-use std::backtrace::Backtrace;
-
+use prism_core::did::error::DidSyntaxError;
 use prism_core::did::operation::get_did_from_signed_operation;
 use prism_core::did::Error as DidError;
 use prism_core::dlt::{BlockMetadata, DltCursor, OperationMetadata};
@@ -17,26 +16,20 @@ use sea_query::{Alias, Expr, OnConflict};
 
 mod entity;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum Error {
-    #[error("Database error: {source}")]
-    Db {
-        #[from]
-        source: sea_orm::DbErr,
-        backtrace: Backtrace,
-    },
-    #[error("Unable to decode to protobuf message. {source}")]
+    #[from]
+    #[display("database connection error")]
+    Db { source: sea_orm::DbErr },
+    #[display("unable to decode to protobuf message into type {target_type} from stored data")]
     ProtobufDecode {
-        #[from]
         source: prost::DecodeError,
-        backtrace: Backtrace,
+        target_type: &'static str,
     },
-    #[error("{source}")]
-    Did {
-        #[from]
-        source: DidError,
-        backtrace: Backtrace,
-    },
+    #[display("cannot compute did index from SignedAtalaOperation")]
+    DidIndexFromSignedAtalaOperation { source: DidError },
+    #[display("cannot decode did from stored data")]
+    DidDecode { source: DidSyntaxError },
 }
 
 #[derive(Debug, Clone)]
@@ -100,18 +93,19 @@ impl OperationStore for PostgresTransaction {
                     .map(|op| (metadata, op))
                     .map_err(|e| Error::ProtobufDecode {
                         source: e,
-                        backtrace: Backtrace::capture(),
+                        target_type: std::any::type_name::<SignedAtalaOperation>(),
                     })
             })
             .collect()
     }
 
-    async fn insert(
+    async fn insert_operation(
         &self,
         signed_operation: SignedAtalaOperation,
         metadata: OperationMetadata,
     ) -> Result<(), Self::Error> {
-        let did = get_did_from_signed_operation(&signed_operation)?;
+        let did = get_did_from_signed_operation(&signed_operation)
+            .map_err(|e| Error::DidIndexFromSignedAtalaOperation { source: e })?;
         let active_model = entity::raw_operation::ActiveModel {
             did: did.suffix.to_vec().into_active_value(),
             signed_operation_data: signed_operation.encode_to_vec().into_active_value(),
@@ -151,7 +145,7 @@ impl OperationStore for PostgresTransaction {
             .into_iter()
             .map(|model| {
                 let suffix = HexStr::from(model.did);
-                CanonicalPrismDid::from_suffix(suffix).map_err(|e| DidError::from(e).into())
+                CanonicalPrismDid::from_suffix(suffix).map_err(|e| Error::DidDecode { source: e })
             })
             .collect()
     }
