@@ -332,15 +332,11 @@ impl TestInput {
 
 #[test]
 fn test_secp256k1_apollo_test_cases() {
-    for (idx, ti) in TEST_VECTOR.iter().enumerate() {
+    for ti in TEST_VECTOR {
         let public_key = ti.public_key();
         let data = ti.data();
         let signature = ti.signature();
         let is_valid = public_key.verify(&data, &signature);
-
-        println!("case {} is_valid: {}", idx, is_valid);
-
-        // FIXME: enable this when compatibility is fixed
-        // assert!(is_valid)
+        assert!(is_valid)
     }
 }
