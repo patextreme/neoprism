@@ -123,14 +123,21 @@ impl FromStr for PrismDid {
 
     /// # Example
     /// ```
-    /// use prism_core::did::PrismDid;
     /// use std::str::FromStr;
+    ///
+    /// use prism_core::did::PrismDid;
     ///
     /// let did = PrismDid::from_str("did:prism:1234567890abcdef");
     /// assert!(did.is_err());
     ///
-    /// let did = PrismDid::from_str("did:prism:0000000000000000000000000000000000000000000000000000000000000000").unwrap();
-    /// assert_eq!(did.to_string(), "did:prism:0000000000000000000000000000000000000000000000000000000000000000");
+    /// let did = PrismDid::from_str(
+    ///     "did:prism:0000000000000000000000000000000000000000000000000000000000000000",
+    /// )
+    /// .unwrap();
+    /// assert_eq!(
+    ///     did.to_string(),
+    ///     "did:prism:0000000000000000000000000000000000000000000000000000000000000000"
+    /// );
     /// assert!(matches!(did, PrismDid::Canonical(_)));
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {

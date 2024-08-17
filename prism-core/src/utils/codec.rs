@@ -45,7 +45,8 @@ impl<B: AsRef<[u8]>> From<B> for HexStr {
 /// # Example
 /// ```
 /// use std::str::FromStr;
-/// use prism_core::utils::codec::{HexStr, Error};
+///
+/// use prism_core::utils::codec::{Error, HexStr};
 ///
 /// let hexstr = HexStr::from_str("68656c6c6f20776f726c64").unwrap();
 /// assert_eq!(hexstr, HexStr::from(b"hello world"));
@@ -94,6 +95,7 @@ impl<B: AsRef<[u8]>> From<B> for Base64UrlStr {
 /// # Example
 /// ```
 /// use std::str::FromStr;
+///
 /// use prism_core::utils::codec::{Base64UrlStr, Error};
 ///
 /// let b64 = Base64UrlStr::from_str("aGVsbG8gd29ybGQ=").unwrap();
@@ -144,6 +146,7 @@ impl<B: AsRef<[u8]>> From<B> for Base64UrlStrNoPad {
 /// # Example
 /// ```
 /// use std::str::FromStr;
+///
 /// use prism_core::utils::codec::{Base64UrlStrNoPad, Error};
 ///
 /// let b64 = Base64UrlStrNoPad::from_str("aGVsbG8gd29ybGQ").unwrap();
