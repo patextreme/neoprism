@@ -221,7 +221,12 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
             well_known: None,
             mapper: Default::default(),
             min_depth: 112,
-            retry_policy: None,
+            retry_policy: Some(oura::sources::RetryPolicy {
+                chainsync_max_retries: u32::MAX,
+                chainsync_max_backoff: 60,
+                connection_max_retries: u32::MAX,
+                connection_max_backoff: 60,
+            }),
             finalize: None,
         };
         let utils = Utils::new(chain.chain_wellknown_info());
