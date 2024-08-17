@@ -40,6 +40,8 @@
             name = "neoprism";
             cargoLock.lockFile = ./Cargo.lock;
             src = pkgs.lib.cleanSource ./.;
+            buildInputs = [ pkgs.protobuf ];
+            PROTOC = "${pkgs.protobuf}/bin/protoc";
           };
 
           assets = pkgs.stdenv.mkDerivation {
