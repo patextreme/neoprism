@@ -29,8 +29,53 @@
           ];
           targets = [ ];
         };
+        rustPlatform = pkgs.makeRustPlatform {
+          cargo = rust;
+          rustc = rust;
+        };
       in
       {
+        packages = rec {
+          default = rustPlatform.buildRustPackage {
+            name = "neoprism";
+            cargoLock.lockFile = ./Cargo.lock;
+            src = pkgs.lib.cleanSource ./.;
+            buildInputs = [ pkgs.protobuf ];
+            PROTOC = "${pkgs.protobuf}/bin/protoc";
+          };
+
+          assets = pkgs.stdenv.mkDerivation {
+            name = "neoprism-assets";
+            src = pkgs.lib.cleanSource ./.;
+            installPhase = ''
+              mkdir -p $out/assets
+              cp prism-node/assets/tailwind.css $out/assets/tailwind.css
+            '';
+          };
+
+          dockerImage = pkgs.dockerTools.buildImage {
+            name = "neoprism";
+            tag = "0.1.0-SNAPSHOT";
+            created = "now";
+            copyToRoot = pkgs.buildEnv {
+              name = "image-root";
+              paths = [
+                pkgs.coreutils
+                assets
+              ];
+            };
+            config = {
+              Env = [ "RUST_LOG=oura=warn,prism_core=debug,prism_node=debug,tracing::span=warn,info" ];
+              Entrypoint = [ "${default}/bin/prism-node" ];
+              Cmd = [
+                "--assets"
+                "/assets"
+              ];
+              WorkingDir = "";
+            };
+          };
+        };
+
         devShells.default =
           let
             rootDir = "$ROOT_DIR";
