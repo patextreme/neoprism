@@ -65,7 +65,7 @@
               ];
             };
             config = {
-              Env = [ "RUST_LOG=oura=warn,prism_core=debug,prism_node=debug,tracing::span=warn,info" ];
+              Env = [ "RUST_LOG=info,oura=info,oura::sources::n2n::run=warn,tracing::span=warn" ];
               Entrypoint = [ "${default}/bin/prism-node" ];
               Cmd = [
                 "--assets"
@@ -189,7 +189,7 @@
             '';
 
             # envs
-            RUST_LOG = "oura=warn,prism_core=debug,prism_node=debug,tracing::span=warn,info";
+            RUST_LOG = "info,oura=info,oura::sources::n2n::run=warn,tracing::span=warn";
           };
       }
     );

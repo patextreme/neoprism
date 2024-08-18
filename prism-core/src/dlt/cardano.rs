@@ -4,7 +4,7 @@ use std::sync::Arc;
 use oura::model::{Event, EventData};
 use oura::pipelining::{SourceProvider, StageReceiver};
 use oura::sources::n2n::Config;
-use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
+use oura::sources::{AddressArg, FinalizeConfig, IntersectArg, MagicArg, PointArg};
 use oura::utils::{ChainWellKnownInfo, Utils, WithUtils};
 use strum::VariantArray;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -212,6 +212,15 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
     }
 
     pub fn new(store: Store, remote_addr: &str, chain: &NetworkIdentifier, intersect: IntersectArg) -> Self {
+        // When oura pipeline fails, it will be restarted from original intersect config.
+        // If the pipeline runs for a long time, it can replay lots of block which has been synced.
+        // This workaround makes the pipeline lifetime finite so the restart doesn't replay too many blocks.
+        // Once the pipeline sync up to the max_block_quantity, it will be terminated and new pipeline will be created with new intersect config.
+        let finalize_config: FinalizeConfig = serde_json::from_value(serde_json::json!({
+            "max_block_quantity": 100_000
+        }))
+        .expect("json config for FinalizeConfig is not valid");
+
         #[allow(deprecated)]
         let config = Config {
             address: AddressArg(oura::sources::BearerKind::Tcp, remote_addr.to_string()),
@@ -227,7 +236,7 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
                 connection_max_retries: u32::MAX,
                 connection_max_backoff: 60,
             }),
-            finalize: None,
+            finalize: Some(finalize_config),
         };
         let utils = Utils::new(chain.chain_wellknown_info());
         let with_utils = WithUtils::new(config, Arc::new(utils));
@@ -277,12 +286,11 @@ impl OuraStreamWorker {
         std::thread::spawn(move || loop {
             let with_utils = self.build_with_util();
             log::info!("Bootstraping oura pipeline thread");
-            let (_, oura_rx) = with_utils.bootstrap().map_err(|e| DltError {
+            let (_, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::Bootstrap {
                 source: e.to_string().into(),
-                location: location!(),
             })?;
-            let exit_err = self.stream_loop(oura_rx);
-            log::error!("Oura pipeline terminated. Retry in 10 seconds. ({})", exit_err);
+            let _exit_err = self.stream_loop(oura_rx);
+            log::error!("Oura pipeline terminated. Retry in 10 seconds");
             std::thread::sleep(std::time::Duration::from_secs(10));
         })
     }
@@ -312,13 +320,22 @@ impl OuraStreamWorker {
                     self.persist_cursor(&event);
                     handle_result
                 }
-                Err(e) => Err(DltError {
+                Err(e) => Err(DltError::DisconnectedOrTimeout {
                     source: e.to_string().into(),
                     location: location!(),
                 }),
             };
             if let Err(e) = handle_result {
-                log::error!("Error handling event from oura source. {}", e);
+                match &e {
+                    DltError::DisconnectedOrTimeout { .. } => {
+                        log::error!("Oura pipeline has disconnected or timeout");
+                    }
+                    e => {
+                        log::error!("Error handling event from oura source");
+                        let report = std::error::Report::new(&e).pretty(true);
+                        log::error!("{}", report);
+                    }
+                };
                 return e;
             }
         }
@@ -358,10 +375,13 @@ impl OuraStreamWorker {
 
         let parsed_atala_object = self::model::parse_oura_event(context, meta);
         match parsed_atala_object {
-            Ok(atala_object) => self.event_tx.blocking_send(atala_object).map_err(|e| DltError {
-                source: e.to_string().into(),
-                location: location!(),
-            })?,
+            Ok(atala_object) => self
+                .event_tx
+                .blocking_send(atala_object)
+                .map_err(|e| DltError::EventHandling {
+                    source: e.to_string().into(),
+                    location: location!(),
+                })?,
             Err(e) => {
                 // TODO: add debug level error report
                 log::warn!("Unable to parse oura event into AtalaObject. ({})", e);
@@ -392,7 +412,7 @@ impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
 
                 let cursor = self.cursor_rx.borrow_and_update().clone();
                 let Some(cursor) = cursor else { continue };
-                log::debug!(
+                log::info!(
                     "Persisting cursor on slot ({}, {})",
                     cursor.slot,
                     HexStr::from(cursor.block_hash.as_slice()).to_string(),
