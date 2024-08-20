@@ -175,22 +175,26 @@ pub struct OuraN2NSource<Store: DltCursorStore + Send + 'static> {
 }
 
 impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> {
-    pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
+    pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier, sync_block_quantity: u64) -> Self {
         let intersect = match chain {
-            // 71482683 was about the slot that first AtalaBlock was observed on mainnet.
             NetworkIdentifier::Mainnet => oura::sources::IntersectArg::Point(PointArg(
                 71482683,
                 "f3fd56f7e390d4e45d06bb797d83b7814b1d32c2112bc997779e34de1579fa7d".to_string(),
             )),
+            NetworkIdentifier::Preprod => oura::sources::IntersectArg::Point(PointArg(
+                10718532,
+                "cb95a5effb12871b69c27c184ffb1355e6208c4071956df67248bad1cc329ca4".to_string(),
+            )),
             _ => oura::sources::IntersectArg::Origin,
         };
-        Self::new(store, remote_addr, chain, intersect)
+        Self::new(store, remote_addr, chain, intersect, sync_block_quantity)
     }
 
     pub async fn since_persisted_cursor_or_genesis(
         store: Store,
         remote_addr: &str,
         chain: &NetworkIdentifier,
+        sync_block_quantity: u64,
     ) -> Result<Self, E> {
         let cursor = store.get_cursor().await?;
         match cursor {
@@ -202,22 +206,28 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
                     blockhash_hex
                 );
                 let intersect = oura::sources::IntersectArg::Point(PointArg(cursor.slot, blockhash_hex));
-                Ok(Self::new(store, remote_addr, chain, intersect))
+                Ok(Self::new(store, remote_addr, chain, intersect, sync_block_quantity))
             }
             None => {
                 log::info!("Persisted cursor not found, staring syncing from PRISM genesis slot");
-                Ok(Self::since_genesis(store, remote_addr, chain))
+                Ok(Self::since_genesis(store, remote_addr, chain, sync_block_quantity))
             }
         }
     }
 
-    pub fn new(store: Store, remote_addr: &str, chain: &NetworkIdentifier, intersect: IntersectArg) -> Self {
+    pub fn new(
+        store: Store,
+        remote_addr: &str,
+        chain: &NetworkIdentifier,
+        intersect: IntersectArg,
+        sync_block_quantity: u64,
+    ) -> Self {
         // When oura pipeline fails, it will be restarted from original intersect config.
         // If the pipeline runs for a long time, it can replay lots of block which has been synced.
         // This workaround makes the pipeline lifetime finite so the restart doesn't replay too many blocks.
         // Once the pipeline sync up to the max_block_quantity, it will be terminated and new pipeline will be created with new intersect config.
         let finalize_config: FinalizeConfig = serde_json::from_value(serde_json::json!({
-            "max_block_quantity": 100_000
+            "max_block_quantity": sync_block_quantity
         }))
         .expect("json config for FinalizeConfig is not valid");
 
