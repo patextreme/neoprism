@@ -25,10 +25,6 @@ pub struct CliArgs {
     /// Node HTTP server binding address
     #[arg(long, default_value = "0.0.0.0")]
     pub address: Ipv4Addr,
-    /// Number of blocks to sync before pipeline terminate and start over from last seen block.
-    /// This is useful to limit the number of blocks to process when the pipeline fails and need to restart.
-    #[arg(long, default_value_t = 100_000)]
-    pub sync_block_quantity: u64,
     /// Node HTTP server listening port
     #[arg(short, long, default_value_t = 8080)]
     pub port: u16,
