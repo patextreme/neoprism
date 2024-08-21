@@ -296,11 +296,12 @@ impl OuraStreamWorker {
         std::thread::spawn(move || loop {
             let with_utils = self.build_with_util();
             log::info!("Bootstraping oura pipeline thread");
-            let (_, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::Bootstrap {
+            let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::Bootstrap {
                 source: e.to_string().into(),
             })?;
             let _exit_err = self.stream_loop(oura_rx);
-            log::error!("Oura pipeline terminated. Retry in 10 seconds");
+            let _exit_res = handle.join();
+            log::error!("Oura pipeline terminated. Restarting in 10 seconds");
             std::thread::sleep(std::time::Duration::from_secs(10));
         })
     }
