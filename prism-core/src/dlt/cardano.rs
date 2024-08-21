@@ -151,11 +151,7 @@ impl NetworkIdentifier {
     }
 
     fn magic_args(&self) -> MagicArg {
-        let chain_magic = match self {
-            NetworkIdentifier::Mainnet => MagicArg::from_str("mainnet"),
-            NetworkIdentifier::Preprod => MagicArg::from_str("preprod"),
-            NetworkIdentifier::Preview => MagicArg::from_str("preview"),
-        };
+        let chain_magic = MagicArg::from_str(&self.to_string());
         chain_magic.expect("The chain magic value cannot be parsed")
     }
 
@@ -239,14 +235,14 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
             intersect: Some(intersect),
             well_known: None,
             mapper: Default::default(),
-            min_depth: 112,
+            min_depth: 1,
             retry_policy: Some(oura::sources::RetryPolicy {
-                chainsync_max_retries: u32::MAX,
+                chainsync_max_retries: 0,
                 chainsync_max_backoff: 60,
-                connection_max_retries: u32::MAX,
+                connection_max_retries: 0,
                 connection_max_backoff: 60,
             }),
-            finalize: Some(finalize_config),
+            finalize: None,
         };
         let utils = Utils::new(chain.chain_wellknown_info());
         let with_utils = WithUtils::new(config, Arc::new(utils));
@@ -302,7 +298,7 @@ impl OuraStreamWorker {
             let _exit_err = self.stream_loop(oura_rx);
             let _exit_res = handle.join();
             log::error!("Oura pipeline terminated. Restarting in 10 seconds");
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            std::thread::sleep(std::time::Duration::from_secs(5));
         })
     }
 
