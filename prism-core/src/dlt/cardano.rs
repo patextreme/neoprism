@@ -219,7 +219,7 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
             intersect: Some(intersect),
             well_known: None,
             mapper: Default::default(),
-            min_depth: 1,
+            min_depth: 112,
             retry_policy: Some(oura::sources::RetryPolicy {
                 chainsync_max_retries: 0,
                 chainsync_max_backoff: 60,
