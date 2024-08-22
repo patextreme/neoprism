@@ -63,7 +63,7 @@ fn init_state() -> AdHoc {
         let mut cursor_rx = None;
         let mut network = None;
         if let Some(address) = &cli.cardano {
-            let network_identifier = cli.network.to_owned().unwrap_or(NetworkIdentifier::Mainnet);
+            let network_identifier = cli.network.to_owned();
 
             log::info!(
                 "Starting DLT sync worker on {} from cardano address {}",

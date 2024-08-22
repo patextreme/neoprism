@@ -20,10 +20,10 @@ pub struct CliArgs {
     pub cardano: Option<String>,
     /// A Cardano network to connect to.
     /// This option must correlate with the network of the node address provided.
-    #[arg(long, value_name = "CARDANO_NETWORK", value_parser = parser::parse_network_identifier)]
-    pub network: Option<NetworkIdentifier>,
+    #[arg(long, value_name = "CARDANO_NETWORK", default_value_t = NetworkIdentifier::Mainnet, value_parser = parser::parse_network_identifier)]
+    pub network: NetworkIdentifier,
     /// Node HTTP server binding address
-    #[arg(long, default_value = "0.0.0.0", value_name = "ADDR")]
+    #[arg(long, default_value = "0.0.0.0")]
     pub address: Ipv4Addr,
     /// Node HTTP server listening port
     #[arg(short, long, default_value_t = 8080)]

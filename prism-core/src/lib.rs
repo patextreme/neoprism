@@ -1,5 +1,5 @@
 // TODO: remove
-#![feature(error_generic_member_access, split_array)]
+#![feature(error_generic_member_access, split_array, error_reporter)]
 #![allow(dead_code)]
 
 pub mod proto {

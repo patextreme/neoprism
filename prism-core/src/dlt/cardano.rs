@@ -151,11 +151,7 @@ impl NetworkIdentifier {
     }
 
     fn magic_args(&self) -> MagicArg {
-        let chain_magic = match self {
-            NetworkIdentifier::Mainnet => MagicArg::from_str("mainnet"),
-            NetworkIdentifier::Preprod => MagicArg::from_str("preprod"),
-            NetworkIdentifier::Preview => MagicArg::from_str("preview"),
-        };
+        let chain_magic = MagicArg::from_str(&self.to_string());
         chain_magic.expect("The chain magic value cannot be parsed")
     }
 
@@ -177,10 +173,13 @@ pub struct OuraN2NSource<Store: DltCursorStore + Send + 'static> {
 impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> {
     pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
         let intersect = match chain {
-            // 71482683 was about the slot that first AtalaBlock was observed on mainnet.
             NetworkIdentifier::Mainnet => oura::sources::IntersectArg::Point(PointArg(
                 71482683,
                 "f3fd56f7e390d4e45d06bb797d83b7814b1d32c2112bc997779e34de1579fa7d".to_string(),
+            )),
+            NetworkIdentifier::Preprod => oura::sources::IntersectArg::Point(PointArg(
+                10718532,
+                "cb95a5effb12871b69c27c184ffb1355e6208c4071956df67248bad1cc329ca4".to_string(),
             )),
             _ => oura::sources::IntersectArg::Origin,
         };
@@ -221,7 +220,12 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
             well_known: None,
             mapper: Default::default(),
             min_depth: 112,
-            retry_policy: None,
+            retry_policy: Some(oura::sources::RetryPolicy {
+                chainsync_max_retries: 0,
+                chainsync_max_backoff: 60,
+                connection_max_retries: 0,
+                connection_max_backoff: 60,
+            }),
             finalize: None,
         };
         let utils = Utils::new(chain.chain_wellknown_info());
@@ -269,16 +273,18 @@ struct OuraStreamWorker {
 
 impl OuraStreamWorker {
     fn spawn(self) -> std::thread::JoinHandle<Result<(), DltError>> {
+        let restart_in_sec = 10;
         std::thread::spawn(move || loop {
             let with_utils = self.build_with_util();
             log::info!("Bootstraping oura pipeline thread");
-            let (_, oura_rx) = with_utils.bootstrap().map_err(|e| DltError {
+            let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::Bootstrap {
                 source: e.to_string().into(),
-                location: location!(),
             })?;
-            let exit_err = self.stream_loop(oura_rx);
-            log::error!("Oura pipeline terminated. Retry in 10 seconds. ({})", exit_err);
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            let _exit_err = self.stream_loop(oura_rx);
+            let _exit_res = handle.join();
+
+            log::error!("Oura pipeline terminated. Restarting in {restart_in_sec} seconds");
+            std::thread::sleep(std::time::Duration::from_secs(restart_in_sec));
         })
     }
 
@@ -307,13 +313,22 @@ impl OuraStreamWorker {
                     self.persist_cursor(&event);
                     handle_result
                 }
-                Err(e) => Err(DltError {
+                Err(e) => Err(DltError::DisconnectedOrTimeout {
                     source: e.to_string().into(),
                     location: location!(),
                 }),
             };
             if let Err(e) = handle_result {
-                log::error!("Error handling event from oura source. {}", e);
+                match &e {
+                    DltError::DisconnectedOrTimeout { .. } => {
+                        log::error!("Oura pipeline has disconnected or timeout");
+                    }
+                    e => {
+                        log::error!("Error handling event from oura source");
+                        let report = std::error::Report::new(&e).pretty(true);
+                        log::error!("{}", report);
+                    }
+                };
                 return e;
             }
         }
@@ -353,10 +368,13 @@ impl OuraStreamWorker {
 
         let parsed_atala_object = self::model::parse_oura_event(context, meta);
         match parsed_atala_object {
-            Ok(atala_object) => self.event_tx.blocking_send(atala_object).map_err(|e| DltError {
-                source: e.to_string().into(),
-                location: location!(),
-            })?,
+            Ok(atala_object) => self
+                .event_tx
+                .blocking_send(atala_object)
+                .map_err(|e| DltError::EventHandling {
+                    source: e.to_string().into(),
+                    location: location!(),
+                })?,
             Err(e) => {
                 // TODO: add debug level error report
                 log::warn!("Unable to parse oura event into AtalaObject. ({})", e);
@@ -387,7 +405,7 @@ impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
 
                 let cursor = self.cursor_rx.borrow_and_update().clone();
                 let Some(cursor) = cursor else { continue };
-                log::debug!(
+                log::info!(
                     "Persisting cursor on slot ({}, {})",
                     cursor.slot,
                     HexStr::from(cursor.block_hash.as_slice()).to_string(),

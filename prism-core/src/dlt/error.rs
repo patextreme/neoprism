@@ -1,11 +1,14 @@
 use crate::error::StdError;
 use crate::utils::Location;
 
-#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
-#[display("unable to connect to DLT {location}")]
-pub struct DltError {
-    pub source: StdError,
-    pub location: Location,
+#[derive(Debug, derive_more::Display, derive_more::Error)]
+pub enum DltError {
+    #[display("unable to bootstrap DLT source")]
+    Bootstrap { source: StdError },
+    #[display("disconnected from DLT or timeout {location}")]
+    DisconnectedOrTimeout { source: StdError, location: Location },
+    #[display("handling DLT event failed {location}")]
+    EventHandling { source: StdError, location: Location },
 }
 
 /// This is an internal error type that should be handled when streaming from DLT source.
