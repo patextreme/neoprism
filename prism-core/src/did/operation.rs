@@ -405,8 +405,8 @@ impl SupportedPublicKey {
 
         match curve_name {
             "secp256k1" => Ok(Self::Secp256k1(Self::convert_secp256k1(key_data)?)),
-            "ed25519" => Ok(Self::Ed25519(Self::convert_ed25519(key_data)?)),
-            "x25519" => Ok(Self::X25519(Self::convert_x25519(key_data)?)),
+            "Ed25519" => Ok(Self::Ed25519(Self::convert_ed25519(key_data)?)),
+            "X25519" => Ok(Self::X25519(Self::convert_x25519(key_data)?)),
             c => Err(CryptoError::UnsupportedCurve { curve: c.to_string() }),
         }
     }
