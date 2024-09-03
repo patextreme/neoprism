@@ -47,10 +47,10 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
     SsrPage(views::resolver::ResolverPage(did, result, network))
 }
 
-#[get("/explorer")]
-pub async fn explorer(state: &State<AppState>) -> SsrPage {
+#[get("/explorer?<page>")]
+pub async fn explorer(state: &State<AppState>, page: Option<u64>) -> SsrPage {
     let cursor = state.cursor_rx.as_ref().and_then(|rx| rx.borrow().to_owned());
-    let dids = state.did_service.get_all_dids().await.unwrap(); // FIXME: unwrap
+    let dids = state.did_service.get_all_dids(page).await.unwrap(); // FIXME: unwrap
     let network = state.network.clone();
     SsrPage(views::explorer::ExplorerPage(cursor, dids, network))
 }
@@ -74,8 +74,8 @@ pub mod hx {
                     cursor,
                 }))
             }
-            HxRpc::GetExplorerDidList {} => {
-                let dids = state.did_service.get_all_dids().await.unwrap(); // FIXME: unwrap
+            HxRpc::GetExplorerDidList { page } => {
+                let dids = state.did_service.get_all_dids(page).await.unwrap(); // FIXME: unwrap
                 SsrComponent(views::explorer::DidList(views::explorer::DidListProps { dids }))
             }
         }

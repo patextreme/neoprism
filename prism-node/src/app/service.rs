@@ -1,6 +1,7 @@
 use prism_core::did::{CanonicalPrismDid, PrismDid, PrismDidLike};
 use prism_core::protocol::resolver::{resolve, ResolutionDebug, ResolutionResult};
 use prism_core::store::OperationStore;
+use prism_core::utils::paging::Paginated;
 use prism_storage::PostgresDb;
 
 pub struct DidService {
@@ -22,9 +23,10 @@ impl DidService {
         Ok(resolve(operations))
     }
 
-    pub async fn get_all_dids(&self) -> anyhow::Result<Vec<CanonicalPrismDid>> {
+    pub async fn get_all_dids(&self, page: Option<u64>) -> anyhow::Result<Paginated<CanonicalPrismDid>> {
+        let page = page.unwrap_or(0);
         let tx = self.db.begin().await?;
-        let dids = tx.get_all_dids().await?;
+        let dids = tx.get_all_dids(page, 100).await?;
         tx.commit().await?;
         Ok(dids)
     }

@@ -1,6 +1,7 @@
 use crate::did::CanonicalPrismDid;
 use crate::dlt::{DltCursor, OperationMetadata};
 use crate::proto::SignedAtalaOperation;
+use crate::utils::paging::Paginated;
 
 #[async_trait::async_trait]
 pub trait OperationStore {
@@ -17,7 +18,7 @@ pub trait OperationStore {
         metadata: OperationMetadata,
     ) -> Result<(), Self::Error>;
 
-    async fn get_all_dids(&self) -> Result<Vec<CanonicalPrismDid>, Self::Error>;
+    async fn get_all_dids(&self, page: u64, page_size: u64) -> Result<Paginated<CanonicalPrismDid>, Self::Error>;
 }
 
 #[async_trait::async_trait]

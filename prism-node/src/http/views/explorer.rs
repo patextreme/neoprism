@@ -3,6 +3,7 @@ use prism_core::did::CanonicalPrismDid;
 use prism_core::dlt::cardano::NetworkIdentifier;
 use prism_core::dlt::DltCursor;
 use prism_core::utils::codec::HexStr;
+use prism_core::utils::paging::Paginated;
 use rocket::uri;
 
 use crate::http::contract::hx::HxRpc;
@@ -11,7 +12,7 @@ use crate::http::views::escape_html_rpc;
 
 pub fn ExplorerPage(
     cursor: Option<DltCursor>,
-    dids: Vec<CanonicalPrismDid>,
+    dids: Paginated<CanonicalPrismDid>,
     network: Option<NetworkIdentifier>,
 ) -> Element {
     rsx! {
@@ -52,10 +53,12 @@ pub fn DltCursorStat(cursor: Option<DltCursor>) -> Element {
 }
 
 #[component]
-pub fn DidList(dids: Vec<CanonicalPrismDid>) -> Element {
+pub fn DidList(dids: Paginated<CanonicalPrismDid>) -> Element {
     let rpc_uri = uri!(crate::http::routes::hx::rpc());
-    let rpc = escape_html_rpc(&HxRpc::GetExplorerDidList {});
-    let did_elems = dids.iter().map(|did| {
+    let rpc = escape_html_rpc(&HxRpc::GetExplorerDidList {
+        page: Some(dids.current_page),
+    });
+    let did_elems = dids.items.iter().map(|did| {
         let uri = uri!(crate::http::routes::resolver(Some(did.to_string())));
         rsx! { a { class: "link font-mono", href: "{uri}", "{did}" } }
     });

@@ -8,9 +8,10 @@ use prism_core::prelude::*;
 use prism_core::proto::SignedAtalaOperation;
 use prism_core::store::{DltCursorStore, OperationStore};
 use prism_core::utils::codec::HexStr;
+use prism_core::utils::paging::Paginated;
 use sea_orm::{
     ColumnTrait, ConnectOptions, Database, DatabaseConnection, DatabaseTransaction, EntityTrait, FromQueryResult,
-    IntoActiveValue, ModelTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
+    IntoActiveValue, ModelTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
 use sea_query::{Alias, Expr, OnConflict};
 
@@ -131,23 +132,32 @@ impl OperationStore for PostgresTransaction {
         Ok(())
     }
 
-    async fn get_all_dids(&self) -> Result<Vec<CanonicalPrismDid>, Self::Error> {
-        let result = entity::raw_operation::Entity::find()
+    async fn get_all_dids(&self, page: u64, page_size: u64) -> Result<Paginated<CanonicalPrismDid>, Self::Error> {
+        let paginator = entity::raw_operation::Entity::find()
             .select_only()
             .column(entity::raw_operation::Column::Did)
             .column_as(entity::raw_operation::Column::BlockNumber.max(), "latest_block")
             .group_by(entity::raw_operation::Column::Did)
             .order_by_desc(Expr::col(Alias::new("latest_block")))
             .into_model::<DidProjection>()
-            .all(&self.tx)
-            .await?;
-        result
+            .paginate(&self.tx, page_size);
+        let total_pages = paginator.num_pages().await?;
+        let total_items = paginator.num_items().await?;
+        let items = paginator
+            .fetch_page(page)
+            .await?
             .into_iter()
             .map(|model| {
                 let suffix = HexStr::from(model.did);
                 CanonicalPrismDid::from_suffix(suffix).map_err(|e| Error::DidDecode { source: e })
             })
-            .collect()
+            .collect::<Result<_, _>>()?;
+        Ok(Paginated {
+            items,
+            current_page: page,
+            total_pages,
+            total_items,
+        })
     }
 }
 
