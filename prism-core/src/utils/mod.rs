@@ -5,6 +5,7 @@ use regex::Regex;
 
 pub mod codec;
 pub mod hash;
+pub mod paging;
 
 static URI_FRAGMENT_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^([A-Za-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9A-Fa-f]{2})*$").expect("URI regex is invalid")
