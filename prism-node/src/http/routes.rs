@@ -49,11 +49,14 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
 
 #[get("/explorer?<page>")]
 pub async fn explorer(state: &State<AppState>, page: Option<u64>) -> SsrPage {
+    // UI use 1-index. internal pagination logic use 0-index.
+    let page = page.map(|i| i.max(1) - 1);
     let cursor = state.cursor_rx.as_ref().and_then(|rx| rx.borrow().to_owned());
     let dids = state.did_service.get_all_dids(page).await.unwrap(); // FIXME: unwrap
     let network = state.network.clone();
     SsrPage(views::explorer::ExplorerPage(cursor, dids, network))
 }
+
 pub mod hx {
     use rocket::form::Form;
     use rocket::{post, State};
