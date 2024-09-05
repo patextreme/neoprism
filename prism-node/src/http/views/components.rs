@@ -14,20 +14,18 @@ pub fn NavBar(props: NavBarProps) -> Element {
     let network_status = props
         .network
         .map(|i| {
-            rsx! { span { class: "text-success", "network: {i.to_string()}" } }
+            rsx! { p { class: "italic text-success", "network: {i.to_string()}" } }
         })
         .unwrap_or_else(|| {
-            rsx! { span { class: "text-error", "disconnected" } }
+            rsx! { p { class: "italic text-error", "disconnected" } }
         });
     rsx! {
-        div { class: "navbar bg-neutral text-neutral-content",
+        div { class: "navbar bg-neutral text-neutral-content flex-wrap-reverse",
             div { class: "flex-1",
                 a { class: "btn btn-ghost text-xl", href: "{resolver_uri}", "Resolver" }
                 a { class: "btn btn-ghost text-xl", href: "{explorer_uri}", "Explorer" }
             }
-            div { class: "flex-none",
-                p { class: "italic mx-2", {network_status} }
-            }
+            div { class: "flex-1 px-2 justify-end", {network_status} }
         }
     }
 }

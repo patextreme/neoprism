@@ -44,10 +44,10 @@ pub fn DltCursorStat(cursor: Option<DltCursor>) -> Element {
                 "hx-vals": "{rpc}",
                 "hx-trigger": "load delay:2s",
                 "hx-swap": "outerHTML",
-                div { class: "stat",
-                    div { class: "stat-title", "Current Sync Slot" }
-                    div { class: "stat-value", "{slot}" }
-                    div { class: "stat-desc", "{hash}" }
+                div { class: "stat text-center",
+                    div { class: "stat-title w-max-full", "Current Sync Slot" }
+                    div { class: "stat-value w-max-full", "{slot}" }
+                    div { class: "stat-desc w-max-full truncate", "{hash}" }
                 }
             }
         }
@@ -62,7 +62,11 @@ pub fn DidList(dids: Paginated<CanonicalPrismDid>) -> Element {
     });
     let did_elems = dids.items.iter().map(|did| {
         let uri = uri!(crate::http::routes::resolver(Some(did.to_string())));
-        rsx! { a { class: "link font-mono", href: "{uri}", "{did}" } }
+        rsx! {
+            div { class: "text-center w-full truncate",
+                a { class: "link font-mono", href: "{uri}", "{did}" }
+            }
+        }
     });
     let pagination_items = (0..dids.total_pages)
         .map(|i| {
@@ -101,17 +105,15 @@ pub fn DidList(dids: Paginated<CanonicalPrismDid>) -> Element {
     };
     rsx! {
         div {
-            class: "flex flex-col items-center",
+            class: "flex flex-col items-center w-full",
             "id": "did-list",
             "hx-post": "{rpc_uri}",
             "hx-vals": "{rpc}",
             "hx-trigger": "load delay:5s",
             "hx-swap": "outerHTML",
             {pagination.clone()},
-            ul {
-                for elem in did_elems {
-                    li { {elem} }
-                }
+            for elem in did_elems {
+                {elem}
             }
             {pagination}
         }

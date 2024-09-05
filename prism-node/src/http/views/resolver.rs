@@ -127,13 +127,13 @@ fn DidDocumentCardContainer(did_state: DidState) -> Element {
                 }
             }
             div { class: "divider divider-neutral", "Public Keys" }
-            div { class: "flex flex-row gap-2",
+            div { class: "flex flex-row flex-wrap gap-2",
                 for k in keys {
                     {k}
                 }
             }
             div { class: "divider divider-neutral", "Services" }
-            div { class: "flex flex-row gap-2",
+            div { class: "flex flex-row flex-wrap gap-2",
                 for s in services {
                     {s}
                 }
