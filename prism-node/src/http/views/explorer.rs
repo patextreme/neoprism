@@ -63,10 +63,8 @@ pub fn DidList(dids: Paginated<CanonicalPrismDid>) -> Element {
     let did_elems = dids.items.iter().map(|did| {
         let uri = uri!(crate::http::routes::resolver(Some(did.to_string())));
         rsx! {
-            a {
-                class: "link font-mono truncate text-center w-full",
-                href: "{uri}",
-                "{did}"
+            div { class: "text-center w-full truncate",
+                a { class: "link font-mono", href: "{uri}", "{did}" }
             }
         }
     });
