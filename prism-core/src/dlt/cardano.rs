@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::sync::mpsc::RecvTimeoutError;
 use std::sync::Arc;
 
 use oura::model::{Event, EventData};
@@ -313,15 +314,13 @@ impl OuraStreamWorker {
                     self.persist_cursor(&event);
                     handle_result
                 }
-                Err(e) => Err(DltError::EventRecvTimeout {
-                    source: e.to_string().into(),
-                    location: location!(),
-                }),
+                Err(RecvTimeoutError::Timeout) => Err(DltError::EventRecvTimeout { location: location!() }),
+                Err(RecvTimeoutError::Disconnected) => Err(DltError::Disconnected { location: location!() }),
             };
             if let Err(e) = handle_result {
                 match e {
                     DltError::EventRecvTimeout { .. } => {
-                        log::error!("Oura pipeline has timeout. Keep waiting for next event without restarting.");
+                        log::error!("Oura pipeline has timeout but not yet disconnected. Waiting for the next event without restarting.");
                     }
                     e => {
                         log::error!("Error handling event from oura source");
