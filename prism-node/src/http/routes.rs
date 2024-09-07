@@ -20,7 +20,7 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
                 .did_service
                 .resolve_did(did)
                 .await
-                .map_err(|e| e.to_string())
+                .map_err(|e| e.chain().map(|e| e.to_string()).collect::<Vec<_>>())
                 .map(|(result, debug)| {
                     let debug: Vec<_> = debug
                         .into_iter()
