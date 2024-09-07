@@ -304,7 +304,7 @@ impl OuraStreamWorker {
     }
 
     fn stream_loop(&self, receiver: StageReceiver) -> DltError {
-        const TIMEOUT: std::time::Duration = std::time::Duration::from_secs(1 * 60);
+        const TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5 * 60);
         loop {
             let received_event = receiver.recv_timeout(TIMEOUT);
             let handle_result = match received_event {
