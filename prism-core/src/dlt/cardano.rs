@@ -392,12 +392,12 @@ struct CursorPersistWorker<Store: DltCursorStore> {
 
 impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
     fn spawn(mut self) -> JoinHandle<Result<(), DltError>> {
-        const DELAY_SEC: u64 = 30;
-        log::info!("Spawn cursor persist worker with {} seconds interval", DELAY_SEC);
+        const DELAY: tokio::time::Duration = tokio::time::Duration::from_secs(30);
+        log::info!("Spawn cursor persist worker with {:?} interval", DELAY);
         tokio::spawn(async move {
             loop {
                 let recv_result = self.cursor_rx.changed().await;
-                tokio::time::sleep(tokio::time::Duration::from_secs(DELAY_SEC)).await;
+                tokio::time::sleep(DELAY).await;
 
                 if let Err(e) = recv_result {
                     log::error!("Error getting cursor to persist: {}", e);
