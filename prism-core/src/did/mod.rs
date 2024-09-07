@@ -144,10 +144,10 @@ impl FromStr for PrismDid {
         if !s.starts_with("did:prism:") {
             Err(DidSyntaxError::DidSyntaxInvalid { did: s.to_string() })?
         }
-        let (_, s) = s.split_at("did:prism:".len());
+        let (_, method_specific_id) = s.split_at("did:prism:".len());
 
-        let canonical_match = CANONICAL_SUFFIX_RE.captures(s);
-        let long_form_match = LONG_FORM_SUFFIX_RE.captures(s);
+        let canonical_match = CANONICAL_SUFFIX_RE.captures(method_specific_id);
+        let long_form_match = LONG_FORM_SUFFIX_RE.captures(method_specific_id);
 
         match (canonical_match, long_form_match) {
             (None, Some(long_form_match)) => {

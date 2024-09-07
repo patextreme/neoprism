@@ -18,12 +18,12 @@ pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Vec<Str
 
 pub fn ResolverPage(
     did: Option<String>,
-    resolution_result: Option<Result<(ResolutionResult, ResolutionDebug), String>>,
+    resolution_result: Option<Result<(ResolutionResult, ResolutionDebug), Vec<String>>>,
     network: Option<NetworkIdentifier>,
 ) -> Element {
     let content = match resolution_result {
         Some(Ok((result, debug))) => rsx! { ResolutionResultSection { result, debug: Rc::new(debug) } },
-        Some(Err(e)) => rsx! { ResolutionErrorSection { message: e } },
+        Some(Err(errors)) => rsx! { ResolutionErrorSection { errors } },
         None => None,
     };
     rsx! {
@@ -58,8 +58,15 @@ fn SearchBox(did: Option<String>) -> Element {
 }
 
 #[component]
-fn ResolutionErrorSection(message: String) -> Element {
-    rsx! { p { class: "text-lg", "{message}" } }
+fn ResolutionErrorSection(errors: Vec<String>) -> Element {
+    let error_stack = errors.iter().enumerate().map(|(idx, message)| {
+        rsx! { p { class: "text-lg font-mono", "{idx}: {message}" } }
+    });
+    rsx! {
+        for e in error_stack {
+            {e}
+        }
+    }
 }
 
 #[component]

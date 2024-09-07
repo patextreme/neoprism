@@ -5,8 +5,8 @@ use crate::utils::Location;
 pub enum DltError {
     #[display("unable to bootstrap DLT source")]
     Bootstrap { source: StdError },
-    #[display("disconnected from DLT or timeout {location}")]
-    DisconnectedOrTimeout { source: StdError, location: Location },
+    #[display("timeout receiving event from DLT source {location}")]
+    EventRecvTimeout { source: StdError, location: Location },
     #[display("handling DLT event failed {location}")]
     EventHandling { source: StdError, location: Location },
 }

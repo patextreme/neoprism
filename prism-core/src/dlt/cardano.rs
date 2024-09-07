@@ -304,32 +304,32 @@ impl OuraStreamWorker {
     }
 
     fn stream_loop(&self, receiver: StageReceiver) -> DltError {
-        let timeout = std::time::Duration::from_secs(300);
+        const TIMEOUT: std::time::Duration = std::time::Duration::from_secs(1 * 60);
         loop {
-            let received_event = receiver.recv_timeout(timeout);
+            let received_event = receiver.recv_timeout(TIMEOUT);
             let handle_result = match received_event {
                 Ok(event) => {
                     let handle_result = self.handle_atala_event(event.clone());
                     self.persist_cursor(&event);
                     handle_result
                 }
-                Err(e) => Err(DltError::DisconnectedOrTimeout {
+                Err(e) => Err(DltError::EventRecvTimeout {
                     source: e.to_string().into(),
                     location: location!(),
                 }),
             };
             if let Err(e) = handle_result {
-                match &e {
-                    DltError::DisconnectedOrTimeout { .. } => {
-                        log::error!("Oura pipeline has disconnected or timeout");
+                match e {
+                    DltError::EventRecvTimeout { .. } => {
+                        log::error!("Oura pipeline has timeout. Keep waiting for next event without restarting.");
                     }
                     e => {
                         log::error!("Error handling event from oura source");
                         let report = std::error::Report::new(&e).pretty(true);
                         log::error!("{}", report);
+                        return e;
                     }
                 };
-                return e;
             }
         }
     }
@@ -392,12 +392,12 @@ struct CursorPersistWorker<Store: DltCursorStore> {
 
 impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
     fn spawn(mut self) -> JoinHandle<Result<(), DltError>> {
-        let delay_sec = 30;
-        log::info!("Spawn cursor persist worker with {} seconds interval", delay_sec);
+        const DELAY: tokio::time::Duration = tokio::time::Duration::from_secs(30);
+        log::info!("Spawn cursor persist worker with {:?} interval", DELAY);
         tokio::spawn(async move {
             loop {
                 let recv_result = self.cursor_rx.changed().await;
-                tokio::time::sleep(tokio::time::Duration::from_secs(delay_sec)).await;
+                tokio::time::sleep(DELAY).await;
 
                 if let Err(e) = recv_result {
                     log::error!("Error getting cursor to persist: {}", e);
