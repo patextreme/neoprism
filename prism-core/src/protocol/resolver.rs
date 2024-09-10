@@ -1,9 +1,11 @@
 use std::collections::VecDeque;
 
-use super::{DidStateProcessingContext, ProcessError};
+use super::{init_published_context, DidStateProcessingContext, ProcessError, Published};
 use crate::did::DidState;
 use crate::dlt::OperationMetadata;
+use crate::prelude::AtalaOperation;
 use crate::proto::SignedAtalaOperation;
+use crate::protocol::init_unpublished_context;
 
 type OperationList = VecDeque<(OperationMetadata, SignedAtalaOperation)>;
 pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>;
@@ -14,8 +16,19 @@ pub enum ResolutionResult {
     NotFound,
 }
 
-pub fn resolve(mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>) -> (ResolutionResult, ResolutionDebug) {
-    log::debug!("resolving DID data from {} operations", operations.len());
+pub fn resolve_unpublished(operation: AtalaOperation) -> (ResolutionResult, Option<ProcessError>) {
+    log::debug!("resolving unpublished DID data");
+    let result = init_unpublished_context(operation).map(|ctx| ctx.finalize());
+    match result {
+        Ok(state) => (ResolutionResult::Ok(state), None),
+        Err(e) => (ResolutionResult::NotFound, Some(e)),
+    }
+}
+
+pub fn resolve_published(
+    mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>,
+) -> (ResolutionResult, ResolutionDebug) {
+    log::debug!("resolving published DID data from {} operations", operations.len());
     operations.sort_by(|a, b| OperationMetadata::compare_time_asc(&a.0, &b.0));
     let mut operations: OperationList = operations.into();
 
@@ -35,10 +48,10 @@ pub fn resolve(mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>) -
     (ResolutionResult::Ok(state_ctx.finalize()), debug)
 }
 
-fn init_state_ops(operations: &mut OperationList) -> (Option<DidStateProcessingContext>, ResolutionDebug) {
+fn init_state_ops(operations: &mut OperationList) -> (Option<DidStateProcessingContext<Published>>, ResolutionDebug) {
     let mut debug = Vec::with_capacity(operations.len());
     while let Some((metadata, operation)) = operations.pop_front() {
-        let result = DidStateProcessingContext::new(operation.clone(), metadata.clone());
+        let result = init_published_context(operation.clone(), metadata.clone());
         match result {
             Ok(state_ctx) => {
                 debug.push((metadata, operation, None));

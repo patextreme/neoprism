@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::rc::Rc;
 
 use enum_dispatch::enum_dispatch;
@@ -6,7 +7,8 @@ use error::{DidStateConflictError, ProcessError};
 use self::v1::V1Processor;
 use crate::did::operation::{PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType};
 use crate::did::{CanonicalPrismDid, DidState};
-use crate::dlt::OperationMetadata;
+use crate::dlt::{BlockMetadata, OperationMetadata};
+use crate::prelude::AtalaOperation;
 use crate::proto::atala_operation::Operation;
 use crate::proto::{
     CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation, SignedAtalaOperation,
@@ -222,34 +224,75 @@ impl DidStateRc {
     }
 }
 
-struct DidStateProcessingContext {
+struct Published;
+struct Unpublished;
+
+struct DidStateProcessingContext<CtxType> {
+    r#type: PhantomData<CtxType>,
     state: DidStateRc,
     processor: OperationProcessorVariants,
 }
 
-impl DidStateProcessingContext {
-    fn new(signed_operation: SignedAtalaOperation, metadata: OperationMetadata) -> Result<Self, ProcessError> {
-        let Some(operation) = &signed_operation.operation else {
-            Err(ProcessError::SignedAtalaOperationMissingOperation)?
-        };
+fn init_published_context(
+    signed_operation: SignedAtalaOperation,
+    metadata: OperationMetadata,
+) -> Result<DidStateProcessingContext<Published>, ProcessError> {
+    let Some(operation) = &signed_operation.operation else {
+        Err(ProcessError::SignedAtalaOperationMissingOperation)?
+    };
 
-        let did = CanonicalPrismDid::from_operation(operation)?;
-        match &operation.operation {
-            Some(Operation::CreateDid(op)) => {
-                let initial_state = DidStateRc::new(did);
-                let processor = OperationProcessorVariants::V1(V1Processor::default());
-                let candidate_state = processor.create_did(&initial_state, op.clone(), metadata)?;
-                processor.check_signature(&candidate_state, &signed_operation)?;
-                Ok(Self {
-                    state: candidate_state,
-                    processor,
-                })
-            }
-            Some(_) => Err(ProcessError::DidStateInitFromNonCreateOperation),
-            None => Err(ProcessError::SignedAtalaOperationMissingOperation),
+    let did = CanonicalPrismDid::from_operation(operation)?;
+    match &operation.operation {
+        Some(Operation::CreateDid(op)) => {
+            let initial_state = DidStateRc::new(did);
+            let processor = OperationProcessorVariants::V1(V1Processor::default());
+            let candidate_state = processor.create_did(&initial_state, op.clone(), metadata)?;
+            processor.check_signature(&candidate_state, &signed_operation)?;
+            Ok(DidStateProcessingContext {
+                r#type: PhantomData,
+                state: candidate_state,
+                processor,
+            })
         }
+        Some(_) => Err(ProcessError::DidStateInitFromNonCreateOperation),
+        None => Err(ProcessError::SignedAtalaOperationMissingOperation),
     }
+}
 
+fn init_unpublished_context(operation: AtalaOperation) -> Result<DidStateProcessingContext<Unpublished>, ProcessError> {
+    let unpublished_metadata = OperationMetadata {
+        block_metadata: BlockMetadata {
+            slot_number: 0,
+            block_number: 0,
+            cbt: time::OffsetDateTime::UNIX_EPOCH,
+            absn: 0,
+        },
+        osn: 0,
+    };
+    let did = CanonicalPrismDid::from_operation(&operation)?;
+    match &operation.operation {
+        Some(Operation::CreateDid(op)) => {
+            let initial_state = DidStateRc::new(did);
+            let processor = OperationProcessorVariants::V1(V1Processor::default());
+            let candidate_state = processor.create_did(&initial_state, op.clone(), unpublished_metadata)?;
+            Ok(DidStateProcessingContext {
+                r#type: PhantomData,
+                state: candidate_state,
+                processor,
+            })
+        }
+        Some(_) => Err(ProcessError::DidStateInitFromNonCreateOperation),
+        None => Err(ProcessError::SignedAtalaOperationMissingOperation),
+    }
+}
+
+impl<T> DidStateProcessingContext<T> {
+    fn finalize(self) -> DidState {
+        self.state.finalize()
+    }
+}
+
+impl DidStateProcessingContext<Published> {
     fn process(
         mut self,
         signed_operation: SignedAtalaOperation,
@@ -293,10 +336,6 @@ impl DidStateProcessingContext {
             }
             Err(e) => (self, Some(e)),
         }
-    }
-
-    fn finalize(self) -> DidState {
-        self.state.finalize()
     }
 }
 

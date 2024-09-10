@@ -1,5 +1,5 @@
 use prism_core::did::{CanonicalPrismDid, PrismDid, PrismDidLike};
-use prism_core::protocol::resolver::{resolve, ResolutionDebug, ResolutionResult};
+use prism_core::protocol::resolver::{resolve_published, ResolutionDebug, ResolutionResult};
 use prism_core::store::OperationStore;
 use prism_core::utils::paging::Paginated;
 use prism_storage::PostgresDb;
@@ -20,7 +20,7 @@ impl DidService {
         let tx = self.db.begin().await?;
         let operations = tx.get_operations_by_did(&canonical_did).await?;
         tx.commit().await?;
-        Ok(resolve(operations))
+        Ok(resolve_published(operations))
     }
 
     pub async fn get_all_dids(&self, page: Option<u64>) -> anyhow::Result<Paginated<CanonicalPrismDid>> {

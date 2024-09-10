@@ -116,6 +116,16 @@ impl LongFormPrismDid {
             Some(_) => Err(Error::LongFormDidNotFromCreateOperation),
         }
     }
+
+    pub fn to_operation(&self) -> Result<AtalaOperation, Error> {
+        let operation = AtalaOperation::decode(self.encoded_state.to_bytes().as_slice()).map_err(|e| {
+            DidSyntaxError::DidEncodedStateInvalidProto {
+                source: e,
+                did: self.to_string(),
+            }
+        })?;
+        Ok(operation)
+    }
 }
 
 impl FromStr for PrismDid {
