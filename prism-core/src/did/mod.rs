@@ -117,7 +117,7 @@ impl LongFormPrismDid {
         }
     }
 
-    pub fn to_operation(&self) -> Result<AtalaOperation, Error> {
+    pub fn operation(&self) -> Result<AtalaOperation, Error> {
         let operation = AtalaOperation::decode(self.encoded_state.to_bytes().as_slice()).map_err(|e| {
             DidSyntaxError::DidEncodedStateInvalidProto {
                 source: e,
