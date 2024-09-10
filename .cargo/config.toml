@@ -1,0 +1,2 @@
+[alias]
+node = "run --bin prism-node --"

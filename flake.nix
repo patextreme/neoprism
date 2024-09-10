@@ -145,7 +145,7 @@
                   --date-time-crate time
               '';
 
-              runServer = pkgs.writeShellScriptBin "runServer" ''
+              runNode = pkgs.writeShellScriptBin "runNode" ''
                 cd ${rootDir}
                 ${buildAssets}/bin/buildAssets
                 ${rust}/bin/cargo run --bin prism-node -- --db postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"

@@ -6,7 +6,9 @@ pub enum DltError {
     #[display("unable to bootstrap DLT source")]
     Bootstrap { source: StdError },
     #[display("timeout receiving event from DLT source {location}")]
-    EventRecvTimeout { source: StdError, location: Location },
+    EventRecvTimeout { location: Location },
+    #[display("event source has disconnected {location}")]
+    Disconnected { location: Location },
     #[display("handling DLT event failed {location}")]
     EventHandling { source: StdError, location: Location },
 }

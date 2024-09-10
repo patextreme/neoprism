@@ -11,7 +11,7 @@ pub struct CliArgs {
     #[arg(long, value_name = "DB_URL")]
     pub db: String,
     /// Skip database migration on Node startup
-    #[arg(long, default_value_t = false)]
+    #[arg(long)]
     pub skip_migration: bool,
     /// Address of the Cardano node to consume events from.
     /// If not provided, the Node will not sync events from the Cardano node.
