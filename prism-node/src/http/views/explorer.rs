@@ -84,9 +84,9 @@ pub fn DidList(dids: Paginated<CanonicalPrismDid>) -> Element {
         .map(|(i, is_3dots)| {
             let is_active = i == dids.current_page;
             let classes = if is_active {
-                format!("join-item btn btn-active")
+                "join-item btn btn-active".to_string()
             } else {
-                format!("join-item btn")
+                "join-item btn".to_string()
             };
             if is_3dots {
                 rsx! { a { class: classes, "..." } }
