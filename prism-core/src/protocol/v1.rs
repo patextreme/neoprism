@@ -9,6 +9,8 @@ use crate::did::operation::{
 };
 use crate::did::Error as DidError;
 use crate::dlt::OperationMetadata;
+use crate::prelude::AtalaOperation;
+use crate::proto::atala_operation::Operation;
 use crate::proto::{
     CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation, SignedAtalaOperation,
     UpdateDidOperation,
@@ -87,7 +89,10 @@ impl OperationProcessor for V1Processor {
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
-        candidate_state.with_last_operation_hash(sha256(operation.encode_to_vec()));
+        let atala_operation = AtalaOperation {
+            operation: Some(Operation::UpdateDid(operation)),
+        };
+        candidate_state.with_last_operation_hash(sha256(atala_operation.encode_to_vec()));
         for action in parsed_operation.actions {
             apply_update_action(&mut candidate_state, action, &metadata)?;
         }
@@ -109,7 +114,10 @@ impl OperationProcessor for V1Processor {
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
-        candidate_state.with_last_operation_hash(sha256(operation.encode_to_vec()));
+        let atala_operation = AtalaOperation {
+            operation: Some(Operation::DeactivateDid(operation)),
+        };
+        candidate_state.with_last_operation_hash(sha256(atala_operation.encode_to_vec()));
         for (id, pk) in &state.public_keys {
             if !pk.is_revoked() {
                 candidate_state.revoke_public_key(id, &metadata)?;
