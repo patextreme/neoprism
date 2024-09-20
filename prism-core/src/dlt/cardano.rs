@@ -305,10 +305,9 @@ impl OuraStreamWorker {
     }
 
     fn stream_loop(&self, receiver: StageReceiver) -> DltError {
-        const TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5 * 60);
+        const TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20 * 60);
         loop {
-            let received_event = receiver.recv_timeout(TIMEOUT);
-            let handle_result = match received_event {
+            let handle_result = match receiver.recv_timeout(TIMEOUT) {
                 Ok(event) => {
                     let handle_result = self.handle_atala_event(event.clone());
                     self.persist_cursor(&event);
@@ -319,9 +318,6 @@ impl OuraStreamWorker {
             };
             if let Err(e) = handle_result {
                 match e {
-                    DltError::EventRecvTimeout { .. } => {
-                        log::error!("Oura pipeline has timeout but not yet disconnected. Waiting for the next event without restarting.");
-                    }
                     e => {
                         log::error!("Error handling event from oura source");
                         let report = std::error::Report::new(&e).pretty(true);
@@ -391,7 +387,7 @@ struct CursorPersistWorker<Store: DltCursorStore> {
 
 impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
     fn spawn(mut self) -> JoinHandle<Result<(), DltError>> {
-        const DELAY: tokio::time::Duration = tokio::time::Duration::from_secs(30);
+        const DELAY: tokio::time::Duration = tokio::time::Duration::from_secs(60);
         log::info!("Spawn cursor persist worker with {:?} interval", DELAY);
         tokio::spawn(async move {
             loop {

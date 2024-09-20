@@ -6,11 +6,12 @@ Prism Node implementation in rust according to the [Prism DID Method](https://gi
 
 ## Public demo instance
 
-A public instance of neoprism is hosted at [https://neoprism.patlo.dev](https://neoprism.patlo.dev)
+A public instance of neoprism is hosted at [https://neoprism.patlo.dev](https://neoprism.patlo.dev).  
+A public preprod instance is also available at [https://neoprism-preprod.patlo.dev](https://neoprism-preprod.patlo.dev).
 
 ## Self hosting
 
-Start the node and sync block metadata from relay node `relays-new.cardano-mainnet.iohk.io:3001`
+Start the node and sync block metadata from relay node `backbone.mainnet.cardanofoundation.org:3001`
 
 ```bash
 cd docker

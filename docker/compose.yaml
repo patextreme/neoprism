@@ -13,7 +13,7 @@ services:
       - --db
       - postgres://postgres:postgres@db:5432/postgres
       - --cardano
-      - relays-new.cardano-mainnet.iohk.io:3001
+      - backbone.mainnet.cardanofoundation.org:3001
       - --assets
       - /workspace/assets
     depends_on:
