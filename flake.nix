@@ -22,7 +22,7 @@
           config.unfree = true;
           overlays = [ (import rust-overlay) ];
         };
-        rust = pkgs.rust-bin.nightly."2024-07-26".default.override {
+        rust = pkgs.rust-bin.nightly."2024-10-30".default.override {
           extensions = [
             "rust-src"
             "rust-analyzer"
