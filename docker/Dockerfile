@@ -7,7 +7,7 @@ WORKDIR /workspace/prism-node
 RUN npx tailwindcss -i tailwind.css -o ./assets/tailwind.css
 
 FROM rust:1.79 AS builder
-RUN rustup default nightly-2024-07-26
+RUN rustup default nightly-2024-10-30
 RUN apt update -y && apt install -y protobuf-compiler
 WORKDIR /workspace
 # dummy lib with real dependencies for docker caching
