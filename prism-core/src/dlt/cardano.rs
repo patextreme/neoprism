@@ -58,25 +58,30 @@ mod model {
         pub v: u64,
     }
 
-    pub fn parse_oura_event(
-        context: EventContext,
-        metadata: MetadataRecord,
-    ) -> Result<PublishedAtalaObject, MetadataReadError> {
-        // parse metadata
-        let block_hash = context.block_hash;
+    pub fn parse_oura_timestamp(context: &EventContext) -> Result<OffsetDateTime, MetadataReadError> {
+        let block_hash = &context.block_hash;
         let tx_idx = context.tx_idx;
         let timestamp = context.timestamp.ok_or(MetadataReadError::MissingBlockProperty {
             block_hash: block_hash.clone(),
             tx_idx,
             name: "timestamp",
         })? as i64;
-        let timestamp =
-            OffsetDateTime::from_unix_timestamp(timestamp).map_err(|e| MetadataReadError::InvalidBlockTimestamp {
-                source: e,
-                block_hash: block_hash.clone(),
-                timestamp,
-                tx_idx,
-            })?;
+        OffsetDateTime::from_unix_timestamp(timestamp).map_err(|e| MetadataReadError::InvalidBlockTimestamp {
+            source: e,
+            block_hash: block_hash.clone(),
+            timestamp,
+            tx_idx,
+        })
+    }
+
+    pub fn parse_oura_event(
+        context: EventContext,
+        metadata: MetadataRecord,
+    ) -> Result<PublishedAtalaObject, MetadataReadError> {
+        // parse metadata
+        let block_hash = &context.block_hash;
+        let tx_idx = context.tx_idx;
+        let timestamp = parse_oura_timestamp(&context)?;
         let block_metadata = BlockMetadata {
             cbt: timestamp,
             absn: context.tx_idx.ok_or(MetadataReadError::MissingBlockProperty {
@@ -125,7 +130,7 @@ mod model {
         let atala_object =
             AtalaObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::AtalaBlockProtoDecode {
                 source: e,
-                block_hash,
+                block_hash: block_hash.clone(),
                 tx_idx,
             })?;
 
@@ -339,9 +344,13 @@ impl OuraStreamWorker {
         let Ok(block_hash) = HexStr::from_str(block_hash_hex) else {
             return;
         };
+        let Ok(timestamp) = model::parse_oura_timestamp(&event.context) else {
+            return;
+        };
         let cursor = DltCursor {
             slot,
             block_hash: block_hash.to_bytes(),
+            cbt: Some(timestamp),
         };
         let _ = self.cursor_tx.send(Some(cursor));
     }

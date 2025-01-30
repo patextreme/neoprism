@@ -22,9 +22,13 @@ pub fn ResolverPage(
     network: Option<NetworkIdentifier>,
 ) -> Element {
     let content = match resolution_result {
-        Some(Ok((result, debug))) => rsx! { ResolutionResultSection { result, debug: Rc::new(debug) } },
-        Some(Err(errors)) => rsx! { ResolutionErrorSection { errors } },
-        None => None,
+        Some(Ok((result, debug))) => rsx! {
+            ResolutionResultSection { result, debug: Rc::new(debug) }
+        },
+        Some(Err(errors)) => rsx! {
+            ResolutionErrorSection { errors }
+        },
+        None => rsx! {},
     };
     rsx! {
         NavBar { network }
@@ -50,7 +54,7 @@ fn SearchBox(did: Option<String>) -> Element {
                 name: "did",
                 placeholder: "Enter Prism DID",
                 value: did,
-                required: true
+                required: true,
             }
             button { class: "btn btn-primary", r#type: "submit", "Resolve" }
         }
@@ -60,7 +64,9 @@ fn SearchBox(did: Option<String>) -> Element {
 #[component]
 fn ResolutionErrorSection(errors: Vec<String>) -> Element {
     let error_stack = errors.iter().enumerate().map(|(idx, message)| {
-        rsx! { p { class: "text-lg font-mono", "{idx}: {message}" } }
+        rsx! {
+            p { class: "text-lg font-mono", "{idx}: {message}" }
+        }
     });
     rsx! {
         for e in error_stack {
@@ -72,8 +78,12 @@ fn ResolutionErrorSection(errors: Vec<String>) -> Element {
 #[component]
 fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>) -> Element {
     let did_doc = match result {
-        ResolutionResult::Ok(did_state) => rsx! { DidDocumentCardContainer { did_state } },
-        ResolutionResult::NotFound => rsx! { p { class: "text-lg", "DID not found" } },
+        ResolutionResult::Ok(did_state) => rsx! {
+            DidDocumentCardContainer { did_state }
+        },
+        ResolutionResult::NotFound => rsx! {
+            p { class: "text-lg", "DID not found" }
+        },
     };
     let debug = debug.iter().map(|(meta, operation, error)| {
         let block_meta = &meta.block_metadata;
@@ -103,7 +113,7 @@ fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>)
         }
     });
     rsx! {
-        {did_doc},
+        {did_doc}
         div { class: "divider divider-neutral", "Operation Debug" }
         for d in debug {
             {d}
@@ -114,16 +124,26 @@ fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>)
 #[component]
 fn DidDocumentCardContainer(did_state: DidState) -> Element {
     let contexts = did_state.context.into_iter().map(|c| {
-        rsx! { li { "{c}" } }
+        rsx! {
+            li { "{c}" }
+        }
     });
 
     let mut keys = did_state.public_keys;
     keys.sort_by_key(|i| i.id.to_string());
-    let keys = keys.into_iter().map(|pk| rsx! { DidDocumentPublicKeyCard { pk } });
+    let keys = keys.into_iter().map(|pk| {
+        rsx! {
+            DidDocumentPublicKeyCard { pk }
+        }
+    });
 
     let mut services = did_state.services;
     services.sort_by_key(|i| i.id.to_string());
-    let services = services.into_iter().map(|s| rsx! { DidDocumentServiceCard { svc: s } });
+    let services = services.into_iter().map(|s| {
+        rsx! {
+            DidDocumentServiceCard { svc: s }
+        }
+    });
 
     rsx! {
         div {
@@ -200,7 +220,9 @@ fn DidDocumentServiceCard(svc: Service) -> Element {
 fn DidDocumentContextCard(ctx: String) -> Element {
     rsx! {
         div { class: "card bg-base-200 w-96 shadow-xl",
-            div { class: "card-body", h2 { class: "card-title font-mono", "{ctx}" } }
+            div { class: "card-body",
+                h2 { class: "card-title font-mono", "{ctx}" }
+            }
         }
     }
 }
