@@ -8,7 +8,7 @@ use rocket::uri;
 
 use crate::http::contract::hx::HxRpc;
 use crate::http::views::components::{NavBar, PageContent, PageTitle};
-use crate::http::views::escape_html_rpc;
+use crate::http::views::{escape_html_rpc, format_datetime};
 
 pub fn ExplorerPage(
     cursor: Option<DltCursor>,
@@ -33,6 +33,10 @@ pub fn DltCursorStat(cursor: Option<DltCursor>) -> Element {
         .as_ref()
         .map(|i| format!("{}", i.slot))
         .unwrap_or_else(|| "-".to_string());
+    let timestamp = cursor
+        .as_ref()
+        .and_then(|i| i.cbt.map(|t| format_datetime(&t)))
+        .unwrap_or_default();
     let hash = cursor
         .map(|i| HexStr::from(i.block_hash).to_string())
         .unwrap_or_else(|| "Sync is not enabled".to_string());
@@ -47,7 +51,11 @@ pub fn DltCursorStat(cursor: Option<DltCursor>) -> Element {
                 div { class: "stat text-center",
                     div { class: "stat-title w-max-full", "Current Sync Slot" }
                     div { class: "stat-value w-max-full", "{slot}" }
-                    div { class: "stat-desc w-max-full truncate", "{hash}" }
+                    div { class: "stat-desc w-max-full truncate",
+                        "{hash}"
+                        br {}
+                        "{timestamp}"
+                    }
                 }
             }
         }
@@ -89,11 +97,15 @@ pub fn DidList(dids: Paginated<CanonicalPrismDid>) -> Element {
                 "join-item btn".to_string()
             };
             if is_3dots {
-                rsx! { a { class: classes, "..." } }
+                rsx! {
+                    a { class: classes, "..." }
+                }
             } else {
                 let userfacing_page = i + 1;
                 let goto_uri = uri!(crate::http::routes::explorer(Some(userfacing_page)));
-                rsx! { a { href: "{goto_uri}", class: classes, "{userfacing_page}" } }
+                rsx! {
+                    a { href: "{goto_uri}", class: classes, "{userfacing_page}" }
+                }
             }
         });
     let pagination = rsx! {
@@ -111,7 +123,7 @@ pub fn DidList(dids: Paginated<CanonicalPrismDid>) -> Element {
             "hx-vals": "{rpc}",
             "hx-trigger": "load delay:5s",
             "hx-swap": "outerHTML",
-            {pagination.clone()},
+            {pagination.clone()}
             for elem in did_elems {
                 {elem}
             }

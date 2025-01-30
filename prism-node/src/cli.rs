@@ -15,7 +15,7 @@ pub struct CliArgs {
     pub skip_migration: bool,
     /// Address of the Cardano node to consume events from.
     /// If not provided, the Node will not sync events from the Cardano node.
-    /// (e.g. relays-new.cardano-mainnet.iohk.io:3001)
+    /// (e.g. backbone.mainnet.cardanofoundation.org:3001)
     #[arg(long, value_name = "CARDANO_ADDR")]
     pub cardano: Option<String>,
     /// A Cardano network to connect to.

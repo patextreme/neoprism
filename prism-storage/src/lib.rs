@@ -174,6 +174,7 @@ impl DltCursorStore for PostgresTransaction {
             .map(|model| DltCursor {
                 slot: model.slot as u64,
                 block_hash: model.block_hash,
+                cbt: None,
             });
         Ok(result)
     }

@@ -12,6 +12,7 @@ pub mod cardano;
 pub struct DltCursor {
     pub slot: u64,
     pub block_hash: Vec<u8>,
+    pub cbt: Option<OffsetDateTime>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
