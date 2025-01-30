@@ -28,7 +28,7 @@ pub fn ResolverPage(
         Some(Err(errors)) => rsx! {
             ResolutionErrorSection { errors }
         },
-        None => None,
+        None => rsx! {},
     };
     rsx! {
         NavBar { network }
