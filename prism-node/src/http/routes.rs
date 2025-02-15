@@ -61,8 +61,8 @@ pub mod hx {
     use rocket::form::Form;
     use rocket::{post, State};
 
-    use crate::http::contract::form::HxRpcForm;
-    use crate::http::contract::hx::HxRpc;
+    use crate::http::model::form::HxRpcForm;
+    use crate::http::model::hx::HxRpc;
     use crate::http::response::SsrComponent;
     use crate::http::views;
     use crate::AppState;
@@ -82,5 +82,15 @@ pub mod hx {
                 SsrComponent(views::explorer::DidList(views::explorer::DidListProps { dids }))
             }
         }
+    }
+}
+
+pub mod api {
+    use rocket::get;
+    use rocket::serde::json::Json;
+
+    #[get("/api/resolver")]
+    pub async fn resolver() -> Json<i32> {
+        todo!()
     }
 }

@@ -6,7 +6,7 @@ use prism_core::utils::codec::HexStr;
 use prism_core::utils::paging::Paginated;
 use rocket::uri;
 
-use crate::http::contract::hx::HxRpc;
+use crate::http::model::hx::HxRpc;
 use crate::http::views::components::{NavBar, PageContent, PageTitle};
 use crate::http::views::{escape_html_rpc, format_datetime};
 
