@@ -322,14 +322,10 @@ impl OuraStreamWorker {
                 Err(RecvTimeoutError::Disconnected) => Err(DltError::Disconnected { location: location!() }),
             };
             if let Err(e) = handle_result {
-                match e {
-                    e => {
-                        log::error!("Error handling event from oura source");
-                        let report = std::error::Report::new(&e).pretty(true);
-                        log::error!("{}", report);
-                        return e;
-                    }
-                };
+                log::error!("Error handling event from oura source");
+                let report = std::error::Report::new(&e).pretty(true);
+                log::error!("{}", report);
+                return e;
             }
         }
     }
