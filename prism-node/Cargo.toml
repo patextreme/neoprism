@@ -8,6 +8,14 @@ edition = "2021"
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
+derive_more = { workspace = true, features = [
+  "as_ref",
+  "from",
+  "into",
+  "debug",
+  "display",
+  "error",
+] }
 dioxus-ssr = { workspace = true }
 dioxus = { workspace = true }
 env_logger = { workspace = true }

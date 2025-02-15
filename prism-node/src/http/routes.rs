@@ -58,6 +58,7 @@ pub async fn explorer(state: &State<AppState>, page: Option<u64>) -> SsrPage {
 }
 
 pub mod hx {
+    use dioxus::prelude::*;
     use rocket::form::Form;
     use rocket::{post, State};
 
@@ -73,24 +74,42 @@ pub mod hx {
         match rpc {
             HxRpc::GetExplorerDltCursor {} => {
                 let cursor = state.cursor_rx.as_ref().and_then(|rx| rx.borrow().to_owned());
-                SsrComponent(views::explorer::DltCursorStat(views::explorer::DltCursorStatProps {
-                    cursor,
-                }))
+                SsrComponent(rsx! {
+                    views::explorer::DltCursorStat { cursor }
+                })
             }
             HxRpc::GetExplorerDidList { page } => {
                 let dids = state.did_service.get_all_dids(page).await.unwrap(); // FIXME: unwrap
-                SsrComponent(views::explorer::DidList(views::explorer::DidListProps { dids }))
+                SsrComponent(rsx! {
+                    views::explorer::DidList { dids }
+                })
             }
         }
     }
 }
 
 pub mod api {
-    use rocket::get;
+    use prism_core::protocol;
+    use rocket::http::Status;
     use rocket::serde::json::Json;
+    use rocket::{get, State};
 
-    #[get("/api/resolver")]
-    pub async fn resolver() -> Json<i32> {
-        todo!()
+    use crate::http::model::api::DidDocument;
+    use crate::AppState;
+
+    /// This endpoint is incomplete according to https://www.w3.org/TR/did-resolution/#bindings-https
+    /// To be fully compliant, we need to add more format
+    /// - application/ld+json;profile="https://w3id.org/did-resolution"
+    /// - application/ld+json;profile="https://w3id.org/did-url-dereferencing"
+    #[get("/api/dids/<did>", format = "application/json")]
+    pub async fn resolver(did: String, state: &State<AppState>) -> Result<Json<DidDocument>, Status> {
+        let Ok((result, _)) = state.did_service.resolve_did(&did).await else {
+            return Err(Status::InternalServerError);
+        };
+
+        match result {
+            protocol::resolver::ResolutionResult::Ok(did_state) => todo!(),
+            protocol::resolver::ResolutionResult::NotFound => Err(Status::NotFound),
+        }
     }
 }

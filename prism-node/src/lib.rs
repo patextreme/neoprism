@@ -100,7 +100,7 @@ fn init_endpoints() -> AdHoc {
                 routes::hx::rpc,
                 routes::index,
                 routes::resolver,
-                routes::api::resolver
+                routes::api::resolver,
             ),
         )
     })
