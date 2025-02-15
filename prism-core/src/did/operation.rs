@@ -11,7 +11,7 @@ use super::CanonicalPrismDid;
 use crate::crypto::ed25519::Ed25519PublicKey;
 use crate::crypto::secp256k1::Secp256k1PublicKey;
 use crate::crypto::x25519::X25519PublicKey;
-use crate::crypto::{Error as CryptoError, ToPublicKey};
+use crate::crypto::{Error as CryptoError, Jwk, ToPublicKey};
 use crate::error::InvalidInputSizeError;
 use crate::location;
 use crate::prelude::{AtalaOperation, SignedAtalaOperation};
@@ -439,6 +439,16 @@ impl SupportedPublicKey {
             KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
         };
         Ok(pk)
+    }
+}
+
+impl From<SupportedPublicKey> for Jwk {
+    fn from(value: SupportedPublicKey) -> Self {
+        match value {
+            SupportedPublicKey::Secp256k1(k) => k.into(),
+            SupportedPublicKey::Ed25519(k) => k.into(),
+            SupportedPublicKey::X25519(k) => k.into(),
+        }
     }
 }
 

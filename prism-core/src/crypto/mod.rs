@@ -35,3 +35,10 @@ pub enum Error {
 pub trait ToPublicKey<Pk> {
     fn to_public_key(&self) -> Result<Pk, Error>;
 }
+
+pub struct Jwk {
+    pub kty: String,
+    pub crv: String,
+    pub x: Option<String>,
+    pub y: Option<String>,
+}

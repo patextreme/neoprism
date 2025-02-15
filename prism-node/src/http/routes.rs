@@ -105,8 +105,10 @@ pub mod api {
     pub async fn resolver(did: String, state: &State<AppState>) -> Result<Json<DidDocument>, Status> {
         let result = state.did_service.resolve_did(&did).await;
         match result {
-            Err(ResolutionError::InvalidDid { .. }) => todo!(),
-            _ => todo!(),
+            Err(ResolutionError::InvalidDid { .. }) => Err(Status::BadRequest),
+            Err(ResolutionError::NotFound) => Err(Status::NotFound),
+            Err(ResolutionError::InternalError { .. }) => Err(Status::InternalServerError),
+            Ok((did_state, _)) => Ok(Json(DidDocument::new(&did, did_state))),
         }
     }
 }

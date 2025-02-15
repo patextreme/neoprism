@@ -76,7 +76,9 @@ fn ResolutionErrorSection(errors: Vec<String>) -> Element {
 
 #[component]
 fn ResolutionResultSection(did_state: DidState, debug: Rc<ResolutionDebug>) -> Element {
-    let did_doc = rsx! {DidDocumentCardContainer { did_state }};
+    let did_doc = rsx! {
+        DidDocumentCardContainer { did_state }
+    };
     let debug = debug.iter().map(|(meta, operation, error)| {
         let block_meta = &meta.block_metadata;
         let cbt = format_datetime(&block_meta.cbt);
