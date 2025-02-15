@@ -50,7 +50,7 @@ pub mod api {
                     operation::PublicKeyData::Other { data, .. } => {
                         let jwk: crypto::Jwk = data.clone().into();
                         Some(json!({
-                            "id": format!("{}/#{}", did, k.id),
+                            "id": format!("{}#{}", did, k.id),
                             "type": "JsonWebKey2020",
                             "controller": did,
                             "publicKeyJwk": {
@@ -68,7 +68,7 @@ pub mod api {
                     .public_keys
                     .iter()
                     .filter(|k| k.usage() == usage)
-                    .map(|k| format!("{}/#{}", did, k.id))
+                    .map(|k| format!("{}#{}", did, k.id))
                     .collect::<Vec<String>>()
             };
             let verification_method = did_state

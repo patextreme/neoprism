@@ -21,7 +21,7 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
                 .resolve_did(did)
                 .await
                 .map_err(|e| anyhow::Error::new(e).chain().map(|e| e.to_string()).collect::<Vec<_>>())
-                .map(|(result, debug)| {
+                .map(|(_, result, debug)| {
                     let debug: Vec<_> = debug
                         .into_iter()
                         .map(|(meta, op, e)| {
@@ -108,7 +108,7 @@ pub mod api {
             Err(ResolutionError::InvalidDid { .. }) => Err(Status::BadRequest),
             Err(ResolutionError::NotFound) => Err(Status::NotFound),
             Err(ResolutionError::InternalError { .. }) => Err(Status::InternalServerError),
-            Ok((did_state, _)) => Ok(Json(DidDocument::new(&did, did_state))),
+            Ok((did, did_state, _)) => Ok(Json(DidDocument::new(&did.to_string(), did_state))),
         }
     }
 }
