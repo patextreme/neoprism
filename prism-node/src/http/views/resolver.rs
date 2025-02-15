@@ -7,7 +7,6 @@ use prism_core::did::DidState;
 use prism_core::dlt::cardano::NetworkIdentifier;
 use prism_core::dlt::OperationMetadata;
 use prism_core::proto::SignedAtalaOperation;
-use prism_core::protocol::resolver::ResolutionResult;
 use prism_core::utils::codec::HexStr;
 use rocket::uri;
 
@@ -18,12 +17,12 @@ pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Vec<Str
 
 pub fn ResolverPage(
     did: Option<String>,
-    resolution_result: Option<Result<(ResolutionResult, ResolutionDebug), Vec<String>>>,
+    resolution_result: Option<Result<(DidState, ResolutionDebug), Vec<String>>>,
     network: Option<NetworkIdentifier>,
 ) -> Element {
     let content = match resolution_result {
-        Some(Ok((result, debug))) => rsx! {
-            ResolutionResultSection { result, debug: Rc::new(debug) }
+        Some(Ok((did_state, debug))) => rsx! {
+            ResolutionResultSection { did_state, debug: Rc::new(debug) }
         },
         Some(Err(errors)) => rsx! {
             ResolutionErrorSection { errors }
@@ -76,15 +75,8 @@ fn ResolutionErrorSection(errors: Vec<String>) -> Element {
 }
 
 #[component]
-fn ResolutionResultSection(result: ResolutionResult, debug: Rc<ResolutionDebug>) -> Element {
-    let did_doc = match result {
-        ResolutionResult::Ok(did_state) => rsx! {
-            DidDocumentCardContainer { did_state }
-        },
-        ResolutionResult::NotFound => rsx! {
-            p { class: "text-lg", "DID not found" }
-        },
-    };
+fn ResolutionResultSection(did_state: DidState, debug: Rc<ResolutionDebug>) -> Element {
+    let did_doc = rsx! {DidDocumentCardContainer { did_state }};
     let debug = debug.iter().map(|(meta, operation, error)| {
         let block_meta = &meta.block_metadata;
         let cbt = format_datetime(&block_meta.cbt);

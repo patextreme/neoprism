@@ -20,7 +20,7 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
                 .did_service
                 .resolve_did(did)
                 .await
-                .map_err(|e| e.chain().map(|e| e.to_string()).collect::<Vec<_>>())
+                .map_err(|e| anyhow::Error::new(e).chain().map(|e| e.to_string()).collect::<Vec<_>>())
                 .map(|(result, debug)| {
                     let debug: Vec<_> = debug
                         .into_iter()
@@ -89,11 +89,11 @@ pub mod hx {
 }
 
 pub mod api {
-    use prism_core::protocol;
     use rocket::http::Status;
     use rocket::serde::json::Json;
     use rocket::{get, State};
 
+    use crate::app::service::error::ResolutionError;
     use crate::http::model::api::DidDocument;
     use crate::AppState;
 
@@ -103,13 +103,10 @@ pub mod api {
     /// - application/ld+json;profile="https://w3id.org/did-url-dereferencing"
     #[get("/api/dids/<did>", format = "application/json")]
     pub async fn resolver(did: String, state: &State<AppState>) -> Result<Json<DidDocument>, Status> {
-        let Ok((result, _)) = state.did_service.resolve_did(&did).await else {
-            return Err(Status::InternalServerError);
-        };
-
+        let result = state.did_service.resolve_did(&did).await;
         match result {
-            protocol::resolver::ResolutionResult::Ok(did_state) => todo!(),
-            protocol::resolver::ResolutionResult::NotFound => Err(Status::NotFound),
+            Err(ResolutionError::InvalidDid { .. }) => todo!(),
+            _ => todo!(),
         }
     }
 }
