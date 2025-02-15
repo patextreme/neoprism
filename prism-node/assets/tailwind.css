@@ -107,7 +107,7 @@
 }
 
 /*
-! tailwindcss v3.4.12 | MIT License | https://tailwindcss.com
+! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com
 */
 
 /*
@@ -550,7 +550,7 @@ video {
 
 /* Make elements with the HTML hidden attribute stay hidden by default */
 
-[hidden] {
+[hidden]:where(:not([hidden="until-found"])) {
   display: none;
 }
 
@@ -1864,17 +1864,17 @@ html {
 
 .bg-base-200 {
   --tw-bg-opacity: 1;
-  background-color: var(--fallback-b2,oklch(var(--b2)/var(--tw-bg-opacity)));
+  background-color: var(--fallback-b2,oklch(var(--b2)/var(--tw-bg-opacity, 1)));
 }
 
 .bg-base-300 {
   --tw-bg-opacity: 1;
-  background-color: var(--fallback-b3,oklch(var(--b3)/var(--tw-bg-opacity)));
+  background-color: var(--fallback-b3,oklch(var(--b3)/var(--tw-bg-opacity, 1)));
 }
 
 .bg-neutral {
   --tw-bg-opacity: 1;
-  background-color: var(--fallback-n,oklch(var(--n)/var(--tw-bg-opacity)));
+  background-color: var(--fallback-n,oklch(var(--n)/var(--tw-bg-opacity, 1)));
 }
 
 .px-2 {
@@ -1930,17 +1930,17 @@ html {
 
 .text-error {
   --tw-text-opacity: 1;
-  color: var(--fallback-er,oklch(var(--er)/var(--tw-text-opacity)));
+  color: var(--fallback-er,oklch(var(--er)/var(--tw-text-opacity, 1)));
 }
 
 .text-neutral-content {
   --tw-text-opacity: 1;
-  color: var(--fallback-nc,oklch(var(--nc)/var(--tw-text-opacity)));
+  color: var(--fallback-nc,oklch(var(--nc)/var(--tw-text-opacity, 1)));
 }
 
 .text-success {
   --tw-text-opacity: 1;
-  color: var(--fallback-su,oklch(var(--su)/var(--tw-text-opacity)));
+  color: var(--fallback-su,oklch(var(--su)/var(--tw-text-opacity, 1)));
 }
 
 .shadow {

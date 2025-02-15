@@ -2,12 +2,12 @@ FROM node:20 AS assets-builder
 COPY . /workspace
 WORKDIR /workspace
 RUN npm install
-RUN npm install -D tailwindcss@3.4.4
+RUN npm install -D tailwindcss@3.4.17
 WORKDIR /workspace/prism-node
 RUN npx tailwindcss -i tailwind.css -o ./assets/tailwind.css
 
-FROM rust:1.79 AS builder
-RUN rustup default nightly-2025-01-28
+FROM rust:1.84 AS builder
+RUN rustup default nightly-2025-02-13
 RUN apt update -y && apt install -y protobuf-compiler
 WORKDIR /workspace
 # dummy lib with real dependencies for docker caching
