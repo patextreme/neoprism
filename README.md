@@ -88,7 +88,7 @@ However, it is much more performant to run `sync worker` close to the `cardano n
 
 ## Standalone mode
 
-In this mode, all components are contained inside a single process.
+In this mode, all components are contained inside a single container.
 To run in this mode, use the following options:
 
 - `--cardano=<address>` - to enable the sync worker
@@ -98,17 +98,17 @@ To run in this mode, use the following options:
 
 ## High-availability mode
 
-In this mode, worker and server are on a different process.
-Since there are multiple process, we have to select specific options for specific component.
+In this mode, worker and server are on a different container.
+Since there are multiple containers, we have to select specific options for specific container.
 There can be multiple servers to serve users and clients where server is connected to the postgres in HA mode.
-There is only one worker to index the operation.
+There is only one worker to index the operation from Cardano.
 
-for `worker` component, use
+for `worker` container, use
 
 - `--cardano=<address>` - to enable the sync worker
 - `--skip-migration=true` - to enable db migration when the server starts
 
-for `server` component, use
+for `server` container, use
 - `--skip-migration=false` - to disable db migration
 
 Make sure to not set `--cardano=<address>` for the `server` as
