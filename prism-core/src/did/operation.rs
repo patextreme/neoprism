@@ -493,7 +493,7 @@ impl Service {
             source: e,
             type_name: service.r#type.to_string(),
         })?;
-        let service_endpoints = ServiceEndpoint::parse(&service.service_endpoint, param).map_err(|e| {
+        let service_endpoint = ServiceEndpoint::parse(&service.service_endpoint, param).map_err(|e| {
             ServiceError::InvalidServiceEndpoint {
                 source: e,
                 endpoint: service.service_endpoint.to_string(),
@@ -503,7 +503,7 @@ impl Service {
         Ok(Self {
             id,
             r#type,
-            service_endpoint: service_endpoints,
+            service_endpoint,
         })
     }
 }
