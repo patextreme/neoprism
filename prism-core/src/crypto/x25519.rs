@@ -1,4 +1,4 @@
-use super::{EncodeArray, EncodeVec, Error, Jwk, ToPublicKey};
+use super::{EncodeArray, EncodeJwk, EncodeVec, Error, Jwk, ToPublicKey};
 use crate::utils::codec::Base64UrlStrNoPad;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -31,9 +31,9 @@ impl<T: AsRef<[u8]>> ToPublicKey<X25519PublicKey> for T {
     }
 }
 
-impl From<X25519PublicKey> for Jwk {
-    fn from(value: X25519PublicKey) -> Self {
-        let x = value.encode_array();
+impl EncodeJwk for X25519PublicKey {
+    fn encode_jwk(&self) -> Jwk {
+        let x = self.encode_array();
         Jwk {
             kty: "OKP".to_string(),
             crv: "X25519".to_string(),

@@ -19,7 +19,7 @@ pub mod hx {
 }
 
 pub mod api {
-    use prism_core::crypto;
+    use prism_core::crypto::EncodeJwk;
     use prism_core::did::operation::KeyUsage;
     use prism_core::did::{operation, DidState};
     use rocket::serde::{Deserialize, Serialize};
@@ -92,7 +92,7 @@ pub mod api {
         match &key.data {
             operation::PublicKeyData::Master { .. } => None,
             operation::PublicKeyData::Other { data, .. } => {
-                let jwk: crypto::Jwk = data.clone().into();
+                let jwk = data.encode_jwk();
                 Some(json!({
                     "id": format!("{}#{}", did, key.id),
                     "type": "JsonWebKey2020",

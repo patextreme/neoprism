@@ -4,7 +4,7 @@ use k256::ecdsa::signature::Verifier;
 use k256::elliptic_curve::sec1::{EncodedPoint, ToEncodedPoint};
 use k256::Secp256k1;
 
-use super::{EncodeArray, EncodeVec, Error, Jwk, ToPublicKey, Verifiable};
+use super::{EncodeArray, EncodeJwk, EncodeVec, Error, Jwk, ToPublicKey, Verifiable};
 use crate::utils::codec::Base64UrlStrNoPad;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -115,9 +115,9 @@ fn transcode_signature_to_bitcoin(sig: &[u8]) -> Vec<u8> {
     r_rev.chain(s_rev).cloned().collect()
 }
 
-impl From<Secp256k1PublicKey> for Jwk {
-    fn from(value: Secp256k1PublicKey) -> Self {
-        let point = value.curve_point();
+impl EncodeJwk for Secp256k1PublicKey {
+    fn encode_jwk(&self) -> Jwk {
+        let point = self.curve_point();
         Jwk {
             kty: "EC".to_string(),
             crv: "secp256k1".to_string(),

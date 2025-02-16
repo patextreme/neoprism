@@ -1,7 +1,22 @@
+use enum_dispatch::enum_dispatch;
+
 pub mod ed25519;
 pub mod secp256k1;
 pub mod x25519;
 
+pub struct Jwk {
+    pub kty: String,
+    pub crv: String,
+    pub x: Option<String>,
+    pub y: Option<String>,
+}
+
+#[enum_dispatch]
+pub trait EncodeJwk {
+    fn encode_jwk(&self) -> Jwk;
+}
+
+#[enum_dispatch]
 pub trait EncodeVec {
     fn encode_vec(&self) -> Vec<u8>;
 }
@@ -34,11 +49,4 @@ pub enum Error {
 
 pub trait ToPublicKey<Pk> {
     fn to_public_key(&self) -> Result<Pk, Error>;
-}
-
-pub struct Jwk {
-    pub kty: String,
-    pub crv: String,
-    pub x: Option<String>,
-    pub y: Option<String>,
 }
