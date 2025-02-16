@@ -194,7 +194,7 @@ impl DidStateRc {
             Err(DidStateConflictError::UpdateServiceIsRevoked { id: id.clone() })?
         }
 
-        service.get_mut().service_endpoints = new_endpoint;
+        service.get_mut().service_endpoint = new_endpoint;
         Ok(())
     }
 

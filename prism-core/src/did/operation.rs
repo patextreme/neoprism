@@ -488,7 +488,7 @@ impl KeyUsage {
 pub struct Service {
     pub id: ServiceId,
     pub r#type: ServiceType,
-    pub service_endpoints: ServiceEndpoint,
+    pub service_endpoint: ServiceEndpoint,
 }
 
 impl Service {
@@ -511,7 +511,7 @@ impl Service {
         Ok(Self {
             id,
             r#type,
-            service_endpoints,
+            service_endpoint: service_endpoints,
         })
     }
 }

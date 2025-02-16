@@ -37,6 +37,15 @@ pub mod api {
         key_agreement: Option<Vec<String>>,
         capability_invocation: Option<Vec<String>>,
         capability_delegation: Option<Vec<String>>,
+        service: Option<Vec<Service>>,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[serde(crate = "rocket::serde", rename_all = "camelCase")]
+    pub struct Service {
+        id: String,
+        r#type: serde_json::Value,
+        service_endpoint: serde_json::Value,
     }
 
     impl DidDocument {
@@ -44,32 +53,13 @@ pub mod api {
             let mut context = vec!["https://www.w3.org/ns/did/v1".to_string()];
             context.extend(did_state.context);
 
-            let to_jwk_json = |k: &operation::PublicKey| -> Option<serde_json::Value> {
-                match &k.data {
-                    operation::PublicKeyData::Master { .. } => None,
-                    operation::PublicKeyData::Other { data, .. } => {
-                        let jwk: crypto::Jwk = data.clone().into();
-                        Some(json!({
-                            "id": format!("{}#{}", did, k.id),
-                            "type": "JsonWebKey2020",
-                            "controller": did,
-                            "publicKeyJwk": {
-                                "kty": jwk.kty,
-                                "crv": jwk.crv,
-                                "x": jwk.x,
-                                "y": jwk.y,
-                            }
-                        }))
-                    }
-                }
-            };
             let get_relationship = |usage: KeyUsage| -> Vec<String> {
                 did_state
                     .public_keys
                     .iter()
                     .filter(|k| k.usage() == usage)
                     .map(|k| format!("{}#{}", did, k.id))
-                    .collect::<Vec<String>>()
+                    .collect()
             };
             let verification_method = did_state
                 .public_keys
@@ -82,7 +72,7 @@ pub mod api {
                         || usage == KeyUsage::CapabilityInvocationKey
                         || usage == KeyUsage::CapabilityDelegationKey
                 })
-                .flat_map(to_jwk_json)
+                .flat_map(|k| transform_key_jwk(did, k))
                 .collect();
             DidDocument {
                 context,
@@ -93,7 +83,54 @@ pub mod api {
                 key_agreement: Some(get_relationship(KeyUsage::KeyAgreementKey)),
                 capability_invocation: Some(get_relationship(KeyUsage::CapabilityInvocationKey)),
                 capability_delegation: Some(get_relationship(KeyUsage::CapabilityDelegationKey)),
+                service: Some(did_state.services.iter().map(transform_service).collect()),
             }
+        }
+    }
+
+    fn transform_key_jwk(did: &str, key: &operation::PublicKey) -> Option<serde_json::Value> {
+        match &key.data {
+            operation::PublicKeyData::Master { .. } => None,
+            operation::PublicKeyData::Other { data, .. } => {
+                let jwk: crypto::Jwk = data.clone().into();
+                Some(json!({
+                    "id": format!("{}#{}", did, key.id),
+                    "type": "JsonWebKey2020",
+                    "controller": did,
+                    "publicKeyJwk": {
+                        "kty": jwk.kty,
+                        "crv": jwk.crv,
+                        "x": jwk.x,
+                        "y": jwk.y,
+                    }
+                }))
+            }
+        }
+    }
+
+    fn transform_service(service: &operation::Service) -> Service {
+        let r#type = match &service.r#type {
+            operation::ServiceType::Value(name) => json!(name.to_string()),
+            operation::ServiceType::List(names) => {
+                json!(names.iter().map(|i| i.to_string()).collect::<Vec<_>>())
+            }
+        };
+        let endpoint_to_json = |uri: &operation::ServiceEndpointValue| -> serde_json::Value {
+            match &uri {
+                operation::ServiceEndpointValue::Uri(uri) => json!(uri),
+                operation::ServiceEndpointValue::Json(obj) => json!(obj),
+            }
+        };
+        let service_endpoint = match &service.service_endpoint {
+            operation::ServiceEndpoint::Value(endpoint) => endpoint_to_json(endpoint),
+            operation::ServiceEndpoint::List(endpoints) => {
+                json!(endpoints.iter().map(endpoint_to_json).collect::<Vec<_>>())
+            }
+        };
+        Service {
+            id: service.id.to_string(),
+            r#type,
+            service_endpoint,
         }
     }
 }

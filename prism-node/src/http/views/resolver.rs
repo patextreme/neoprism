@@ -204,7 +204,7 @@ fn DidDocumentServiceCard(svc: Service) -> Element {
                 p { class: "font-bold", "service type" }
                 p { class: "bg-base-300 font-mono break-words", "{svc.r#type:?}" }
                 p { class: "font-bold", "service endpoint" }
-                p { class: "bg-base-300 font-mono break-words", "{svc.service_endpoints:?}" }
+                p { class: "bg-base-300 font-mono break-words", "{svc.service_endpoint:?}" }
             }
         }
     }
