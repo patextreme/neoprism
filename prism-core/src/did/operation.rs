@@ -369,12 +369,12 @@ impl PublicKey {
         let Some(key_data) = &public_key.key_data else {
             Err(PublicKeyError::MissingKeyData { id: id.clone() })?
         };
-        let pk = SupportedPublicKey::from_key_data(key_data).map_err(|e| PublicKeyError::Crypto {
+        let pk = NonMasterPublicKey::from_key_data(key_data).map_err(|e| PublicKeyError::Crypto {
             source: e,
             id: id.clone(),
         })?;
         let data = match (usage, pk) {
-            (KeyUsage::MasterKey, SupportedPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
+            (KeyUsage::MasterKey, NonMasterPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
             (KeyUsage::MasterKey, _) => Err(PublicKeyError::MasterKeyNotSecp256k1 { id: id.clone() })?,
             (usage, pk) => PublicKeyData::Other { data: pk, usage },
         };
@@ -392,13 +392,13 @@ impl PublicKey {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[enum_dispatch(EncodeJwk, EncodeVec)]
-pub enum SupportedPublicKey {
+pub enum NonMasterPublicKey {
     Secp256k1(Secp256k1PublicKey),
     Ed25519(Ed25519PublicKey),
     X25519(X25519PublicKey),
 }
 
-impl SupportedPublicKey {
+impl NonMasterPublicKey {
     pub fn from_key_data(key_data: &KeyData) -> Result<Self, CryptoError> {
         let curve_name: &str = match key_data {
             KeyData::EcKeyData(k) => &k.curve,
@@ -447,7 +447,7 @@ impl SupportedPublicKey {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicKeyData {
     Master { data: Secp256k1PublicKey },
-    Other { data: SupportedPublicKey, usage: KeyUsage },
+    Other { data: NonMasterPublicKey, usage: KeyUsage },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

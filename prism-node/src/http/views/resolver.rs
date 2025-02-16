@@ -169,17 +169,17 @@ fn DidDocumentPublicKeyCard(pk: PublicKey) -> Element {
     let curve = match &pk.data {
         prism_core::did::operation::PublicKeyData::Master { .. } => "secp256k1",
         prism_core::did::operation::PublicKeyData::Other { data, .. } => match data {
-            prism_core::did::operation::SupportedPublicKey::Secp256k1(_) => "secp256k1",
-            prism_core::did::operation::SupportedPublicKey::Ed25519(_) => "Ed25519",
-            prism_core::did::operation::SupportedPublicKey::X25519(_) => "X25519",
+            prism_core::did::operation::NonMasterPublicKey::Secp256k1(_) => "secp256k1",
+            prism_core::did::operation::NonMasterPublicKey::Ed25519(_) => "Ed25519",
+            prism_core::did::operation::NonMasterPublicKey::X25519(_) => "X25519",
         },
     };
     let public_key_hex: HexStr = match pk.data {
         prism_core::did::operation::PublicKeyData::Master { data } => data.encode_vec().into(),
         prism_core::did::operation::PublicKeyData::Other { data, .. } => match data {
-            prism_core::did::operation::SupportedPublicKey::Secp256k1(k) => k.encode_vec().into(),
-            prism_core::did::operation::SupportedPublicKey::Ed25519(k) => k.encode_vec().into(),
-            prism_core::did::operation::SupportedPublicKey::X25519(k) => k.encode_vec().into(),
+            prism_core::did::operation::NonMasterPublicKey::Secp256k1(k) => k.encode_vec().into(),
+            prism_core::did::operation::NonMasterPublicKey::Ed25519(k) => k.encode_vec().into(),
+            prism_core::did::operation::NonMasterPublicKey::X25519(k) => k.encode_vec().into(),
         },
     };
     rsx! {
