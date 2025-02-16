@@ -17,15 +17,15 @@ pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Vec<Str
 
 pub fn ResolverPage(
     did: Option<String>,
-    resolution_result: Option<Result<(DidState, ResolutionDebug), Vec<String>>>,
+    resolution_result: Option<(Result<DidState, Vec<String>>, ResolutionDebug)>,
     network: Option<NetworkIdentifier>,
 ) -> Element {
     let content = match resolution_result {
-        Some(Ok((did_state, debug))) => rsx! {
+        Some((Ok(did_state), debug)) => rsx! {
             ResolutionResultSection { did_state, debug: Rc::new(debug) }
         },
-        Some(Err(errors)) => rsx! {
-            ResolutionErrorSection { errors }
+        Some((Err(errors), debug)) => rsx! {
+            ResolutionErrorSection { errors, debug: Rc::new(debug) }
         },
         None => rsx! {},
     };
@@ -61,7 +61,7 @@ fn SearchBox(did: Option<String>) -> Element {
 }
 
 #[component]
-fn ResolutionErrorSection(errors: Vec<String>) -> Element {
+fn ResolutionErrorSection(errors: Vec<String>, debug: Rc<ResolutionDebug>) -> Element {
     let error_stack = errors.iter().enumerate().map(|(idx, message)| {
         rsx! {
             p { class: "text-lg font-mono", "{idx}: {message}" }
@@ -71,47 +71,15 @@ fn ResolutionErrorSection(errors: Vec<String>) -> Element {
         for e in error_stack {
             {e}
         }
+        DidOperationDebug { debug }
     }
 }
 
 #[component]
 fn ResolutionResultSection(did_state: DidState, debug: Rc<ResolutionDebug>) -> Element {
-    let did_doc = rsx! {
-        DidDocumentCardContainer { did_state }
-    };
-    let debug = debug.iter().map(|(meta, operation, error)| {
-        let block_meta = &meta.block_metadata;
-        let cbt = format_datetime(&block_meta.cbt);
-        rsx! {
-            div { class: "flex flex-col gap-2 my-3 bg-base-300",
-                p { class: "font-mono",
-                    "Cardano Block Time: {cbt}"
-                    br {}
-                    "Slot: {block_meta.slot_number}"
-                    br {}
-                    "Block: {block_meta.block_number}"
-                    br {}
-                    "Atala Block Sequence Number: {block_meta.absn}"
-                    br {}
-                    "Operation Sequence Number: {meta.osn}"
-                }
-                p { class: "font-mono", "{operation:?}" }
-                p { class: "font-mono",
-                    "Error stack:"
-                    for e in error {
-                        br {}
-                        span { class: "ml-5", "{e}" }
-                    }
-                }
-            }
-        }
-    });
     rsx! {
-        {did_doc}
-        div { class: "divider divider-neutral", "Operation Debug" }
-        for d in debug {
-            {d}
-        }
+        DidDocumentCardContainer { did_state }
+        DidOperationDebug { debug }
     }
 }
 
@@ -217,6 +185,43 @@ fn DidDocumentContextCard(ctx: String) -> Element {
             div { class: "card-body",
                 h2 { class: "card-title font-mono", "{ctx}" }
             }
+        }
+    }
+}
+
+#[component]
+fn DidOperationDebug(debug: Rc<ResolutionDebug>) -> Element {
+    let debug = debug.iter().map(|(meta, operation, error)| {
+        let block_meta = &meta.block_metadata;
+        let cbt = format_datetime(&block_meta.cbt);
+        rsx! {
+            div { class: "flex flex-col gap-2 my-3 bg-base-300",
+                p { class: "font-mono",
+                    "Cardano Block Time: {cbt}"
+                    br {}
+                    "Slot: {block_meta.slot_number}"
+                    br {}
+                    "Block: {block_meta.block_number}"
+                    br {}
+                    "Atala Block Sequence Number: {block_meta.absn}"
+                    br {}
+                    "Operation Sequence Number: {meta.osn}"
+                }
+                p { class: "font-mono", "{operation:?}" }
+                p { class: "font-mono",
+                    "Error stack:"
+                    for e in error {
+                        br {}
+                        span { class: "ml-5", "{e}" }
+                    }
+                }
+            }
+        }
+    });
+    rsx! {
+        div { class: "divider divider-neutral", "Operation Debug" }
+        for d in debug {
+            {d}
         }
     }
 }

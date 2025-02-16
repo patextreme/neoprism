@@ -16,7 +16,17 @@ impl DidService {
         Self { db: db.clone() }
     }
 
-    pub async fn resolve_did(&self, did: &str) -> Result<(PrismDid, DidState, ResolutionDebug), ResolutionError> {
+    pub async fn resolve_did(&self, did: &str) -> (Result<(PrismDid, DidState), ResolutionError>, ResolutionDebug) {
+        let mut debug = vec![];
+        let result = self.resolve_did_logic(did, &mut debug).await;
+        (result, debug)
+    }
+
+    async fn resolve_did_logic(
+        &self,
+        did: &str,
+        debug_acc: &mut ResolutionDebug,
+    ) -> Result<(PrismDid, DidState), ResolutionError> {
         let did: PrismDid = did.parse().map_err(|e| InvalidDid::ParsingFail { source: e })?;
         let canonical_did = did.clone().into_canonical();
 
@@ -42,13 +52,14 @@ impl DidService {
                         .map_err(|e| InvalidDid::ParsingFail { source: e })?;
                     let did_state =
                         resolve_unpublished(operation).map_err(|e| InvalidDid::ProcessFail { source: e })?;
-                    Ok((did, did_state, vec![]))
+                    Ok((did, did_state))
                 }
             }
         } else {
             let (did_state, debug) = resolve_published(operations);
+            debug_acc.extend(debug);
             match did_state {
-                Some(did_state) => Ok((did, did_state, debug)),
+                Some(did_state) => Ok((did, did_state)),
                 None => Err(ResolutionError::NotFound),
             }
         }
