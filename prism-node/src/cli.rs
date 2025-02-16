@@ -28,7 +28,7 @@ pub struct CliArgs {
     /// Node HTTP server listening port
     #[arg(short, long, default_value_t = 8080)]
     pub port: u16,
-    /// Path of the directory containing the Node assets
+    /// The directory containing the web-ui assets (CSS, Javascripts)
     #[arg(long, default_value = "./prism-node/assets")]
     pub assets: PathBuf,
 }

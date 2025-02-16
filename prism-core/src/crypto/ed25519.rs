@@ -1,4 +1,5 @@
-use super::{EncodeArray, EncodeVec, Error, ToPublicKey, Verifiable};
+use super::{EncodeArray, EncodeJwk, EncodeVec, Error, Jwk, ToPublicKey, Verifiable};
+use crate::utils::codec::Base64UrlStrNoPad;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ed25519PublicKey(ed25519_dalek::VerifyingKey);
@@ -36,5 +37,17 @@ impl<T: AsRef<[u8]>> ToPublicKey<Ed25519PublicKey> for T {
         };
         let key = ed25519_dalek::VerifyingKey::from_bytes(key)?;
         Ok(Ed25519PublicKey(key))
+    }
+}
+
+impl EncodeJwk for Ed25519PublicKey {
+    fn encode_jwk(&self) -> Jwk {
+        let x = self.encode_array();
+        Jwk {
+            kty: "OKP".to_string(),
+            crv: "Ed25519".to_string(),
+            x: Some(Base64UrlStrNoPad::from(x).to_string()),
+            y: None,
+        }
     }
 }

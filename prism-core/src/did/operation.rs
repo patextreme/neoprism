@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+use enum_dispatch::enum_dispatch;
 use regex::Regex;
 
 use super::error::{
@@ -11,7 +12,7 @@ use super::CanonicalPrismDid;
 use crate::crypto::ed25519::Ed25519PublicKey;
 use crate::crypto::secp256k1::Secp256k1PublicKey;
 use crate::crypto::x25519::X25519PublicKey;
-use crate::crypto::{Error as CryptoError, ToPublicKey};
+use crate::crypto::{EncodeJwk, EncodeVec, Error as CryptoError, Jwk, ToPublicKey};
 use crate::error::InvalidInputSizeError;
 use crate::location;
 use crate::prelude::{AtalaOperation, SignedAtalaOperation};
@@ -368,12 +369,12 @@ impl PublicKey {
         let Some(key_data) = &public_key.key_data else {
             Err(PublicKeyError::MissingKeyData { id: id.clone() })?
         };
-        let pk = SupportedPublicKey::from_key_data(key_data).map_err(|e| PublicKeyError::Crypto {
+        let pk = NonMasterPublicKey::from_key_data(key_data).map_err(|e| PublicKeyError::Crypto {
             source: e,
             id: id.clone(),
         })?;
         let data = match (usage, pk) {
-            (KeyUsage::MasterKey, SupportedPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
+            (KeyUsage::MasterKey, NonMasterPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
             (KeyUsage::MasterKey, _) => Err(PublicKeyError::MasterKeyNotSecp256k1 { id: id.clone() })?,
             (usage, pk) => PublicKeyData::Other { data: pk, usage },
         };
@@ -390,13 +391,14 @@ impl PublicKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SupportedPublicKey {
+#[enum_dispatch(EncodeJwk, EncodeVec)]
+pub enum NonMasterPublicKey {
     Secp256k1(Secp256k1PublicKey),
     Ed25519(Ed25519PublicKey),
     X25519(X25519PublicKey),
 }
 
-impl SupportedPublicKey {
+impl NonMasterPublicKey {
     pub fn from_key_data(key_data: &KeyData) -> Result<Self, CryptoError> {
         let curve_name: &str = match key_data {
             KeyData::EcKeyData(k) => &k.curve,
@@ -445,7 +447,7 @@ impl SupportedPublicKey {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicKeyData {
     Master { data: Secp256k1PublicKey },
-    Other { data: SupportedPublicKey, usage: KeyUsage },
+    Other { data: NonMasterPublicKey, usage: KeyUsage },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -478,7 +480,7 @@ impl KeyUsage {
 pub struct Service {
     pub id: ServiceId,
     pub r#type: ServiceType,
-    pub service_endpoints: ServiceEndpoint,
+    pub service_endpoint: ServiceEndpoint,
 }
 
 impl Service {
@@ -491,7 +493,7 @@ impl Service {
             source: e,
             type_name: service.r#type.to_string(),
         })?;
-        let service_endpoints = ServiceEndpoint::parse(&service.service_endpoint, param).map_err(|e| {
+        let service_endpoint = ServiceEndpoint::parse(&service.service_endpoint, param).map_err(|e| {
             ServiceError::InvalidServiceEndpoint {
                 source: e,
                 endpoint: service.service_endpoint.to_string(),
@@ -501,7 +503,7 @@ impl Service {
         Ok(Self {
             id,
             r#type,
-            service_endpoints,
+            service_endpoint,
         })
     }
 }

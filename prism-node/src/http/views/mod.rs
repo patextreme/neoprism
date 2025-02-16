@@ -1,6 +1,6 @@
 use time::OffsetDateTime;
 
-use super::contract::hx::HxRpc;
+use super::model::hx::HxRpc;
 
 pub mod components;
 pub mod explorer;

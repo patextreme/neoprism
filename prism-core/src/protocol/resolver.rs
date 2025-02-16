@@ -10,24 +10,14 @@ use crate::protocol::init_unpublished_context;
 type OperationList = VecDeque<(OperationMetadata, SignedAtalaOperation)>;
 pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ResolutionResult {
-    Ok(DidState),
-    NotFound,
-}
-
-pub fn resolve_unpublished(operation: AtalaOperation) -> (ResolutionResult, Option<ProcessError>) {
+pub fn resolve_unpublished(operation: AtalaOperation) -> Result<DidState, ProcessError> {
     log::debug!("resolving unpublished DID data");
-    let result = init_unpublished_context(operation).map(|ctx| ctx.finalize());
-    match result {
-        Ok(state) => (ResolutionResult::Ok(state), None),
-        Err(e) => (ResolutionResult::NotFound, Some(e)),
-    }
+    init_unpublished_context(operation).map(|ctx| ctx.finalize())
 }
 
 pub fn resolve_published(
     mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>,
-) -> (ResolutionResult, ResolutionDebug) {
+) -> (Option<DidState>, ResolutionDebug) {
     log::debug!("resolving published DID data from {} operations", operations.len());
     operations.sort_by(|a, b| OperationMetadata::compare_time_asc(&a.0, &b.0));
     let mut operations: OperationList = operations.into();
@@ -35,7 +25,7 @@ pub fn resolve_published(
     // Initialize first valid CreateOperation
     let (state_ctx, mut debug) = init_state_ops(&mut operations);
     let Some(mut state_ctx) = state_ctx else {
-        return (ResolutionResult::NotFound, debug);
+        return (None, debug);
     };
 
     // Iterate all remaining operations and apply new state
@@ -45,7 +35,7 @@ pub fn resolve_published(
         debug.push((metadata, operation, error));
     }
 
-    (ResolutionResult::Ok(state_ctx.finalize()), debug)
+    (Some(state_ctx.finalize()), debug)
 }
 
 fn init_state_ops(operations: &mut OperationList) -> (Option<DidStateProcessingContext<Published>>, ResolutionDebug) {

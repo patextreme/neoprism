@@ -24,7 +24,7 @@ impl<'r> Responder<'r, 'static> for SsrPage {
     }
 }
 
-impl<'r, 'a> Responder<'r, 'static> for HxRedirect<'a> {
+impl<'r> Responder<'r, 'static> for HxRedirect<'_> {
     fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
         let resp = Response::build()
             .raw_header("hx-redirect", self.0.to_string())
