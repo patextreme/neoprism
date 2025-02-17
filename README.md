@@ -58,8 +58,7 @@ Contributions are always welcome.
 
 # Deployment
 
-The workspace produce a single runnable binary under `prism-node` crate.
-The binary has the following CLI options
+The workspace generates a single runnable binary under the `prism-node` crate with the following CLI options:
 
 ```
 Usage: prism-node [OPTIONS] --db <DB_URL>
@@ -75,41 +74,41 @@ Options:
   -h, --help                       Print help
 ```
 
-The CLI options provide the flexibility to deploy in various configuration depending on the needs.
+The CLI options enable flexible deployment based on specific needs.
 
-A fully-functional deployment must contain
-- `server` - responsible for providing web UI and a universal resolver endpoint
-- `sync worker` - responsible for following cardano node, index the DID operations and persist those operations in the database
-- `database` - postgres database
-- `cardano node` - used for verifiable data registry for DID operation.
+A fully functional deployment includes:
 
-System operator can use any trusted public `cardano node` instance,
-However, it is much more performant to run `sync worker` close to the `cardano node`, preferably in the same network or host.
+- `server` – Provides the web UI and a universal resolver endpoint.
+- `sync worker` – Tracks the Cardano node, indexes DID operations, and stores them in the database.
+- `database` – PostgreSQL for data storage.
+- `cardano node` – Serves as the verifiable data registry for DID operations.
+
+A system operator can use any trusted public `cardano node` instance.
+However, for better performance, the `sync worker` should run close to the `cardano node`, ideally on the same network or host.
 
 ## Standalone mode
 
-In this mode, all components are contained inside a single container.
-To run in this mode, use the following options:
+In this mode, all components run within a single container.
+To enable this mode, use the following options:
 
 - `--cardano=<address>` - to enable the sync worker
-- `--skip-migration=false` - to run migration when the server starts
 
 ![](./docs/diagrams/deploy_standalone.png)
 
 ## High-availability mode
 
-In this mode, worker and server are on a different container.
-Since there are multiple containers, we have to select specific options for specific container.
-There can be multiple servers to serve users and clients where server is connected to the postgres in HA mode.
-There is only one worker to index the operation from Cardano.
+In this mode, the `sync worker` and `server` run in separate containers.
+Since multiple containers are used, specific options must be set for each.
+
+- One or more `server` can serve users and clients, connecting to a shared PostgreSQL (optionally in HA mode).
+- A single `sync worker` indexes operations from Cardano.
 
 for `worker` container, use
 
 - `--cardano=<address>` - to enable the sync worker
-- `--skip-migration=true` - to enable db migration when the server starts
 
 for `server` container, use
-- `--skip-migration=false` - to disable db migration
+- `--skip-migration` - to disable db migration
 
 Make sure to not set `--cardano=<address>` for the `server` as
 multiple sync workers are redundnat and may conflict the sync cursor.
