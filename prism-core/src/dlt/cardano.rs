@@ -279,18 +279,30 @@ struct OuraStreamWorker {
 
 impl OuraStreamWorker {
     fn spawn(self) -> std::thread::JoinHandle<Result<(), DltError>> {
-        let restart_in_sec = 10;
+        const RESTART_DELAY: std::time::Duration = std::time::Duration::from_secs(10);
         std::thread::spawn(move || loop {
             let with_utils = self.build_with_util();
             log::info!("Bootstraping oura pipeline thread");
             let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::Bootstrap {
                 source: e.to_string().into(),
             })?;
-            let _exit_err = self.stream_loop(oura_rx);
-            let _exit_res = handle.join();
 
-            log::error!("Oura pipeline terminated. Restarting in {restart_in_sec} seconds");
-            std::thread::sleep(std::time::Duration::from_secs(restart_in_sec));
+            // When the stream loop terminates with recv timeout,
+            // the oura thread join will hangs and it will block the pipeline restart process.
+            // We just ignore the thread and make sure the restart is not blocked.
+            // Resource usage will grow over time, hopefully that is ok.
+            match self.stream_loop(oura_rx) {
+                DltError::EventRecvTimeout { .. } => drop(handle),
+                _ => {
+                    let _ = handle.join();
+                }
+            };
+
+            log::error!(
+                "Oura pipeline terminated. Restarting in {} seconds",
+                RESTART_DELAY.as_secs()
+            );
+            std::thread::sleep(RESTART_DELAY);
         })
     }
 

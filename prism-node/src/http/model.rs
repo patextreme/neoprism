@@ -65,12 +65,14 @@ pub mod api {
                 .public_keys
                 .iter()
                 .filter(|k| {
-                    let usage = k.usage();
-                    usage == KeyUsage::AuthenticationKey
-                        || usage == KeyUsage::IssuingKey
-                        || usage == KeyUsage::KeyAgreementKey
-                        || usage == KeyUsage::CapabilityInvocationKey
-                        || usage == KeyUsage::CapabilityDelegationKey
+                    const W3C_KEY_TYPES: [KeyUsage; 5] = [
+                        KeyUsage::AuthenticationKey,
+                        KeyUsage::IssuingKey,
+                        KeyUsage::KeyAgreementKey,
+                        KeyUsage::CapabilityInvocationKey,
+                        KeyUsage::CapabilityDelegationKey,
+                    ];
+                    W3C_KEY_TYPES.iter().any(|usage| usage == &k.usage())
                 })
                 .flat_map(|k| transform_key_jwk(did, k))
                 .collect();
