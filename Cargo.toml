@@ -1,6 +1,6 @@
 [workspace]
 members = ["prism-core", "prism-migration", "prism-node", "prism-storage"]
-resolver = "2"
+resolver = "3"
 
 
 [workspace.dependencies]
