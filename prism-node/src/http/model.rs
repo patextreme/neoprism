@@ -21,7 +21,7 @@ pub mod hx {
 pub mod api {
     use prism_core::crypto::EncodeJwk;
     use prism_core::did::operation::KeyUsage;
-    use prism_core::did::{operation, DidState};
+    use prism_core::did::{DidState, operation};
     use rocket::serde::{Deserialize, Serialize};
     use serde_json::json;
 

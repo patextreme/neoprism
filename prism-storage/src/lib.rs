@@ -1,8 +1,8 @@
 #![feature(error_generic_member_access)]
 
+use prism_core::did::Error as DidError;
 use prism_core::did::error::DidSyntaxError;
 use prism_core::did::operation::get_did_from_signed_operation;
-use prism_core::did::Error as DidError;
 use prism_core::dlt::{BlockMetadata, DltCursor, OperationMetadata};
 use prism_core::prelude::*;
 use prism_core::proto::SignedAtalaOperation;

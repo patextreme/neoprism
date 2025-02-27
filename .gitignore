@@ -3,3 +3,4 @@
 *.db
 *.dump
 node_modules/
+result

@@ -4,8 +4,8 @@
 use app::service::DidService;
 use clap::Parser;
 use cli::CliArgs;
-use prism_core::dlt::cardano::{NetworkIdentifier, OuraN2NSource};
 use prism_core::dlt::DltCursor;
+use prism_core::dlt::cardano::{NetworkIdentifier, OuraN2NSource};
 use prism_migration::run_migrations;
 use prism_storage::PostgresDb;
 use rocket::fairing::AdHoc;
