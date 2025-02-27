@@ -1,6 +1,6 @@
 use error::{InvalidDid, ResolutionError};
 use prism_core::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidLike};
-use prism_core::protocol::resolver::{resolve_published, resolve_unpublished, ResolutionDebug};
+use prism_core::protocol::resolver::{ResolutionDebug, resolve_published, resolve_unpublished};
 use prism_core::store::OperationStore;
 use prism_core::utils::paging::Paginated;
 use prism_storage::PostgresDb;

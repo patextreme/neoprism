@@ -4,10 +4,10 @@ use super::{
     DidStateConflictError, DidStateRc, OperationProcessor, OperationProcessorVariants, ProcessError, ProtocolParameter,
 };
 use crate::crypto::Verifiable;
+use crate::did::Error as DidError;
 use crate::did::operation::{
     CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId, UpdateOperation, UpdateOperationAction,
 };
-use crate::did::Error as DidError;
 use crate::dlt::OperationMetadata;
 use crate::prelude::AtalaOperation;
 use crate::proto::atala_operation::Operation;

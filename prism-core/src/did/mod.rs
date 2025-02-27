@@ -7,10 +7,10 @@ use prost::Message;
 use regex::Regex;
 
 use self::operation::{PublicKey, Service};
-use crate::proto::atala_operation::Operation;
 use crate::proto::AtalaOperation;
+use crate::proto::atala_operation::Operation;
 use crate::utils::codec::{Base64UrlStrNoPad, HexStr};
-use crate::utils::hash::{sha256, Sha256Digest};
+use crate::utils::hash::{Sha256Digest, sha256};
 
 pub mod error;
 pub mod operation;

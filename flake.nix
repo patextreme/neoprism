@@ -22,7 +22,8 @@
           config.unfree = true;
           overlays = [ (import rust-overlay) ];
         };
-        rust = pkgs.rust-bin.nightly."2025-02-24".default.override {
+        rustMinimal = pkgs.rust-bin.nightly."2025-02-24".minimal;
+        rustDev = pkgs.rust-bin.nightly."2025-02-24".default.override {
           extensions = [
             "rust-src"
             "rust-analyzer"
@@ -30,8 +31,8 @@
           targets = [ ];
         };
         rustPlatform = pkgs.makeRustPlatform {
-          cargo = rust;
-          rustc = rust;
+          cargo = rustMinimal;
+          rustc = rustMinimal;
         };
       in
       {
@@ -53,20 +54,17 @@
             '';
           };
 
-          dockerImage = pkgs.dockerTools.buildImage {
+          dockerImage = pkgs.dockerTools.buildLayeredImage {
             name = "neoprism";
             tag = "0.1.0-SNAPSHOT";
             created = "now";
-            copyToRoot = pkgs.buildEnv {
-              name = "image-root";
-              paths = [
-                pkgs.coreutils
-                assets
-              ];
-            };
+            contents = [
+              assets
+              default
+            ];
             config = {
               Env = [ "RUST_LOG=info,oura=warn,tracing::span=warn" ];
-              Entrypoint = [ "${default}/bin/prism-node" ];
+              Entrypoint = [ "/bin/prism-node" ];
               Cmd = [
                 "--assets"
                 "/assets"
@@ -91,7 +89,7 @@
                 find ${rootDir} | grep '\.nix$' | xargs -I _ bash -c "echo running nixfmt on _ && ${pkgs.nixfmt-rfc-style}/bin/nixfmt _"
                 find ${rootDir} | grep '\.toml$' | xargs -I _ bash -c "echo running taplo on _ && ${pkgs.taplo}/bin/taplo format _"
                 ${pkgs.dioxus-cli}/bin/dx fmt
-                ${rust}/bin/cargo fmt
+                ${rustDev}/bin/cargo fmt
               '';
 
               buildAssets = pkgs.writeShellScriptBin "buildAssets" ''
@@ -102,11 +100,11 @@
               build = pkgs.writeShellScriptBin "build" ''
                 cd ${rootDir}
                 ${buildAssets}/bin/buildAssets
-                ${rust}/bin/cargo build --all-features
+                ${rustDev}/bin/cargo build --all-features
               '';
 
               clean = pkgs.writeShellScriptBin "clean" ''
-                ${rust}/bin/cargo clean
+                ${rustDev}/bin/cargo clean
               '';
 
               dbUp = pkgs.writeShellScriptBin "dbUp" ''
@@ -148,7 +146,7 @@
               runNode = pkgs.writeShellScriptBin "runNode" ''
                 cd ${rootDir}
                 ${buildAssets}/bin/buildAssets
-                ${rust}/bin/cargo run --bin prism-node -- --db postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
+                ${rustDev}/bin/cargo run --bin prism-node -- --db postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
               '';
             };
           in
@@ -173,7 +171,7 @@
                 cargo-watch
                 dioxus-cli
                 protobuf
-                rust
+                rustDev
                 sea-orm-cli
                 # tailwind & html
                 nodejs_20
@@ -202,8 +200,8 @@
           ];
 
           shellHook = ''
-              export ROOT_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel)
-              cd $ROOT_DIR/docs/diagrams
+            export ROOT_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel)
+            cd $ROOT_DIR/docs/diagrams
           '';
         };
       }

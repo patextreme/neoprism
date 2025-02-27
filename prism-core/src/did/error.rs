@@ -1,5 +1,5 @@
-use super::operation::PublicKeyId;
 use super::CanonicalPrismDid;
+use super::operation::PublicKeyId;
 use crate::error::InvalidInputSizeError;
 use crate::utils::codec::HexStr;
 

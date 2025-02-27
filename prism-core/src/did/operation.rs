@@ -4,11 +4,11 @@ use std::sync::LazyLock;
 use enum_dispatch::enum_dispatch;
 use regex::Regex;
 
+use super::CanonicalPrismDid;
 use super::error::{
     CreateOperationError, DeactivateOperationError, Error, PublicKeyError, PublicKeyIdError, ServiceEndpointError,
     ServiceError, ServiceIdError, ServiceTypeError, UpdateOperationError,
 };
-use super::CanonicalPrismDid;
 use crate::crypto::ed25519::Ed25519PublicKey;
 use crate::crypto::secp256k1::Secp256k1PublicKey;
 use crate::crypto::x25519::X25519PublicKey;

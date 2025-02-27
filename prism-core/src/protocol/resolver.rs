@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use super::{init_published_context, DidStateProcessingContext, ProcessError, Published};
+use super::{DidStateProcessingContext, ProcessError, Published, init_published_context};
 use crate::did::DidState;
 use crate::dlt::OperationMetadata;
 use crate::prelude::AtalaOperation;

@@ -1,6 +1,6 @@
 use std::str::FromStr;
-use std::sync::mpsc::RecvTimeoutError;
 use std::sync::Arc;
+use std::sync::mpsc::RecvTimeoutError;
 
 use oura::model::{Event, EventData};
 use oura::pipelining::{SourceProvider, StageReceiver};
@@ -280,29 +280,31 @@ struct OuraStreamWorker {
 impl OuraStreamWorker {
     fn spawn(self) -> std::thread::JoinHandle<Result<(), DltError>> {
         const RESTART_DELAY: std::time::Duration = std::time::Duration::from_secs(10);
-        std::thread::spawn(move || loop {
-            let with_utils = self.build_with_util();
-            log::info!("Bootstraping oura pipeline thread");
-            let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::Bootstrap {
-                source: e.to_string().into(),
-            })?;
+        std::thread::spawn(move || {
+            loop {
+                let with_utils = self.build_with_util();
+                log::info!("Bootstraping oura pipeline thread");
+                let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::Bootstrap {
+                    source: e.to_string().into(),
+                })?;
 
-            // When the stream loop terminates with recv timeout,
-            // the oura thread join will hangs and it will block the pipeline restart process.
-            // We just ignore the thread and make sure the restart is not blocked.
-            // Resource usage will grow over time, hopefully that is ok.
-            match self.stream_loop(oura_rx) {
-                DltError::EventRecvTimeout { .. } => drop(handle),
-                _ => {
-                    let _ = handle.join();
-                }
-            };
+                // When the stream loop terminates with recv timeout,
+                // the oura thread join will hangs and it will block the pipeline restart process.
+                // We just ignore the thread and make sure the restart is not blocked.
+                // Resource usage will grow over time, hopefully that is ok.
+                match self.stream_loop(oura_rx) {
+                    DltError::EventRecvTimeout { .. } => drop(handle),
+                    _ => {
+                        let _ = handle.join();
+                    }
+                };
 
-            log::error!(
-                "Oura pipeline terminated. Restarting in {} seconds",
-                RESTART_DELAY.as_secs()
-            );
-            std::thread::sleep(RESTART_DELAY);
+                log::error!(
+                    "Oura pipeline terminated. Restarting in {} seconds",
+                    RESTART_DELAY.as_secs()
+                );
+                std::thread::sleep(RESTART_DELAY);
+            }
         })
     }
 

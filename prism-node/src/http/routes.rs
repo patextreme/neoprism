@@ -1,9 +1,9 @@
 use rocket::response::Redirect;
-use rocket::{get, uri, State};
+use rocket::{State, get, uri};
 
+use crate::AppState;
 use crate::http::response::SsrPage;
 use crate::http::views;
-use crate::AppState;
 
 #[get("/")]
 pub async fn index() -> Redirect {
@@ -56,13 +56,13 @@ pub async fn explorer(state: &State<AppState>, page: Option<u64>) -> SsrPage {
 pub mod hx {
     use dioxus::prelude::*;
     use rocket::form::Form;
-    use rocket::{post, State};
+    use rocket::{State, post};
 
+    use crate::AppState;
     use crate::http::model::form::HxRpcForm;
     use crate::http::model::hx::HxRpc;
     use crate::http::response::SsrComponent;
     use crate::http::views;
-    use crate::AppState;
 
     #[post("/hx/rpc", data = "<form>")]
     pub async fn rpc(form: Form<HxRpcForm>, state: &State<AppState>) -> SsrComponent {
@@ -87,11 +87,11 @@ pub mod hx {
 pub mod api {
     use rocket::http::Status;
     use rocket::serde::json::Json;
-    use rocket::{get, State};
+    use rocket::{State, get};
 
+    use crate::AppState;
     use crate::app::service::error::ResolutionError;
     use crate::http::model::api::DidDocument;
-    use crate::AppState;
 
     /// This endpoint is incomplete according to https://www.w3.org/TR/did-resolution/#bindings-https
     /// To be fully compliant, we need to add more format
