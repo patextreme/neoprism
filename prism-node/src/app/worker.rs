@@ -44,7 +44,7 @@ where
                     .await;
 
                 if let Err(e) = insert_result {
-                    log::error!("{:?}", e);
+                    tracing::error!("{:?}", e);
                 }
             }
             tx.commit().await?;

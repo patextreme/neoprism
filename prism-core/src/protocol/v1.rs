@@ -139,7 +139,7 @@ impl OperationProcessor for V1Processor {
         _: OperationMetadata,
     ) -> Result<OperationProcessorVariants, ProcessError> {
         // TODO: add support for protocol version update
-        log::warn!("Protocol version update is not yet supported");
+        tracing::warn!("Protocol version update is not yet supported");
         Ok(self.clone().into())
     }
 }

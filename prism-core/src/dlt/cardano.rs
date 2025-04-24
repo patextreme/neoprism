@@ -201,7 +201,7 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
         match cursor {
             Some(cursor) => {
                 let blockhash_hex = HexStr::from(cursor.block_hash).to_string();
-                log::info!(
+                tracing::info!(
                     "Persisted cursor found, starting syncing from ({}, {})",
                     cursor.slot,
                     blockhash_hex
@@ -210,7 +210,7 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
                 Ok(Self::new(store, remote_addr, chain, intersect))
             }
             None => {
-                log::info!("Persisted cursor not found, staring syncing from PRISM genesis slot");
+                tracing::info!("Persisted cursor not found, staring syncing from PRISM genesis slot");
                 Ok(Self::since_genesis(store, remote_addr, chain))
             }
         }
@@ -283,7 +283,7 @@ impl OuraStreamWorker {
         std::thread::spawn(move || {
             loop {
                 let with_utils = self.build_with_util();
-                log::info!("Bootstraping oura pipeline thread");
+                tracing::info!("Bootstraping oura pipeline thread");
                 let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::Bootstrap {
                     source: e.to_string().into(),
                 })?;
@@ -299,7 +299,7 @@ impl OuraStreamWorker {
                     }
                 };
 
-                log::error!(
+                tracing::error!(
                     "Oura pipeline terminated. Restarting in {} seconds",
                     RESTART_DELAY.as_secs()
                 );
@@ -336,9 +336,9 @@ impl OuraStreamWorker {
                 Err(RecvTimeoutError::Disconnected) => Err(DltError::Disconnected { location: location!() }),
             };
             if let Err(e) = handle_result {
-                log::error!("Error handling event from oura source");
+                tracing::error!("Error handling event from oura source");
                 let report = std::error::Report::new(&e).pretty(true);
-                log::error!("{}", report);
+                tracing::error!("{}", report);
                 return e;
             }
         }
@@ -374,7 +374,7 @@ impl OuraStreamWorker {
         }
 
         let context = event.context;
-        log::info!(
+        tracing::info!(
             "Detect a new atala_block on slot ({}, {})",
             context.slot.unwrap_or_default(),
             context.block_hash.as_deref().unwrap_or_default(),
@@ -391,7 +391,7 @@ impl OuraStreamWorker {
                 })?,
             Err(e) => {
                 // TODO: add debug level error report
-                log::warn!("Unable to parse oura event into AtalaObject. ({})", e);
+                tracing::warn!("Unable to parse oura event into AtalaObject. ({})", e);
             }
         }
 
@@ -407,19 +407,19 @@ struct CursorPersistWorker<Store: DltCursorStore> {
 impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
     fn spawn(mut self) -> JoinHandle<Result<(), DltError>> {
         const DELAY: tokio::time::Duration = tokio::time::Duration::from_secs(60);
-        log::info!("Spawn cursor persist worker with {:?} interval", DELAY);
+        tracing::info!("Spawn cursor persist worker with {:?} interval", DELAY);
         tokio::spawn(async move {
             loop {
                 let recv_result = self.cursor_rx.changed().await;
                 tokio::time::sleep(DELAY).await;
 
                 if let Err(e) = recv_result {
-                    log::error!("Error getting cursor to persist: {}", e);
+                    tracing::error!("Error getting cursor to persist: {}", e);
                 }
 
                 let cursor = self.cursor_rx.borrow_and_update().clone();
                 let Some(cursor) = cursor else { continue };
-                log::info!(
+                tracing::info!(
                     "Persisting cursor on slot ({}, {})",
                     cursor.slot,
                     HexStr::from(cursor.block_hash.as_slice()).to_string(),
@@ -427,7 +427,7 @@ impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
 
                 let persist_result = self.store.set_cursor(cursor).await;
                 if let Err(e) = persist_result {
-                    log::error!("Error persisting cursor: {}", e);
+                    tracing::error!("Error persisting cursor: {}", e);
                 }
             }
         })

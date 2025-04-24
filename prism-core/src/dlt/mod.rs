@@ -123,7 +123,7 @@ impl DltSink for InMemoryDltSink {
             };
             let send_result = owned_tx.send(published_atala_object).await;
             if let Err(e) = send_result {
-                log::error!("Error sending AtalaObject to InMemoryDlt: {}", e);
+                tracing::error!("Error sending AtalaObject to InMemoryDlt: {}", e);
             }
         });
         self.block_number += 1;
