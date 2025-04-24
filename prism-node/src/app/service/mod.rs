@@ -30,16 +30,9 @@ impl DidService {
         let did: PrismDid = did.parse().map_err(|e| InvalidDid::ParsingFail { source: e })?;
         let canonical_did = did.clone().into_canonical();
 
-        let tx = self
+        let operations = self
             .db
-            .begin()
-            .await
-            .map_err(|e| ResolutionError::InternalError { source: e.into() })?;
-        let operations = tx
             .get_operations_by_did(&canonical_did)
-            .await
-            .map_err(|e| ResolutionError::InternalError { source: e.into() })?;
-        tx.commit()
             .await
             .map_err(|e| ResolutionError::InternalError { source: e.into() })?;
 
@@ -65,11 +58,9 @@ impl DidService {
         }
     }
 
-    pub async fn get_all_dids(&self, page: Option<u64>) -> anyhow::Result<Paginated<CanonicalPrismDid>> {
+    pub async fn get_all_dids(&self, page: Option<u32>) -> anyhow::Result<Paginated<CanonicalPrismDid>> {
         let page = page.unwrap_or(0);
-        let tx = self.db.begin().await?;
-        let dids = tx.get_all_dids(page, 100).await?;
-        tx.commit().await?;
+        let dids = self.db.get_all_dids(page, 100).await?;
         Ok(dids)
     }
 }

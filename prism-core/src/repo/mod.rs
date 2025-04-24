@@ -18,7 +18,7 @@ pub trait OperationRepo {
         metadata: OperationMetadata,
     ) -> Result<(), Self::Error>;
 
-    async fn get_all_dids(&self, page: u64, page_size: u64) -> Result<Paginated<CanonicalPrismDid>, Self::Error>;
+    async fn get_all_dids(&self, page: u32, page_size: u32) -> Result<Paginated<CanonicalPrismDid>, Self::Error>;
 }
 
 #[async_trait::async_trait]

@@ -22,7 +22,6 @@ where
             let block = published_atala_object.atala_object.block_content;
             let block_metadata = published_atala_object.block_metadata;
             let signed_operations = block.map(|i| i.operations).unwrap_or_default();
-            let tx = self.store.begin().await?;
             for (idx, signed_operation) in signed_operations.into_iter().enumerate() {
                 if signed_operation
                     .operation
@@ -33,7 +32,9 @@ where
                     continue;
                 }
 
-                let insert_result = tx
+                // TODO: do bulk transaction
+                let insert_result = self
+                    .store
                     .insert_operation(
                         signed_operation,
                         OperationMetadata {
@@ -47,7 +48,6 @@ where
                     tracing::error!("{:?}", e);
                 }
             }
-            tx.commit().await?;
         }
         Ok(())
     }

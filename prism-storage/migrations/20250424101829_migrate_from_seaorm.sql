@@ -40,3 +40,16 @@ ADD CONSTRAINT dlt_cursor_pkey PRIMARY KEY (id);
 
 ALTER TABLE dlt_cursor
 ADD CONSTRAINT dlt_cursor_abs_order UNIQUE (slot, block_hash);
+
+CREATE VIEW did_stats AS
+SELECT
+    did,
+    count(*) AS operation_count,
+    max(block_number) AS last_block,
+    max(slot) AS last_slot,
+    max(cbt) AS last_cbt,
+    min(block_number) AS first_block,
+    min(slot) AS first_slot,
+    min(cbt) AS first_cbt
+FROM raw_operation
+GROUP BY 1;

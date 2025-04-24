@@ -36,7 +36,6 @@ pub(crate) enum MetadataReadError {
     },
     #[display("timestamp {timestamp} is invalid on block {block_hash:?} tx {tx_idx:?}")]
     InvalidBlockTimestamp {
-        source: time::error::ComponentRange,
         block_hash: Option<String>,
         tx_idx: Option<usize>,
         timestamp: i64,

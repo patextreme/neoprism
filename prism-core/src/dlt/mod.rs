@@ -1,4 +1,4 @@
-use time::OffsetDateTime;
+use chrono::{DateTime, Utc};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 use crate::proto::AtalaObject;
@@ -12,7 +12,7 @@ pub mod cardano;
 pub struct DltCursor {
     pub slot: u64,
     pub block_hash: Vec<u8>,
-    pub cbt: Option<OffsetDateTime>,
+    pub cbt: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,7 +22,7 @@ pub struct BlockMetadata {
     /// Cardano block number
     pub block_number: u64,
     /// Cardano block timestamp
-    pub cbt: OffsetDateTime,
+    pub cbt: DateTime<Utc>,
     /// AtalaBlock seqeuence number
     ///
     /// This is used to order AtalaBlock within the same Cardano block
@@ -114,7 +114,7 @@ impl DltSink for InMemoryDltSink {
             let block_metadata = BlockMetadata {
                 slot_number: block_number,
                 block_number,
-                cbt: OffsetDateTime::now_utc(),
+                cbt: Utc::now(),
                 absn: 0,
             };
             let published_atala_object = PublishedAtalaObject {

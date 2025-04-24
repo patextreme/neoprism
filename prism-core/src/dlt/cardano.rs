@@ -20,10 +20,10 @@ use crate::utils::codec::HexStr;
 mod model {
     use std::str::FromStr;
 
+    use chrono::{DateTime, Utc};
     use oura::model::{EventContext, MetadataRecord};
     use prost::Message;
     use serde::{Deserialize, Serialize};
-    use time::OffsetDateTime;
 
     use crate::dlt::error::MetadataReadError;
     use crate::dlt::{BlockMetadata, PublishedAtalaObject};
@@ -58,7 +58,7 @@ mod model {
         pub v: u64,
     }
 
-    pub fn parse_oura_timestamp(context: &EventContext) -> Result<OffsetDateTime, MetadataReadError> {
+    pub fn parse_oura_timestamp(context: &EventContext) -> Result<DateTime<Utc>, MetadataReadError> {
         let block_hash = &context.block_hash;
         let tx_idx = context.tx_idx;
         let timestamp = context.timestamp.ok_or(MetadataReadError::MissingBlockProperty {
@@ -66,8 +66,7 @@ mod model {
             tx_idx,
             name: "timestamp",
         })? as i64;
-        OffsetDateTime::from_unix_timestamp(timestamp).map_err(|e| MetadataReadError::InvalidBlockTimestamp {
-            source: e,
+        DateTime::from_timestamp(timestamp, 0).ok_or(MetadataReadError::InvalidBlockTimestamp {
             block_hash: block_hash.clone(),
             timestamp,
             tx_idx,

@@ -1,5 +1,10 @@
 #![feature(error_generic_member_access)]
 
+use lazybe::db::DbOps;
+use lazybe::db::postgres::PostgresDbCtx;
+use lazybe::filter::Filter;
+use lazybe::page::PaginationInput;
+use lazybe::sort::Sort;
 use prism_core::did::Error as DidError;
 use prism_core::did::error::DidSyntaxError;
 use prism_core::did::operation::get_did_from_signed_operation;
@@ -7,78 +12,74 @@ use prism_core::dlt::{BlockMetadata, DltCursor, OperationMetadata};
 use prism_core::prelude::*;
 use prism_core::proto::SignedAtalaOperation;
 use prism_core::repo::{DltCursorRepo, OperationRepo};
-use prism_core::utils::codec::HexStr;
 use prism_core::utils::paging::Paginated;
-use sea_orm::{
-    ColumnTrait, ConnectOptions, Database, DatabaseConnection, DatabaseTransaction, EntityTrait, FromQueryResult,
-    IntoActiveValue, ModelTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
-};
-use sea_query::{Alias, Expr, OnConflict};
+use sqlx::PgPool;
 
 mod entity;
+mod entity2;
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum Error {
     #[from]
     #[display("database connection error")]
-    Db { source: sea_orm::DbErr },
+    Db { source: sqlx::Error },
+    #[from]
+    #[display("database migration error")]
+    DbMigration { source: sqlx::migrate::MigrateError },
     #[display("unable to decode to protobuf message into type {target_type} from stored data")]
     ProtobufDecode {
         source: prost::DecodeError,
         target_type: &'static str,
     },
+    #[from]
     #[display("cannot compute did index from SignedAtalaOperation")]
     DidIndexFromSignedAtalaOperation { source: DidError },
+    #[from]
     #[display("cannot decode did from stored data")]
     DidDecode { source: DidSyntaxError },
 }
 
 #[derive(Debug, Clone)]
 pub struct PostgresDb {
-    db: DatabaseConnection,
+    pool: PgPool,
+    db_ctx: PostgresDbCtx,
 }
 
 impl PostgresDb {
-    pub async fn connect(url: &str, log_statement: bool) -> Result<Self, Error> {
-        let mut options = ConnectOptions::new(url);
-        options.sqlx_logging(log_statement);
+    pub async fn connect(db_url: &str) -> Result<Self, Error> {
+        let pool = PgPool::connect(db_url).await?;
         Ok(Self {
-            db: Database::connect(options).await?,
+            db_ctx: PostgresDbCtx,
+            pool,
         })
     }
 
-    pub async fn begin(&self) -> Result<PostgresTransaction, Error> {
-        let tx = self.db.begin().await?;
-        Ok(PostgresTransaction { tx })
-    }
-}
-
-pub struct PostgresTransaction {
-    tx: DatabaseTransaction,
-}
-
-impl PostgresTransaction {
-    pub async fn commit(self) -> Result<(), Error> {
-        self.tx.commit().await?;
+    pub async fn migrate(&self) -> Result<(), Error> {
+        sqlx::migrate!("./migrations").run(&self.pool).await?;
         Ok(())
     }
 }
 
 #[async_trait::async_trait]
-impl OperationRepo for PostgresTransaction {
+impl OperationRepo for PostgresDb {
     type Error = Error;
 
     async fn get_operations_by_did(
         &self,
         did: &CanonicalPrismDid,
     ) -> Result<Vec<(OperationMetadata, SignedAtalaOperation)>, Self::Error> {
-        let suffix_bytes = did.suffix().as_bytes();
-        let result = entity::raw_operation::Entity::find()
-            .filter(entity::raw_operation::Column::Did.eq(suffix_bytes))
-            .all(&self.tx)
-            .await?;
-
-        result
+        let suffix_bytes = did.suffix().to_vec();
+        let mut tx = self.pool.begin().await?;
+        let result = self
+            .db_ctx
+            .list::<entity2::RawOperation>(
+                &mut tx,
+                Filter::all([entity2::RawOperationFilter::did().eq(suffix_bytes.into())]),
+                Sort::empty(),
+                None,
+            )
+            .await?
+            .data
             .into_iter()
             .map(|model| {
                 let metadata = OperationMetadata {
@@ -97,7 +98,9 @@ impl OperationRepo for PostgresTransaction {
                         target_type: std::any::type_name::<SignedAtalaOperation>(),
                     })
             })
-            .collect()
+            .collect::<Result<Vec<_>, _>>()?;
+        tx.commit().await?;
+        Ok(result)
     }
 
     async fn insert_operation(
@@ -107,96 +110,53 @@ impl OperationRepo for PostgresTransaction {
     ) -> Result<(), Self::Error> {
         let did = get_did_from_signed_operation(&signed_operation)
             .map_err(|e| Error::DidIndexFromSignedAtalaOperation { source: e })?;
-        let active_model = entity::raw_operation::ActiveModel {
-            did: did.suffix.to_vec().into_active_value(),
-            signed_operation_data: signed_operation.encode_to_vec().into_active_value(),
-            slot: (metadata.block_metadata.slot_number as i64).into_active_value(),
-            block_number: (metadata.block_metadata.block_number as i64).into_active_value(),
-            cbt: metadata.block_metadata.cbt.into_active_value(),
-            absn: (metadata.block_metadata.absn as i32).into_active_value(),
-            osn: (metadata.osn as i32).into_active_value(),
-        };
-        entity::raw_operation::Entity::insert(active_model)
-            .on_conflict(
-                OnConflict::columns([
-                    entity::raw_operation::Column::Did,
-                    entity::raw_operation::Column::BlockNumber,
-                    entity::raw_operation::Column::Absn,
-                    entity::raw_operation::Column::Osn,
-                ])
-                .update_columns([entity::raw_operation::Column::SignedOperationData])
-                .to_owned(),
+        let mut tx = self.pool.begin().await?;
+        self.db_ctx
+            .create::<entity2::RawOperation>(
+                &mut tx,
+                entity2::CreateRawOperation {
+                    did: did.suffix.to_vec().into(),
+                    signed_operation_data: signed_operation.encode_to_vec(),
+                    slot: metadata.block_metadata.slot_number as i64,
+                    block_number: metadata.block_metadata.block_number as i64,
+                    cbt: metadata.block_metadata.cbt,
+                    absn: metadata.block_metadata.absn as i32,
+                    osn: metadata.osn as i32,
+                },
             )
-            .exec(&self.tx)
             .await?;
+        tx.commit().await?;
         Ok(())
     }
 
-    async fn get_all_dids(&self, page: u64, page_size: u64) -> Result<Paginated<CanonicalPrismDid>, Self::Error> {
-        let paginator = entity::raw_operation::Entity::find()
-            .select_only()
-            .column(entity::raw_operation::Column::Did)
-            .column_as(entity::raw_operation::Column::BlockNumber.max(), "latest_block")
-            .group_by(entity::raw_operation::Column::Did)
-            .order_by_desc(Expr::col(Alias::new("latest_block")))
-            .into_model::<DidProjection>()
-            .paginate(&self.tx, page_size);
-        let total_pages = paginator.num_pages().await?;
-        let total_items = paginator.num_items().await?;
-        let items = paginator
-            .fetch_page(page)
-            .await?
+    async fn get_all_dids(&self, page: u32, page_size: u32) -> Result<Paginated<CanonicalPrismDid>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+        let did_page = self
+            .db_ctx
+            .list::<entity2::DidStats>(
+                &mut tx,
+                Filter::empty(),
+                Sort::new([
+                    entity2::DidStatsSort::last_slot().desc(),
+                    entity2::DidStatsSort::did().asc(),
+                ]),
+                Some(PaginationInput { page, limit: page_size }),
+            )
+            .await?;
+        tx.commit().await?;
+
+        let items = did_page
+            .data
             .into_iter()
-            .map(|model| {
-                let suffix = HexStr::from(model.did);
-                CanonicalPrismDid::from_suffix(suffix).map_err(|e| Error::DidDecode { source: e })
-            })
-            .collect::<Result<_, _>>()?;
+            .map(|stats| stats.did.try_into())
+            .collect::<Result<Vec<_>, _>>()?;
+
         Ok(Paginated {
             items,
-            current_page: page,
-            total_pages,
-            total_items,
+            current_page: did_page.page.into(),
+            page_size: did_page.page_size,
+            total_items: did_page.total_records,
         })
-    }
-}
-
-#[async_trait::async_trait]
-impl DltCursorRepo for PostgresTransaction {
-    type Error = Error;
-
-    async fn get_cursor(&self) -> Result<Option<DltCursor>, Self::Error> {
-        let result = entity::dlt_cursor::Entity::find()
-            .all(&self.tx)
-            .await?
-            .into_iter()
-            .next()
-            .map(|model| DltCursor {
-                slot: model.slot as u64,
-                block_hash: model.block_hash,
-                cbt: None,
-            });
-        Ok(result)
-    }
-
-    async fn set_cursor(&self, cursor: DltCursor) -> Result<(), Self::Error> {
-        let active_model = entity::dlt_cursor::ActiveModel {
-            slot: (cursor.slot as i64).into_active_value(),
-            block_hash: cursor.block_hash.into_active_value(),
-        };
-        let cursors = entity::dlt_cursor::Entity::find().all(&self.tx).await?;
-        for c in cursors {
-            c.delete(&self.tx).await?;
-        }
-        entity::dlt_cursor::Entity::insert(active_model)
-            .on_conflict(
-                OnConflict::columns([entity::dlt_cursor::Column::Slot, entity::dlt_cursor::Column::BlockHash])
-                    .do_nothing()
-                    .to_owned(),
-            )
-            .exec(&self.tx)
-            .await?;
-        Ok(())
     }
 }
 
@@ -205,21 +165,51 @@ impl DltCursorRepo for PostgresDb {
     type Error = Error;
 
     async fn get_cursor(&self) -> Result<Option<DltCursor>, Self::Error> {
-        let tx = self.begin().await?;
-        let result = tx.get_cursor().await?;
+        let mut tx = self.pool.begin().await?;
+        let result = self
+            .db_ctx
+            .list::<entity2::DltCursor>(&mut tx, Filter::empty(), Sort::empty(), None)
+            .await?
+            .data
+            .into_iter()
+            .next()
+            .map(|model| DltCursor {
+                slot: model.slot as u64,
+                block_hash: model.block_hash,
+                cbt: None,
+            });
         tx.commit().await?;
         Ok(result)
     }
 
     async fn set_cursor(&self, cursor: DltCursor) -> Result<(), Self::Error> {
-        let tx = self.begin().await?;
-        tx.set_cursor(cursor).await?;
+        let mut tx = self.pool.begin().await?;
+        let cursors = self
+            .db_ctx
+            .list::<entity2::DltCursor>(&mut tx, Filter::empty(), Sort::empty(), None)
+            .await?
+            .data;
+        for c in cursors {
+            self.db_ctx.delete::<entity2::DltCursor>(&mut tx, c.id).await?;
+        }
+        self.db_ctx
+            .create::<entity2::DltCursor>(
+                &mut tx,
+                entity2::CreateDltCursor {
+                    slot: cursor.slot as i64,
+                    block_hash: cursor.block_hash,
+                },
+            )
+            .await?;
         tx.commit().await?;
         Ok(())
     }
 }
 
-#[derive(FromQueryResult)]
 struct DidProjection {
     did: Vec<u8>,
+}
+
+struct CountProjection {
+    count: Option<i64>,
 }

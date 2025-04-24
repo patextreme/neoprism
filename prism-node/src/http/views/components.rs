@@ -10,7 +10,7 @@ pub struct NavBarProps {
 
 pub fn NavBar(props: NavBarProps) -> Element {
     let resolver_uri = uri!(crate::http::routes::resolver(Option::<String>::None)).to_string();
-    let explorer_uri = uri!(crate::http::routes::explorer(Option::<u64>::None)).to_string();
+    let explorer_uri = uri!(crate::http::routes::explorer(Option::<u32>::None)).to_string();
     let network_status = props
         .network
         .map(|i| {

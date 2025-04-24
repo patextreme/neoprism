@@ -14,7 +14,7 @@ pub mod hx {
     #[serde(crate = "rocket::serde")]
     pub enum HxRpc {
         GetExplorerDltCursor {},
-        GetExplorerDidList { page: Option<u64> },
+        GetExplorerDidList { page: Option<u32> },
     }
 }
 

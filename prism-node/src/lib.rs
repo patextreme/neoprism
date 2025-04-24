@@ -6,7 +6,6 @@ use clap::Parser;
 use cli::CliArgs;
 use prism_core::dlt::DltCursor;
 use prism_core::dlt::cardano::{NetworkIdentifier, OuraN2NSource};
-use prism_migration::run_migrations;
 use prism_storage::PostgresDb;
 use rocket::fairing::AdHoc;
 use rocket::fs::FileServer;
@@ -40,16 +39,16 @@ pub fn build_rocket() -> Rocket<Build> {
 fn init_database() -> AdHoc {
     AdHoc::on_ignite("Database Setup", |rocket| async move {
         let cli = rocket.state::<CliArgs>().expect("No CLI arguments provided");
+        let db = PostgresDb::connect(&cli.db)
+            .await
+            .expect("Unable to connect to database");
         if cli.skip_migration {
             tracing::info!("Skipping database migrations");
         } else {
             tracing::info!("Applying database migrations");
-            run_migrations(&cli.db).await.expect("Failed to apply migrations");
+            db.migrate().await.expect("Failed to apply migrations");
             tracing::info!("Applied database migrations successfully");
         }
-        let db = PostgresDb::connect(&cli.db, false)
-            .await
-            .expect("Unable to connect to database");
         rocket.manage(db)
     })
 }

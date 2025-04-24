@@ -1,0 +1,56 @@
+use chrono::{DateTime, Utc};
+use lazybe::macros::{Entity, Newtype};
+use lazybe::uuid::Uuid;
+use prism_core::did::CanonicalPrismDid;
+use prism_core::utils::codec::HexStr;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize, Newtype, derive_more::From)]
+pub struct DidSuffix(Vec<u8>);
+
+impl TryFrom<DidSuffix> for CanonicalPrismDid {
+    type Error = crate::Error;
+
+    fn try_from(value: DidSuffix) -> Result<Self, Self::Error> {
+        let suffix = HexStr::from(value.0);
+        let did = CanonicalPrismDid::from_suffix(suffix)?;
+        Ok(did)
+    }
+}
+
+#[derive(Entity)]
+#[lazybe(table = "dlt_cursor")]
+pub struct DltCursor {
+    #[lazybe(primary_key)]
+    pub id: Uuid,
+    pub slot: i64,
+    pub block_hash: Vec<u8>,
+}
+
+#[derive(Entity)]
+#[lazybe(table = "raw_operation")]
+pub struct RawOperation {
+    #[lazybe(primary_key)]
+    pub id: Uuid,
+    pub did: DidSuffix,
+    pub signed_operation_data: Vec<u8>,
+    pub slot: i64,
+    pub block_number: i64,
+    pub cbt: DateTime<Utc>,
+    pub absn: i32,
+    pub osn: i32,
+}
+
+#[derive(Entity)]
+#[lazybe(table = "did_stats")]
+pub struct DidStats {
+    #[lazybe(primary_key)]
+    pub did: DidSuffix,
+    pub operation_count: i64,
+    pub last_block: i64,
+    pub last_slot: i64,
+    pub last_cbt: DateTime<Utc>,
+    pub first_block: i64,
+    pub first_slot: i64,
+    pub first_cbt: DateTime<Utc>,
+}
