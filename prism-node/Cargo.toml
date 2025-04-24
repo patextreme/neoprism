@@ -21,7 +21,6 @@ dioxus-ssr = { workspace = true }
 dioxus = { workspace = true }
 html-escape = { workspace = true }
 prism-core = { path = "../prism-core", features = ["full"] }
-prism-migration = { path = "../prism-migration" }
 prism-storage = { path = "../prism-storage" }
 rocket = { workspace = true, features = ["json"] }
 serde_json = { workspace = true }

@@ -16,7 +16,6 @@ use prism_core::utils::paging::Paginated;
 use sqlx::PgPool;
 
 mod entity;
-mod entity2;
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum Error {
@@ -72,9 +71,9 @@ impl OperationRepo for PostgresDb {
         let mut tx = self.pool.begin().await?;
         let result = self
             .db_ctx
-            .list::<entity2::RawOperation>(
+            .list::<entity::RawOperation>(
                 &mut tx,
-                Filter::all([entity2::RawOperationFilter::did().eq(suffix_bytes.into())]),
+                Filter::all([entity::RawOperationFilter::did().eq(suffix_bytes.into())]),
                 Sort::empty(),
                 None,
             )
@@ -84,12 +83,15 @@ impl OperationRepo for PostgresDb {
             .map(|model| {
                 let metadata = OperationMetadata {
                     block_metadata: BlockMetadata {
-                        slot_number: model.slot as u64,
-                        block_number: model.block_number as u64,
+                        slot_number: model.slot.try_into().expect("slot value does not fit in u64"),
+                        block_number: model
+                            .block_number
+                            .try_into()
+                            .expect("block_number value does not fit in u64"),
                         cbt: model.cbt,
-                        absn: model.absn as u32,
+                        absn: model.absn.try_into().expect("absn value does not fit in u32"),
                     },
-                    osn: model.osn as u32,
+                    osn: model.osn.try_into().expect("osn value does not fit in u32"),
                 };
                 SignedAtalaOperation::decode(model.signed_operation_data.as_slice())
                     .map(|op| (metadata, op))
@@ -112,9 +114,9 @@ impl OperationRepo for PostgresDb {
             .map_err(|e| Error::DidIndexFromSignedAtalaOperation { source: e })?;
         let mut tx = self.pool.begin().await?;
         self.db_ctx
-            .create::<entity2::RawOperation>(
+            .create::<entity::RawOperation>(
                 &mut tx,
-                entity2::CreateRawOperation {
+                entity::CreateRawOperation {
                     did: did.suffix.to_vec().into(),
                     signed_operation_data: signed_operation.encode_to_vec(),
                     slot: metadata.block_metadata.slot_number as i64,
@@ -133,12 +135,12 @@ impl OperationRepo for PostgresDb {
         let mut tx = self.pool.begin().await?;
         let did_page = self
             .db_ctx
-            .list::<entity2::DidStats>(
+            .list::<entity::DidStats>(
                 &mut tx,
                 Filter::empty(),
                 Sort::new([
-                    entity2::DidStatsSort::last_slot().desc(),
-                    entity2::DidStatsSort::did().asc(),
+                    entity::DidStatsSort::last_slot().desc(),
+                    entity::DidStatsSort::did().asc(),
                 ]),
                 Some(PaginationInput { page, limit: page_size }),
             )
@@ -153,7 +155,7 @@ impl OperationRepo for PostgresDb {
 
         Ok(Paginated {
             items,
-            current_page: did_page.page.into(),
+            current_page: did_page.page,
             page_size: did_page.page_size,
             total_items: did_page.total_records,
         })
@@ -168,7 +170,7 @@ impl DltCursorRepo for PostgresDb {
         let mut tx = self.pool.begin().await?;
         let result = self
             .db_ctx
-            .list::<entity2::DltCursor>(&mut tx, Filter::empty(), Sort::empty(), None)
+            .list::<entity::DltCursor>(&mut tx, Filter::empty(), Sort::empty(), None)
             .await?
             .data
             .into_iter()
@@ -186,16 +188,16 @@ impl DltCursorRepo for PostgresDb {
         let mut tx = self.pool.begin().await?;
         let cursors = self
             .db_ctx
-            .list::<entity2::DltCursor>(&mut tx, Filter::empty(), Sort::empty(), None)
+            .list::<entity::DltCursor>(&mut tx, Filter::empty(), Sort::empty(), None)
             .await?
             .data;
         for c in cursors {
-            self.db_ctx.delete::<entity2::DltCursor>(&mut tx, c.id).await?;
+            self.db_ctx.delete::<entity::DltCursor>(&mut tx, c.id).await?;
         }
         self.db_ctx
-            .create::<entity2::DltCursor>(
+            .create::<entity::DltCursor>(
                 &mut tx,
-                entity2::CreateDltCursor {
+                entity::CreateDltCursor {
                     slot: cursor.slot as i64,
                     block_hash: cursor.block_hash,
                 },
@@ -204,12 +206,4 @@ impl DltCursorRepo for PostgresDb {
         tx.commit().await?;
         Ok(())
     }
-}
-
-struct DidProjection {
-    did: Vec<u8>,
-}
-
-struct CountProjection {
-    count: Option<i64>,
 }

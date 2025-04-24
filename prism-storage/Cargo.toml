@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 async-trait = { workspace = true }
-chrono = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
 derive_more = { workspace = true, features = ["from", "display", "error"] }
 lazybe = { workspace = true, features = ["postgres"] }
 prism-core = { path = "../prism-core" }
@@ -19,7 +19,3 @@ serde = { workspace = true }
 sqlx = { workspace = true, features = ["postgres", "uuid", "chrono"] }
 tokio = { workspace = true, features = ["full"] }
 tracing = { workspace = true }
-
-[dependencies.sea-orm]
-workspace = true
-features = ["sqlx-postgres", "runtime-tokio-rustls"]

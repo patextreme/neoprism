@@ -1,5 +1,5 @@
 [workspace]
-members = ["prism-core", "prism-migration", "prism-node", "prism-storage"]
+members = ["prism-core", "prism-node", "prism-storage"]
 resolver = "3"
 
 
@@ -30,8 +30,6 @@ tracing-subscriber = "0.3"
 uriparse = "0.6"
 # db
 sqlx = "0.8"
-sea-orm = "1.1"
-sea-orm-migration = "1.1"
 sea-query = "0.32"
 # crypto
 ed25519-dalek = "2"
