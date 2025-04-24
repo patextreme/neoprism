@@ -160,19 +160,21 @@
                 less
                 ncurses
                 protobuf
+                watchexec
                 which
                 # lsp
                 nil
                 taplo
+                # db
+                sqlfluff
+                sqlx-cli
                 # rust
                 cargo-edit
                 cargo-license
                 cargo-udeps
-                cargo-watch
                 dioxus-cli
                 protobuf
                 rustDev
-                sea-orm-cli
                 # tailwind & html
                 nodejs_20
                 nodePackages."@tailwindcss/language-server"
