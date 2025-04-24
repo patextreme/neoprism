@@ -14,7 +14,7 @@ use tokio::task::JoinHandle;
 use super::error::DltError;
 use super::{DltCursor, DltSource, PublishedAtalaObject};
 use crate::location;
-use crate::store::DltCursorStore;
+use crate::repo::DltCursorRepo;
 use crate::utils::codec::HexStr;
 
 mod model {
@@ -170,13 +170,13 @@ impl NetworkIdentifier {
     }
 }
 
-pub struct OuraN2NSource<Store: DltCursorStore + Send + 'static> {
+pub struct OuraN2NSource<Store: DltCursorRepo + Send + 'static> {
     with_utils: WithUtils<Config>,
     store: Store,
     cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
 }
 
-impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> {
+impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
     pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
         let intersect = match chain {
             NetworkIdentifier::Mainnet => oura::sources::IntersectArg::Point(PointArg(
@@ -249,7 +249,7 @@ impl<E, Store: DltCursorStore<Error = E> + Send + 'static> OuraN2NSource<Store> 
     }
 }
 
-impl<Store: DltCursorStore + Send> DltSource for OuraN2NSource<Store> {
+impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
     fn receiver(self) -> Result<Receiver<PublishedAtalaObject>, String> {
         let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedAtalaObject>(1024);
 
@@ -399,12 +399,12 @@ impl OuraStreamWorker {
     }
 }
 
-struct CursorPersistWorker<Store: DltCursorStore> {
+struct CursorPersistWorker<Store: DltCursorRepo> {
     cursor_rx: tokio::sync::watch::Receiver<Option<DltCursor>>,
     store: Store,
 }
 
-impl<Store: DltCursorStore + Send + 'static> CursorPersistWorker<Store> {
+impl<Store: DltCursorRepo + Send + 'static> CursorPersistWorker<Store> {
     fn spawn(mut self) -> JoinHandle<Result<(), DltError>> {
         const DELAY: tokio::time::Duration = tokio::time::Duration::from_secs(60);
         tracing::info!("Spawn cursor persist worker with {:?} interval", DELAY);

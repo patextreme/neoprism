@@ -6,7 +6,7 @@ use prism_core::did::operation::get_did_from_signed_operation;
 use prism_core::dlt::{BlockMetadata, DltCursor, OperationMetadata};
 use prism_core::prelude::*;
 use prism_core::proto::SignedAtalaOperation;
-use prism_core::store::{DltCursorStore, OperationStore};
+use prism_core::repo::{DltCursorRepo, OperationRepo};
 use prism_core::utils::codec::HexStr;
 use prism_core::utils::paging::Paginated;
 use sea_orm::{
@@ -65,7 +65,7 @@ impl PostgresTransaction {
 }
 
 #[async_trait::async_trait]
-impl OperationStore for PostgresTransaction {
+impl OperationRepo for PostgresTransaction {
     type Error = Error;
 
     async fn get_operations_by_did(
@@ -162,7 +162,7 @@ impl OperationStore for PostgresTransaction {
 }
 
 #[async_trait::async_trait]
-impl DltCursorStore for PostgresTransaction {
+impl DltCursorRepo for PostgresTransaction {
     type Error = Error;
 
     async fn get_cursor(&self) -> Result<Option<DltCursor>, Self::Error> {
@@ -201,7 +201,7 @@ impl DltCursorStore for PostgresTransaction {
 }
 
 #[async_trait::async_trait]
-impl DltCursorStore for PostgresDb {
+impl DltCursorRepo for PostgresDb {
     type Error = Error;
 
     async fn get_cursor(&self) -> Result<Option<DltCursor>, Self::Error> {

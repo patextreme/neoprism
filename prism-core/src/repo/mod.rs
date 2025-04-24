@@ -4,7 +4,7 @@ use crate::proto::SignedAtalaOperation;
 use crate::utils::paging::Paginated;
 
 #[async_trait::async_trait]
-pub trait OperationStore {
+pub trait OperationRepo {
     type Error: std::error::Error;
 
     async fn get_operations_by_did(
@@ -22,7 +22,7 @@ pub trait OperationStore {
 }
 
 #[async_trait::async_trait]
-pub trait DltCursorStore {
+pub trait DltCursorRepo {
     type Error: std::error::Error;
 
     async fn set_cursor(&self, cursor: DltCursor) -> Result<(), Self::Error>;
