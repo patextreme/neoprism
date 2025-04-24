@@ -29,11 +29,10 @@ pub struct DltCursor {
 
 #[derive(Entity)]
 #[lazybe(table = "raw_operation")]
+#[allow(unused)]
 pub struct RawOperation {
-    #[allow(unused)]
     #[lazybe(primary_key)]
     pub id: Uuid,
-    #[allow(unused)]
     pub did: DidSuffix,
     pub signed_operation_data: Vec<u8>,
     pub slot: i64,
@@ -45,21 +44,15 @@ pub struct RawOperation {
 
 #[derive(Entity)]
 #[lazybe(table = "did_stats")]
+#[allow(unused)]
 pub struct DidStats {
     #[lazybe(primary_key)]
     pub did: DidSuffix,
-    #[allow(unused)]
     pub operation_count: i64,
-    #[allow(unused)]
     pub last_block: i64,
-    #[allow(unused)]
     pub last_slot: i64,
-    #[allow(unused)]
     pub last_cbt: DateTime<Utc>,
-    #[allow(unused)]
     pub first_block: i64,
-    #[allow(unused)]
     pub first_slot: i64,
-    #[allow(unused)]
     pub first_cbt: DateTime<Utc>,
 }
