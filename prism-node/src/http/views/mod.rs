@@ -1,4 +1,4 @@
-use time::OffsetDateTime;
+use chrono::{DateTime, Utc};
 
 use super::model::hx::HxRpc;
 
@@ -16,9 +16,8 @@ fn escape_html_rpc(rpc: &HxRpc) -> String {
     escape_html_json(&json)
 }
 
-fn format_datetime(dt: &OffsetDateTime) -> String {
-    dt.format(&time::format_description::well_known::Rfc3339)
-        .unwrap_or_default()
+fn format_datetime(dt: &DateTime<Utc>) -> String {
+    dt.to_rfc3339()
 }
 
 pub fn html_page(body: String) -> String {

@@ -8,6 +8,7 @@ edition = "2024"
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
+chrono = { workspace = true }
 derive_more = { workspace = true, features = [
   "as_ref",
   "from",
@@ -18,14 +19,13 @@ derive_more = { workspace = true, features = [
 ] }
 dioxus-ssr = { workspace = true }
 dioxus = { workspace = true }
-env_logger = { workspace = true }
 html-escape = { workspace = true }
-log = { workspace = true }
 prism-core = { path = "../prism-core", features = ["full"] }
-prism-migration = { path = "../prism-migration" }
 prism-storage = { path = "../prism-storage" }
 rocket = { workspace = true, features = ["json"] }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-time = { workspace = true }
+sqlx = { workspace = true, features = ["runtime-tokio"] }
 tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

@@ -86,8 +86,12 @@
             scripts = rec {
               format = pkgs.writeShellScriptBin "format" ''
                 cd ${rootDir}
-                find ${rootDir} | grep '\.nix$' | xargs -I _ bash -c "echo running nixfmt on _ && ${pkgs.nixfmt-rfc-style}/bin/nixfmt _"
-                find ${rootDir} | grep '\.toml$' | xargs -I _ bash -c "echo running taplo on _ && ${pkgs.taplo}/bin/taplo format _"
+                find . | grep '\.nix$' | xargs -I _ bash -c "echo running nixfmt on _ && ${pkgs.nixfmt-rfc-style}/bin/nixfmt _"
+                find . | grep '\.toml$' | xargs -I _ bash -c "echo running taplo on _ && ${pkgs.taplo}/bin/taplo format _"
+
+                ${pkgs.sqlfluff}/bin/sqlfluff fix ./prism-storage/migrations
+                ${pkgs.sqlfluff}/bin/sqlfluff lint ./prism-storage/migrations
+
                 ${pkgs.dioxus-cli}/bin/dx fmt
                 ${rustDev}/bin/cargo fmt
               '';
@@ -160,19 +164,21 @@
                 less
                 ncurses
                 protobuf
+                watchexec
                 which
                 # lsp
                 nil
                 taplo
+                # db
+                sqlfluff
+                sqlx-cli
                 # rust
                 cargo-edit
                 cargo-license
                 cargo-udeps
-                cargo-watch
                 dioxus-cli
                 protobuf
                 rustDev
-                sea-orm-cli
                 # tailwind & html
                 nodejs_20
                 nodePackages."@tailwindcss/language-server"

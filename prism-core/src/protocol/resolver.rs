@@ -11,14 +11,14 @@ type OperationList = VecDeque<(OperationMetadata, SignedAtalaOperation)>;
 pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>;
 
 pub fn resolve_unpublished(operation: AtalaOperation) -> Result<DidState, ProcessError> {
-    log::debug!("resolving unpublished DID data");
+    tracing::debug!("resolving unpublished DID data");
     init_unpublished_context(operation).map(|ctx| ctx.finalize())
 }
 
 pub fn resolve_published(
     mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>,
 ) -> (Option<DidState>, ResolutionDebug) {
-    log::debug!("resolving published DID data from {} operations", operations.len());
+    tracing::debug!("resolving published DID data from {} operations", operations.len());
     operations.sort_by(|a, b| OperationMetadata::compare_time_asc(&a.0, &b.0));
     let mut operations: OperationList = operations.into();
 
@@ -48,7 +48,7 @@ fn init_state_ops(operations: &mut OperationList) -> (Option<DidStateProcessingC
                 return (Some(state_ctx), debug);
             }
             Err(e) => {
-                log::debug!("unable to initialize DIDState from operation: {:?}", e);
+                tracing::debug!("unable to initialize DIDState from operation: {:?}", e);
                 debug.push((metadata, operation, Some(e)));
             }
         }

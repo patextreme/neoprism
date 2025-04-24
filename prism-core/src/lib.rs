@@ -13,5 +13,5 @@ pub mod error;
 mod macros;
 pub mod prelude;
 pub mod protocol;
-pub mod store;
+pub mod repo;
 pub mod utils;

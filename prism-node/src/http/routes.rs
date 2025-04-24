@@ -44,7 +44,7 @@ pub async fn resolver(did: Option<String>, state: &State<AppState>) -> SsrPage {
 }
 
 #[get("/explorer?<page>")]
-pub async fn explorer(state: &State<AppState>, page: Option<u64>) -> SsrPage {
+pub async fn explorer(state: &State<AppState>, page: Option<u32>) -> SsrPage {
     // UI use 1-index. internal pagination logic use 0-index.
     let page = page.map(|i| i.max(1) - 1);
     let cursor = state.cursor_rx.as_ref().and_then(|rx| rx.borrow().to_owned());

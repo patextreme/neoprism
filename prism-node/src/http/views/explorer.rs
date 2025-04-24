@@ -76,10 +76,10 @@ pub fn DidList(dids: Paginated<CanonicalPrismDid>) -> Element {
             }
         }
     });
-    let pagination_items = (0..dids.total_pages)
+    let pagination_items = (0..dids.total_pages())
         .map(|i| {
             // Only first, last and N pages before and after the current page
-            let should_display = |i: u64| i == 0 || i == (dids.total_pages - 1) || i.abs_diff(dids.current_page) <= 2;
+            let should_display = |i: u32| i == 0 || i == (dids.total_pages() - 1) || i.abs_diff(dids.current_page) <= 2;
             (i, should_display(i), should_display(i + 1))
         })
         .filter_map(

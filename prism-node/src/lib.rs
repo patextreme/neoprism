@@ -6,7 +6,6 @@ use clap::Parser;
 use cli::CliArgs;
 use prism_core::dlt::DltCursor;
 use prism_core::dlt::cardano::{NetworkIdentifier, OuraN2NSource};
-use prism_migration::run_migrations;
 use prism_storage::PostgresDb;
 use rocket::fairing::AdHoc;
 use rocket::fs::FileServer;
@@ -26,7 +25,7 @@ struct AppState {
 }
 
 pub fn build_rocket() -> Rocket<Build> {
-    env_logger::init();
+    tracing_subscriber::fmt::init();
 
     let cli = CliArgs::parse();
 
@@ -40,16 +39,16 @@ pub fn build_rocket() -> Rocket<Build> {
 fn init_database() -> AdHoc {
     AdHoc::on_ignite("Database Setup", |rocket| async move {
         let cli = rocket.state::<CliArgs>().expect("No CLI arguments provided");
-        if cli.skip_migration {
-            log::info!("Skipping database migrations");
-        } else {
-            log::info!("Applying database migrations");
-            run_migrations(&cli.db).await.expect("Failed to apply migrations");
-            log::info!("Applied database migrations successfully");
-        }
-        let db = PostgresDb::connect(&cli.db, false)
+        let db = PostgresDb::connect(&cli.db)
             .await
             .expect("Unable to connect to database");
+        if cli.skip_migration {
+            tracing::info!("Skipping database migrations");
+        } else {
+            tracing::info!("Applying database migrations");
+            db.migrate().await.expect("Failed to apply migrations");
+            tracing::info!("Applied database migrations successfully");
+        }
         rocket.manage(db)
     })
 }
@@ -65,7 +64,7 @@ fn init_state() -> AdHoc {
         if let Some(address) = &cli.cardano {
             let network_identifier = cli.network.to_owned();
 
-            log::info!(
+            tracing::info!(
                 "Starting DLT sync worker on {} from cardano address {}",
                 network_identifier,
                 address

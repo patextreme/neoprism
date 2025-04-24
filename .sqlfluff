@@ -1,0 +1,11 @@
+[sqlfluff]
+dialect = postgres
+exclude_rules = LT08
+max_line_length = 120
+large_file_skip_byte_limit = 0
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
+
+[sqlfluff:rules:references.quoting]
+prefer_quoted_keywords = True

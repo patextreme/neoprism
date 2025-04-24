@@ -1,5 +1,5 @@
 use prism_core::dlt::{DltSource, OperationMetadata};
-use prism_core::store::OperationStore;
+use prism_core::repo::OperationRepo;
 use prism_storage::PostgresDb;
 
 pub struct DltSyncWorker<Src> {
@@ -22,32 +22,33 @@ where
             let block = published_atala_object.atala_object.block_content;
             let block_metadata = published_atala_object.block_metadata;
             let signed_operations = block.map(|i| i.operations).unwrap_or_default();
-            let tx = self.store.begin().await?;
+
+            let mut insert_batch = Vec::with_capacity(signed_operations.len());
             for (idx, signed_operation) in signed_operations.into_iter().enumerate() {
-                if signed_operation
+                let has_operation = signed_operation
                     .operation
                     .as_ref()
                     .and_then(|i| i.operation.as_ref())
-                    .is_none()
-                {
+                    .is_none();
+
+                if !has_operation {
                     continue;
                 }
 
-                let insert_result = tx
-                    .insert_operation(
-                        signed_operation,
-                        OperationMetadata {
-                            block_metadata: block_metadata.clone(),
-                            osn: idx as u32,
-                        },
-                    )
-                    .await;
-
-                if let Err(e) = insert_result {
-                    log::error!("{:?}", e);
-                }
+                insert_batch.push((
+                    OperationMetadata {
+                        block_metadata: block_metadata.clone(),
+                        osn: idx as u32,
+                    },
+                    signed_operation,
+                ));
             }
-            tx.commit().await?;
+
+            let insert_result = self.store.insert_operations(insert_batch).await;
+
+            if let Err(e) = insert_result {
+                tracing::error!("{:?}", e);
+            }
         }
         Ok(())
     }

@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 use std::rc::Rc;
 
+use chrono::DateTime;
 use enum_dispatch::enum_dispatch;
 use error::{DidStateConflictError, ProcessError};
 
@@ -264,7 +265,7 @@ fn init_unpublished_context(operation: AtalaOperation) -> Result<DidStateProcess
         block_metadata: BlockMetadata {
             slot_number: 0,
             block_number: 0,
-            cbt: time::OffsetDateTime::UNIX_EPOCH,
+            cbt: DateTime::UNIX_EPOCH,
             absn: 0,
         },
         osn: 0,
