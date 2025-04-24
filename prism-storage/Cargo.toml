@@ -17,5 +17,4 @@ sea-query = { workspace = true, features = [
 ] }
 serde = { workspace = true }
 sqlx = { workspace = true, features = ["postgres", "uuid", "chrono"] }
-tokio = { workspace = true, features = ["full"] }
 tracing = { workspace = true }

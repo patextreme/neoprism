@@ -22,31 +22,32 @@ where
             let block = published_atala_object.atala_object.block_content;
             let block_metadata = published_atala_object.block_metadata;
             let signed_operations = block.map(|i| i.operations).unwrap_or_default();
+
+            let mut insert_batch = Vec::with_capacity(signed_operations.len());
             for (idx, signed_operation) in signed_operations.into_iter().enumerate() {
-                if signed_operation
+                let has_operation = signed_operation
                     .operation
                     .as_ref()
                     .and_then(|i| i.operation.as_ref())
-                    .is_none()
-                {
+                    .is_none();
+
+                if !has_operation {
                     continue;
                 }
 
-                // TODO: do bulk transaction
-                let insert_result = self
-                    .store
-                    .insert_operation(
-                        signed_operation,
-                        OperationMetadata {
-                            block_metadata: block_metadata.clone(),
-                            osn: idx as u32,
-                        },
-                    )
-                    .await;
+                insert_batch.push((
+                    OperationMetadata {
+                        block_metadata: block_metadata.clone(),
+                        osn: idx as u32,
+                    },
+                    signed_operation,
+                ));
+            }
 
-                if let Err(e) = insert_result {
-                    tracing::error!("{:?}", e);
-                }
+            let insert_result = self.store.insert_operations(insert_batch).await;
+
+            if let Err(e) = insert_result {
+                tracing::error!("{:?}", e);
             }
         }
         Ok(())

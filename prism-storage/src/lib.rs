@@ -63,6 +63,36 @@ impl PostgresDb {
 impl OperationRepo for PostgresDb {
     type Error = Error;
 
+    async fn get_all_dids(&self, page: u32, page_size: u32) -> Result<Paginated<CanonicalPrismDid>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+        let did_page = self
+            .db_ctx
+            .list::<entity::DidStats>(
+                &mut tx,
+                Filter::empty(),
+                Sort::new([
+                    entity::DidStatsSort::last_slot().desc(),
+                    entity::DidStatsSort::did().asc(),
+                ]),
+                Some(PaginationInput { page, limit: page_size }),
+            )
+            .await?;
+        tx.commit().await?;
+
+        let items = did_page
+            .data
+            .into_iter()
+            .map(|stats| stats.did.try_into())
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(Paginated {
+            items,
+            current_page: did_page.page,
+            page_size: did_page.page_size,
+            total_items: did_page.total_records,
+        })
+    }
+
     async fn get_operations_by_did(
         &self,
         did: &CanonicalPrismDid,
@@ -105,60 +135,40 @@ impl OperationRepo for PostgresDb {
         Ok(result)
     }
 
-    async fn insert_operation(
+    async fn insert_operations(
         &self,
-        signed_operation: SignedAtalaOperation,
-        metadata: OperationMetadata,
+        operations: Vec<(OperationMetadata, SignedAtalaOperation)>,
     ) -> Result<(), Self::Error> {
-        let did = get_did_from_signed_operation(&signed_operation)
-            .map_err(|e| Error::DidIndexFromSignedAtalaOperation { source: e })?;
         let mut tx = self.pool.begin().await?;
-        self.db_ctx
-            .create::<entity::RawOperation>(
-                &mut tx,
-                entity::CreateRawOperation {
-                    did: did.suffix.to_vec().into(),
-                    signed_operation_data: signed_operation.encode_to_vec(),
-                    slot: metadata.block_metadata.slot_number as i64,
-                    block_number: metadata.block_metadata.block_number as i64,
-                    cbt: metadata.block_metadata.cbt,
-                    absn: metadata.block_metadata.absn as i32,
-                    osn: metadata.osn as i32,
-                },
-            )
-            .await?;
+        for (metadata, signed_operation) in operations {
+            let did = get_did_from_signed_operation(&signed_operation)
+                .map_err(|e| Error::DidIndexFromSignedAtalaOperation { source: e })?;
+
+            let create_op = entity::CreateRawOperation {
+                did: did.suffix.to_vec().into(),
+                signed_operation_data: signed_operation.encode_to_vec(),
+                slot: metadata
+                    .block_metadata
+                    .slot_number
+                    .try_into()
+                    .expect("slot_number does not fit in i64"),
+                block_number: metadata
+                    .block_metadata
+                    .block_number
+                    .try_into()
+                    .expect("block_number does not fit in i64"),
+                cbt: metadata.block_metadata.cbt,
+                absn: metadata
+                    .block_metadata
+                    .absn
+                    .try_into()
+                    .expect("absn does not fit in i32"),
+                osn: metadata.osn.try_into().expect("osn does not fit in i32"),
+            };
+            self.db_ctx.create::<entity::RawOperation>(&mut tx, create_op).await?;
+        }
         tx.commit().await?;
         Ok(())
-    }
-
-    async fn get_all_dids(&self, page: u32, page_size: u32) -> Result<Paginated<CanonicalPrismDid>, Self::Error> {
-        let mut tx = self.pool.begin().await?;
-        let did_page = self
-            .db_ctx
-            .list::<entity::DidStats>(
-                &mut tx,
-                Filter::empty(),
-                Sort::new([
-                    entity::DidStatsSort::last_slot().desc(),
-                    entity::DidStatsSort::did().asc(),
-                ]),
-                Some(PaginationInput { page, limit: page_size }),
-            )
-            .await?;
-        tx.commit().await?;
-
-        let items = did_page
-            .data
-            .into_iter()
-            .map(|stats| stats.did.try_into())
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(Paginated {
-            items,
-            current_page: did_page.page,
-            page_size: did_page.page_size,
-            total_items: did_page.total_records,
-        })
     }
 }
 
