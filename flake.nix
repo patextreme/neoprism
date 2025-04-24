@@ -90,6 +90,8 @@
                 find ${rootDir} | grep '\.toml$' | xargs -I _ bash -c "echo running taplo on _ && ${pkgs.taplo}/bin/taplo format _"
                 ${pkgs.dioxus-cli}/bin/dx fmt
                 ${rustDev}/bin/cargo fmt
+                ${pkgs.sqlfluff}/bin/sqlfluff fix ${rootDir}/migrations
+                ${pkgs.sqlfluff}/bin/sqlfluff lint ${rootDir}/migrations
               '';
 
               buildAssets = pkgs.writeShellScriptBin "buildAssets" ''

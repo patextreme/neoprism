@@ -16,3 +16,27 @@ CREATE TABLE IF NOT EXISTS raw_operation (
     osn int4 NOT NULL,
     CONSTRAINT raw_operation_pkey PRIMARY KEY (did, block_number, absn, osn)
 );
+
+-- migrate primary key for raw_operation
+ALTER TABLE raw_operation DROP CONSTRAINT raw_operation_pkey;
+
+ALTER TABLE raw_operation
+ADD COLUMN id uuid DEFAULT gen_random_uuid();
+
+ALTER TABLE raw_operation
+ADD CONSTRAINT raw_operation_pkey PRIMARY KEY (id);
+
+ALTER TABLE raw_operation
+ADD CONSTRAINT raw_operation_abs_order UNIQUE (did, block_number, absn, osn);
+
+-- migrate primary key for dlt_cursor
+ALTER TABLE dlt_cursor DROP CONSTRAINT dlt_cursor_pkey;
+
+ALTER TABLE dlt_cursor
+ADD COLUMN id uuid DEFAULT gen_random_uuid();
+
+ALTER TABLE dlt_cursor
+ADD CONSTRAINT dlt_cursor_pkey PRIMARY KEY (id);
+
+ALTER TABLE dlt_cursor
+ADD CONSTRAINT dlt_cursor_abs_order UNIQUE (slot, block_hash);
