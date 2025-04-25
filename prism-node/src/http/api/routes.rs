@@ -5,7 +5,7 @@ use axum::{Json, Router};
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
 
-use crate::http::model::api::DidDocument;
+use super::models::DidDocument;
 use crate::AppState;
 use crate::app::service::error::ResolutionError;
 
@@ -13,14 +13,11 @@ use crate::app::service::error::ResolutionError;
 #[openapi(paths(resolve_did))]
 struct OpenApiDoc;
 
-pub fn api_router() -> Router<AppState> {
+pub fn router() -> Router<AppState> {
     let openapi = OpenApiDoc::openapi();
-
-    let router = Router::new().route("/dids/{did}", get(resolve_did));
-
     Router::new()
         .merge(Redoc::with_url("/redoc", openapi))
-        .nest("/api", router)
+        .route("/api/dids/{did}", get(resolve_did))
 }
 
 #[utoipa::path(
