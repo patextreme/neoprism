@@ -1,32 +1,12 @@
-pub mod form {
-    use rocket::FromForm;
-
-    #[derive(Debug, Clone, FromForm)]
-    pub struct HxRpcForm {
-        pub rpc: String,
-    }
-}
-
-pub mod hx {
-    use rocket::serde::{Deserialize, Serialize};
-
-    #[derive(Debug, Clone, Serialize, Deserialize)]
-    #[serde(crate = "rocket::serde")]
-    pub enum HxRpc {
-        GetExplorerDltCursor {},
-        GetExplorerDidList { page: Option<u32> },
-    }
-}
-
 pub mod api {
     use prism_core::crypto::EncodeJwk;
     use prism_core::did::operation::KeyUsage;
     use prism_core::did::{DidState, operation};
-    use rocket::serde::{Deserialize, Serialize};
+    use serde::{Deserialize, Serialize};
     use serde_json::json;
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
-    #[serde(crate = "rocket::serde", rename_all = "camelCase")]
+    #[serde(rename_all = "camelCase")]
     pub struct DidDocument {
         #[serde(rename(serialize = "@context", deserialize = "@context"))]
         context: Vec<String>,
@@ -41,7 +21,7 @@ pub mod api {
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
-    #[serde(crate = "rocket::serde", rename_all = "camelCase")]
+    #[serde(rename_all = "camelCase")]
     pub struct Service {
         id: String,
         r#type: serde_json::Value,

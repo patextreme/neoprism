@@ -3,7 +3,6 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use prism_core::dlt::cardano::NetworkIdentifier;
-use rocket::Config;
 
 #[derive(Parser)]
 pub struct CliArgs {
@@ -31,17 +30,6 @@ pub struct CliArgs {
     /// The directory containing the web-ui assets (CSS, Javascripts)
     #[arg(long, default_value = "./prism-node/assets")]
     pub assets: PathBuf,
-}
-
-impl CliArgs {
-    pub fn rocket_config(&self) -> Config {
-        let config = Config::default();
-        Config {
-            address: self.address.into(),
-            port: self.port,
-            ..config
-        }
-    }
 }
 
 mod parser {

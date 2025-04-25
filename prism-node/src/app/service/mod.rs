@@ -7,6 +7,7 @@ use prism_storage::PostgresDb;
 
 pub mod error;
 
+#[derive(Clone)]
 pub struct DidService {
     db: PostgresDb,
 }
