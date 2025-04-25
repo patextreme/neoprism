@@ -46,11 +46,7 @@
             name = "neoprism-checks";
             src = pkgs.lib.cleanSource ./.;
             cargoLock.lockFile = ./Cargo.lock;
-            nativeBuildInputs = with pkgs; [
-              protobuf
-              sqlfluff
-            ];
-            buildInputs = [ pkgs.protobuf ];
+            nativeBuildInputs = with pkgs; [ protobuf sqlfluff ];
             buildPhase = "cargo b --all-features --all-targets";
             checkPhase = ''
               sqlfluff lint --dialect postgres ./prism-storage/migrations
