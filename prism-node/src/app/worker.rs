@@ -29,7 +29,7 @@ where
                     .operation
                     .as_ref()
                     .and_then(|i| i.operation.as_ref())
-                    .is_none();
+                    .is_some();
 
                 if !has_operation {
                     continue;
