@@ -4,8 +4,9 @@ pub mod api {
     use prism_core::did::{DidState, operation};
     use serde::{Deserialize, Serialize};
     use serde_json::json;
+    use utoipa::ToSchema;
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
     #[serde(rename_all = "camelCase")]
     pub struct DidDocument {
         #[serde(rename(serialize = "@context", deserialize = "@context"))]
@@ -20,7 +21,7 @@ pub mod api {
         service: Option<Vec<Service>>,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
     #[serde(rename_all = "camelCase")]
     pub struct Service {
         id: String,

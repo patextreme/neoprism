@@ -65,7 +65,7 @@ pub async fn start_server() -> anyhow::Result<()> {
         network,
     };
 
-    let app = Router::new().with_state(state);
+    let app = Router::new().merge(http::route::api::api_router()).with_state(state);
 
     let bind_addr = format!("{}:{}", cli.address, cli.port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
