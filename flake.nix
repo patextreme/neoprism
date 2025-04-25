@@ -22,8 +22,9 @@
           config.unfree = true;
           overlays = [ (import rust-overlay) ];
         };
-        rustMinimal = pkgs.rust-bin.nightly."2025-02-24".minimal;
-        rustDev = pkgs.rust-bin.nightly."2025-02-24".default.override {
+        nightlyVersion = "2025-04-23";
+        rustMinimal = pkgs.rust-bin.nightly.${nightlyVersion}.minimal;
+        rustDev = pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
           extensions = [
             "rust-src"
             "rust-analyzer"
@@ -137,14 +138,6 @@
 
               migrate = pkgs.writeShellScriptBin "migrate" ''
                 ${pkgs.sea-orm-cli}/bin/sea-orm-cli migrate up -d prism-migration --database-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName}
-              '';
-
-              generateEntity = pkgs.writeShellScriptBin "generateEntity" ''
-                rm -rf prism-storage/src/entity
-                ${pkgs.sea-orm-cli}/bin/sea-orm-cli generate entity \
-                  --database-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} \
-                  -o prism-storage/src/entity \
-                  --date-time-crate time
               '';
 
               runNode = pkgs.writeShellScriptBin "runNode" ''
