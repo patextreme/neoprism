@@ -24,23 +24,60 @@
         };
         nightlyVersion = "2025-04-23";
         rustMinimal = pkgs.rust-bin.nightly.${nightlyVersion}.minimal;
-        rustDev = pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
+        rust = pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
           extensions = [
             "rust-src"
             "rust-analyzer"
           ];
           targets = [ ];
         };
-        rustPlatform = pkgs.makeRustPlatform {
+        rustPlatformMinimal = pkgs.makeRustPlatform {
           cargo = rustMinimal;
           rustc = rustMinimal;
         };
+        rustPlatform = pkgs.makeRustPlatform {
+          cargo = rust;
+          rustc = rust;
+        };
       in
-      {
-        packages = rec {
+      rec {
+        checks = {
+          dockerImage = packages.dockerImage;
           default = rustPlatform.buildRustPackage {
+            name = "neoprism-checks";
+            src = pkgs.lib.cleanSource ./.;
+            cargoLock = {
+              lockFile = ./Cargo.lock;
+              outputHashes = {
+                "oura-1.9.3" = "sha256-s2ceX9O6Y9mWIN5v719dBZJdbDMf8JY1dRJnwoQx5Ws=";
+              };
+            };
+            nativeBuildInputs = with pkgs; [
+              protobuf
+              sqlfluff
+            ];
+            buildPhase = "cargo b --all-features --all-targets";
+            checkPhase = ''
+              sqlfluff lint --dialect postgres ./prism-storage/migrations
+              cargo fmt --check
+              cargo clippy --all-features --all-targets -- -D warnings
+              cargo test --all-features
+            '';
+            installPhase = "touch $out";
+
+            PROTOC = "${pkgs.protobuf}/bin/protoc";
+          };
+        };
+
+        packages = rec {
+          default = rustPlatformMinimal.buildRustPackage {
             name = "neoprism";
-            cargoLock.lockFile = ./Cargo.lock;
+            cargoLock = {
+              lockFile = ./Cargo.lock;
+              outputHashes = {
+                "oura-1.9.3" = "sha256-s2ceX9O6Y9mWIN5v719dBZJdbDMf8JY1dRJnwoQx5Ws=";
+              };
+            };
             src = pkgs.lib.cleanSource ./.;
             buildInputs = [ pkgs.protobuf ];
             PROTOC = "${pkgs.protobuf}/bin/protoc";
@@ -94,7 +131,7 @@
                 ${pkgs.sqlfluff}/bin/sqlfluff lint ./prism-storage/migrations
 
                 ${pkgs.dioxus-cli}/bin/dx fmt
-                ${rustDev}/bin/cargo fmt
+                ${rust}/bin/cargo fmt
               '';
 
               buildAssets = pkgs.writeShellScriptBin "buildAssets" ''
@@ -105,11 +142,11 @@
               build = pkgs.writeShellScriptBin "build" ''
                 cd ${rootDir}
                 ${buildAssets}/bin/buildAssets
-                ${rustDev}/bin/cargo build --all-features
+                ${rust}/bin/cargo build --all-features
               '';
 
               clean = pkgs.writeShellScriptBin "clean" ''
-                ${rustDev}/bin/cargo clean
+                ${rust}/bin/cargo clean
               '';
 
               dbUp = pkgs.writeShellScriptBin "dbUp" ''
@@ -143,7 +180,7 @@
               runNode = pkgs.writeShellScriptBin "runNode" ''
                 cd ${rootDir}
                 ${buildAssets}/bin/buildAssets
-                ${rustDev}/bin/cargo run --bin prism-node -- --db postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
+                ${rust}/bin/cargo run --bin prism-node -- --db postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
               '';
             };
           in
@@ -171,7 +208,7 @@
                 cargo-udeps
                 dioxus-cli
                 protobuf
-                rustDev
+                rust
                 # tailwind & html
                 nodejs_20
                 nodePackages."@tailwindcss/language-server"
