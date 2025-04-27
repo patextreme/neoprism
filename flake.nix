@@ -31,13 +31,13 @@
           ];
           targets = [ ];
         };
-        rustPlatformMinimal = pkgs.makeRustPlatform {
-          cargo = rustMinimal;
-          rustc = rustMinimal;
-        };
         rustPlatform = pkgs.makeRustPlatform {
           cargo = rust;
           rustc = rust;
+        };
+        rustPlatformMinimal = pkgs.makeRustPlatform {
+          cargo = rustMinimal;
+          rustc = rustMinimal;
         };
       in
       {
@@ -45,9 +45,7 @@
           default = rustPlatform.buildRustPackage {
             name = "neoprism-checks";
             src = pkgs.lib.cleanSource ./.;
-            cargoLock = {
-              lockFile = ./Cargo.lock;
-            };
+            cargoLock.lockFile = ./Cargo.lock;
             nativeBuildInputs = with pkgs; [
               protobuf
               sqlfluff
@@ -66,33 +64,24 @@
         };
 
         packages = rec {
-          default = rustPlatformMinimal.buildRustPackage {
-            name = "neoprism";
-            cargoLock = {
-              lockFile = ./Cargo.lock;
-            };
-            src = pkgs.lib.cleanSource ./.;
-            buildInputs = [ pkgs.protobuf ];
-            PROTOC = "${pkgs.protobuf}/bin/protoc";
+          cargoDeps = rustPlatformMinimal.importCargoLock {
+            lockFile = ./Cargo.lock;
           };
 
-          assets = pkgs.stdenv.mkDerivation {
-            name = "neoprism-assets";
+          default = rustPlatformMinimal.buildRustPackage {
+            name = "neoprism";
             src = pkgs.lib.cleanSource ./.;
-            installPhase = ''
-              mkdir -p $out/assets
-              cp prism-node/assets/tailwind.css $out/assets/tailwind.css
-            '';
+            cargoLock.lockFile = ./Cargo.lock;
+            nativeBuildInputs = [ pkgs.protobuf ];
+            doCheck = false;
+            PROTOC = "${pkgs.protobuf}/bin/protoc";
           };
 
           dockerImage = pkgs.dockerTools.buildLayeredImage {
             name = "neoprism";
             tag = "0.1.0-SNAPSHOT";
             created = "now";
-            contents = [
-              assets
-              default
-            ];
+            contents = [ default ];
             config = {
               Env = [ "RUST_LOG=info,oura=warn,tracing::span=warn" ];
               Entrypoint = [ "/bin/prism-node" ];
