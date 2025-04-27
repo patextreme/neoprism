@@ -48,9 +48,6 @@
             src = pkgs.lib.cleanSource ./.;
             cargoLock = {
               lockFile = ./Cargo.lock;
-              outputHashes = {
-                "oura-1.9.3" = "sha256-s2ceX9O6Y9mWIN5v719dBZJdbDMf8JY1dRJnwoQx5Ws=";
-              };
             };
             nativeBuildInputs = with pkgs; [
               protobuf
@@ -74,9 +71,6 @@
             name = "neoprism";
             cargoLock = {
               lockFile = ./Cargo.lock;
-              outputHashes = {
-                "oura-1.9.3" = "sha256-s2ceX9O6Y9mWIN5v719dBZJdbDMf8JY1dRJnwoQx5Ws=";
-              };
             };
             src = pkgs.lib.cleanSource ./.;
             buildInputs = [ pkgs.protobuf ];

@@ -2584,7 +2584,8 @@ checksum = "e2355d85b9a3786f481747ced0e0ff2ba35213a1f9bd406ed906554d7af805a1"
 [[package]]
 name = "oura"
 version = "1.9.3"
-source = "git+https://github.com/txpipe/oura.git?tag=v1.9.3#2c3cf32356234168c0070fae9c6aef3ca96c93bf"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddfea0182a0ff767d257dc0973668934f123b4b33e3961d0ea589d48d04dd1f7"
 dependencies = [
  "bech32",
  "clap 3.2.25",

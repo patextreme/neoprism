@@ -18,8 +18,7 @@ hex = "0.4"
 html-escape = "0.2"
 im-rc = "15"
 lazybe = "0.1"
-# oura = "1.9.2" # 1.9.3 not available on crates.io
-oura = { git = "https://github.com/txpipe/oura.git", tag = "v1.9.3", version = "1.9.3" }
+oura = "1.9.3"
 regex = "1"
 rocket = "0.5"
 serde = "1"
