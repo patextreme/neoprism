@@ -50,6 +50,7 @@
               protobuf
               sqlfluff
             ];
+            buildInputs = [ pkgs.protobuf ];
             buildPhase = "cargo b --all-features --all-targets";
             checkPhase = ''
               sqlfluff lint --dialect postgres ./prism-storage/migrations
