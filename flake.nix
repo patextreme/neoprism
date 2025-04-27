@@ -118,7 +118,7 @@
 
               buildAssets = pkgs.writeShellScriptBin "buildAssets" ''
                 cd ${rootDir}/prism-node
-                ${pkgs.nodePackages.tailwindcss}/bin/tailwindcss -i tailwind.css -o ./assets/tailwind.css
+                # ${pkgs.nodePackages.tailwindcss}/bin/tailwindcss -i tailwind.css -o ./assets/tailwind.css
               '';
 
               build = pkgs.writeShellScriptBin "build" ''

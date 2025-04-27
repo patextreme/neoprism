@@ -1,6 +1,7 @@
 use axum::Router;
 use axum::routing::get;
 use maud::{DOCTYPE, Markup, html};
+use sqlx::types::Uuid;
 
 use crate::AppState;
 
@@ -9,22 +10,54 @@ pub fn router() -> Router<AppState> {
 }
 
 async fn explorer_home() -> Markup {
+    let stats_number = 100_000_000;
+    let uuids = vec![
+        Uuid::new_v4(),
+        Uuid::new_v4(),
+        Uuid::new_v4(),
+        Uuid::new_v4(),
+        Uuid::new_v4(),
+    ];
     html! {
         (DOCTYPE)
-        html lang="en" {
+        html data-theme="dark" {
             head {
-                meta charset="UTF-8"
-                meta name="viewport" content="width=device-width, initial-scale=1.0";
-                title { "UUID Search" }
-                script src="https://cdn.tailwindcss.com";
-                link href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/daisyui.css" rel="stylesheet" type="text/css";
-                link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet";
-                style {
-                    "body { font-family: 'Inter', sans-serif; }"
-                }
+                meta charset="utf-8";
+                meta name="viewport" content="width=device-width, initial-scale=1";
+                title { "Dashboard" }
+                link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/full.css";
+                script src="https://cdn.tailwindcss.com" {}
             }
-            body {
-                p { "hello world" }
+            body class="min-h-screen bg-base-100 text-base-content flex flex-col" {
+                // Navbar
+                nav class="navbar bg-neutral" {
+                    div class="flex-1" {
+                        a class="btn btn-ghost normal-case text-xl" href="#" { "My App" }
+                    }
+                }
+
+                // Main content
+                main class="flex flex-col items-center justify-center flex-grow p-8 space-y-8" {
+                    // Statistic Number
+                    div class="stats shadow" {
+                        div class="stat" {
+                            div class="stat-title" { "Total Records" }
+                            div class="stat-value" { (stats_number) }
+                        }
+                    }
+
+                    // UUID List
+                    div class="card w-full max-w-md bg-neutral text-neutral-content" {
+                        div class="card-body" {
+                            h2 class="card-title" { "Available UUIDs" }
+                            ul class="list-disc pl-5" {
+                                @for uuid in uuids {
+                                    li { (uuid) }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
