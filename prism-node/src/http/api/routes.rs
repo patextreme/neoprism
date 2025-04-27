@@ -3,26 +3,27 @@ use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
 use utoipa::OpenApi;
-use utoipa_redoc::{Redoc, Servable};
+use utoipa_swagger_ui::SwaggerUi;
 
 use super::models::DidDocument;
 use crate::AppState;
 use crate::app::service::error::ResolutionError;
 
 #[derive(OpenApi)]
-#[openapi(paths(resolve_did))]
+#[openapi(servers((url = "http://localhost:8080", description = "Local")), paths(resolve_did))]
 struct OpenApiDoc;
 
 pub fn router() -> Router<AppState> {
     let openapi = OpenApiDoc::openapi();
     Router::new()
-        .merge(Redoc::with_url("/redoc", openapi))
+        .merge(SwaggerUi::new("/swagger-ui").url("/api/openapi.json", openapi))
         .route("/api/dids/{did}", get(resolve_did))
 }
 
 #[utoipa::path(
     get,
     path = "/api/dids/{did}",
+    tags = ["DIDs"],
     responses(
         (status = OK, description = "Resolve DID successfully", body = DidDocument),
         (status = BAD_REQUEST, description = "Invalid DID"),

@@ -30,4 +30,4 @@ tracing-subscriber = { workspace = true }
 
 utoipa = { version = "5", features = ["chrono"] }
 utoipa-axum = { version = "0.2" }
-utoipa-redoc = { version = "6", features = ["axum"] }
+utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
