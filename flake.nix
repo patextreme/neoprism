@@ -40,9 +40,8 @@
           rustc = rust;
         };
       in
-      rec {
+      {
         checks = {
-          dockerImage = packages.dockerImage;
           default = rustPlatform.buildRustPackage {
             name = "neoprism-checks";
             src = pkgs.lib.cleanSource ./.;
