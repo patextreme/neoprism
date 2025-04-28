@@ -1,26 +1,22 @@
 use axum::Router;
+use axum::extract::{Query, State};
 use axum::routing::get;
 use maud::{DOCTYPE, Markup, html};
-use sqlx::types::Uuid;
 
+use super::models::PageQueryParams;
 use crate::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/explorer", get(explorer_home))
 }
 
-async fn explorer_home() -> Markup {
-    let stats_number = 100_000_000;
-    let uuids = vec![
-        Uuid::new_v4(),
-        Uuid::new_v4(),
-        Uuid::new_v4(),
-        Uuid::new_v4(),
-        Uuid::new_v4(),
-    ];
+async fn explorer_home(Query(page): Query<PageQueryParams>, State(state): State<AppState>) -> Markup {
+    let cursor = state.cursor_rx.as_ref().and_then(|rx| rx.borrow().to_owned());
+    let dids = state.did_service.get_all_dids(page.page).await.unwrap();
+
     html! {
         (DOCTYPE)
-        html data-theme="dark" {
+        html data-theme="black" {
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
@@ -29,30 +25,31 @@ async fn explorer_home() -> Markup {
                 script src="https://cdn.tailwindcss.com" {}
             }
             body class="min-h-screen bg-base-100 text-base-content flex flex-col" {
-                // Navbar
                 nav class="navbar bg-neutral" {
                     div class="flex-1" {
                         a class="btn btn-ghost normal-case text-xl" href="#" { "My App" }
                     }
                 }
 
-                // Main content
                 main class="flex flex-col items-center justify-center flex-grow p-8 space-y-8" {
-                    // Statistic Number
                     div class="stats shadow" {
                         div class="stat" {
-                            div class="stat-title" { "Total Records" }
-                            div class="stat-value" { (stats_number) }
+                            div class="stat-title" { "Sync cursor" }
+                            div class="stat-value" {
+                                @match cursor {
+                                    Some(cursor) => (cursor.slot)
+                                    None => "-"
+                                }
+                            }
                         }
                     }
 
-                    // UUID List
                     div class="card w-full max-w-md bg-neutral text-neutral-content" {
                         div class="card-body" {
-                            h2 class="card-title" { "Available UUIDs" }
+                            h2 class="card-title" { "Available DIDs" }
                             ul class="list-disc pl-5" {
-                                @for uuid in uuids {
-                                    li { (uuid) }
+                                @for did in dids.items {
+                                    li class="truncate" { (did) }
                                 }
                             }
                         }
