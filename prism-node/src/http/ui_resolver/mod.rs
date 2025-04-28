@@ -1,5 +1,5 @@
-use axum::extract::State;
 use axum::Router;
+use axum::extract::State;
 use axum::routing::get;
 use maud::Markup;
 

@@ -2,7 +2,6 @@
 #![feature(error_reporter)]
 
 use app::service::DidService;
-use axum::Router;
 use clap::Parser;
 use cli::CliArgs;
 use prism_core::dlt::DltCursor;
@@ -65,17 +64,12 @@ pub async fn start_server() -> anyhow::Result<()> {
         network,
     };
 
-    let app = Router::new()
-        .merge(http::home::router())
-        .merge(http::api::router())
-        .merge(http::ui_explorer::router())
-        .merge(http::ui_resolver::router())
-        .with_state(state);
-
+    // start server
+    let router = http::router().with_state(state);
     let bind_addr = format!("{}:{}", cli.address, cli.port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     tracing::info!("Server is listening on {}", bind_addr);
-    axum::serve(listener, app).await?;
+    axum::serve(listener, router).await?;
 
     Ok(())
 }
