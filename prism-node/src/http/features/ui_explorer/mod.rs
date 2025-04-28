@@ -11,7 +11,7 @@ mod models;
 mod views;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route(&urls::Explorer::axum_url(), get(explorer_home))
+    Router::new().route(urls::Explorer::axum_url(), get(explorer_home))
 }
 
 async fn explorer_home(Query(page): Query<PageQueryParams>, State(state): State<AppState>) -> Markup {

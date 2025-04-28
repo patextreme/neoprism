@@ -3,18 +3,18 @@ macro_rules! expand_axum_url {
         ""
     };
     (($ident:ident: $_:ty) $(, $parts:tt)*) => {
-        format!("/{{{}}}", stringify!($ident)) + &expand_axum_url!($($parts),*)
+        concat!("/{", stringify!($ident), "}", expand_axum_url!($($parts),*))
     };
     ($part:literal $(, $parts:tt)*) => {
-        format!("/{}", $part) + &expand_axum_url!($($parts),*)
+        concat!("/", $part, expand_axum_url!($($parts),*))
     }
 }
 
 macro_rules! expand_make_url {
     ($(($ident:ident: $ty:ty)),*) => {
-            #[allow(unused)]
+        #[allow(unused)]
         pub fn make_url($($ident: $ty),*) -> String {
-            Self::axum_url()
+            Self::axum_url().to_string()
                 $(.replace(
                         &format!("{{{}}}", stringify!($ident)),
                         &$ident.to_string()
@@ -34,7 +34,7 @@ macro_rules! url_def {
         pub struct $ident;
         impl $ident {
             #[allow(unused)]
-            pub fn axum_url() -> String {
+            pub fn axum_url() -> &'static str {
                 expand_axum_url!($($parts),*)
             }
 

@@ -9,7 +9,7 @@ use crate::http::urls;
 mod views;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route(&urls::Resolver::axum_url(), get(resolver_home))
+    Router::new().route(urls::Resolver::axum_url(), get(resolver_home))
 }
 
 async fn resolver_home(State(state): State<AppState>) -> Markup {

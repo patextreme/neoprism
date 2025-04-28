@@ -12,7 +12,7 @@ mod urls;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route(
-            &urls::Home::axum_url(),
+            urls::Home::axum_url(),
             get(Redirect::temporary(&urls::Resolver::make_url())),
         )
         .merge(api::router())

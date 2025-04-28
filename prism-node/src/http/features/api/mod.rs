@@ -20,7 +20,7 @@ pub fn router() -> Router<AppState> {
     let openapi = OpenApiDoc::openapi();
     Router::new()
         .merge(SwaggerUi::new(urls::Swagger::axum_url()).url("/api/openapi.json", openapi))
-        .route(&urls::DidResolver::axum_url(), get(resolve_did))
+        .route(urls::DidResolver::axum_url(), get(resolve_did))
 }
 
 #[utoipa::path(
