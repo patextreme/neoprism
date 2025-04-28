@@ -66,6 +66,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     };
 
     let app = Router::new()
+        .merge(http::home::router())
         .merge(http::api::router())
         .merge(http::ui_explorer::router())
         .with_state(state);

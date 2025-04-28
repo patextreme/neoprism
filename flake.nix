@@ -186,9 +186,9 @@
                 sqlx-cli
                 # rust
                 cargo-edit
+                cargo-expand
                 cargo-license
                 cargo-udeps
-                dioxus-cli
                 protobuf
                 rust
                 # tailwind & html
