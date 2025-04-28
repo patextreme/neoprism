@@ -5,7 +5,7 @@ use crate::http::shared::components;
 
 pub fn page(network: Option<NetworkIdentifier>) -> Markup {
     let body = html! {
-        h1 class="text-lg" { "hello explorer" }
+        h1 class="text-lg" { "hello resolver" }
     };
     components::page_layout(network, body)
 }

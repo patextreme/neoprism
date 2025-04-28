@@ -69,6 +69,7 @@ pub async fn start_server() -> anyhow::Result<()> {
         .merge(http::home::router())
         .merge(http::api::router())
         .merge(http::ui_explorer::router())
+        .merge(http::ui_resolver::router())
         .with_state(state);
 
     let bind_addr = format!("{}:{}", cli.address, cli.port);
