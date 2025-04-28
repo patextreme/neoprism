@@ -6,9 +6,9 @@ use models::DidDocument;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use super::urls;
 use crate::AppState;
 use crate::app::service::error::ResolutionError;
+use crate::http::urls;
 
 mod models;
 
