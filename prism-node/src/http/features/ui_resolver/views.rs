@@ -26,7 +26,7 @@ pub fn resolve(
 ) -> Markup {
     let resolution_body = match did_state.as_ref() {
         Err(e) => resolution_error_body(e),
-        Ok((_, state)) => did_document_body(did, &state),
+        Ok((_, state)) => did_document_body(did, state),
     };
     let body = html! {
         (search_box(Some(did)))
@@ -41,7 +41,7 @@ fn search_box(did: Option<&str>) -> Markup {
         div class="flex flex-col items-center min-w-screen py-8" {
             form
                 method="GET"
-                action=(urls::Resolver::url())
+                action=(urls::Resolver::url(None))
                 class="form-control w-full" {
                 div class="flex flex-col flex-wrap items-center space-x-2 space-y-2" {
                     input

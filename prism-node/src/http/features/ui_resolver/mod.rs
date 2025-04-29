@@ -7,7 +7,7 @@ use models::ResolveQuery;
 use crate::AppState;
 use crate::http::urls;
 
-mod models;
+pub(in crate::http) mod models;
 mod views;
 
 pub fn router() -> Router<AppState> {

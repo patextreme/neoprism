@@ -10,8 +10,8 @@ use crate::AppState;
 
 mod components;
 mod features;
-mod urls;
 mod models;
+mod urls;
 
 pub fn router(assets_dir: &Path) -> Router<AppState> {
     tracing::info!("Serving static asset from {:?}", assets_dir);
@@ -19,7 +19,7 @@ pub fn router(assets_dir: &Path) -> Router<AppState> {
     let serve_dir = ServeDir::new(assets_dir);
     Router::new()
         .nest_service(urls::AssetBase::AXUM, serve_dir)
-        .route(urls::Home::AXUM, get(Redirect::temporary(&urls::Resolver::url())))
+        .route(urls::Home::AXUM, get(Redirect::temporary(&urls::Resolver::url(None))))
         .merge(api::router())
         .merge(ui_explorer::router())
         .merge(ui_resolver::router())

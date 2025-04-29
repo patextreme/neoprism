@@ -1,3 +1,5 @@
+use crate::http::ui_resolver::models::ResolveQuery;
+
 macro_rules! expand_axum_url {
     () => {
         ""
@@ -11,32 +13,45 @@ macro_rules! expand_axum_url {
 }
 
 macro_rules! expand_make_url {
-    ($(($ident:ident: $ty:ty)),*) => {
+    ($(($ident:ident: $ty:ty)),* $(? $query:ty)?) => {
         #[allow(unused)]
-        pub fn url($($ident: $ty),*) -> String {
-            Self::AXUM.to_string()
+        pub fn url($($ident: $ty),* $(query: $query)?) -> String {
+            let base = Self::AXUM.to_string()
                 $(.replace(
                         &format!("{{{}}}", stringify!($ident)),
                         &$ident.to_string()
-                ))*
+                ))*;
+
+            let full = base $(
+                + "?" + &{
+                    type _1 = $query; // dummy type to make repitition work
+                    serde_qs::to_string(&query).unwrap_or_default()
+                }
+            )?;
+
+            if full.ends_with('?') {
+                full[..full.len() - 1].to_string()
+            } else {
+                full
+            }
         }
     };
-    ($(($ident:ident : $ty:ty)),* ,$_:literal  $(, $parts:tt)*) => {
-        expand_make_url!($(($ident: $ty)),* $(, $parts)*);
+    ($(($ident:ident : $ty:ty)),* ,$_:literal  $(, $parts:tt)* $(? $query:ty)?) => {
+        expand_make_url!($(($ident: $ty)),* $(, $parts)* $(? $query)?);
     };
-    ($_:literal  $(, $parts:tt)*) => {
-        expand_make_url!($($parts),*);
+    ($_:literal  $(, $parts:tt)* $(? $query:ty)?) => {
+        expand_make_url!($($parts),* $(? $query)?);
     }
 }
 
 macro_rules! url_def {
-    ($ident:ident, $($parts:tt)/ *) => {
+    ($ident:ident, $($parts:tt)/ * $(? $query:ty)?) => {
         pub struct $ident;
         impl $ident {
             #[allow(unused)]
             pub const AXUM: &str = expand_axum_url!($($parts),*);
 
-            expand_make_url!($($parts),*);
+            expand_make_url!($($parts),* $(? $query)?);
         }
     };
 }
@@ -46,17 +61,27 @@ url_def!(AssetStyleSheet, "assets" / "styles.css");
 
 url_def!(Home, "");
 url_def!(Explorer, "explorer");
-url_def!(Resolver, "resolver");
+url_def!(Resolver, "resolver" ? Option<ResolveQuery>);
 url_def!(Swagger, "swagger-ui");
 url_def!(DidResolver, "api" / "dids" / (did: String));
 
 #[cfg(test)]
 mod test {
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize, Default)]
+    pub struct QueryParam {
+        page: Option<u32>,
+        size: Option<u32>,
+        comment: Option<String>,
+    }
+
     url_def!(TestLiveness, "api" / "health" / "liveness");
     url_def!(TestReadiness, "api" / "health" / "readiness");
     url_def!(TestBook, "api" / "books" / (book_id: u32));
     url_def!(TestBookAuthor, "api" / "books" / (book_id: u32) / "author");
     url_def!(TestGhPr, (org: String) / (repo: String) / "pulls" / (pull_id: u32));
+    url_def!(TestQuery, "api" / "books" ? Option<QueryParam>);
 
     #[test]
     fn dynamic_url_axum_url() {
@@ -76,6 +101,39 @@ mod test {
         assert_eq!(
             TestGhPr::url("tokio-rs".to_string(), "axum".to_string(), 123),
             "/tokio-rs/axum/pulls/123"
+        );
+
+        assert_eq!(TestQuery::AXUM, "/api/books");
+        assert_eq!(TestQuery::url(None), "/api/books");
+        assert_eq!(TestQuery::url(Some(Default::default())), "/api/books");
+        assert_eq!(
+            TestQuery::url(Some(QueryParam {
+                page: Some(1),
+                ..Default::default()
+            })),
+            "/api/books?page=1"
+        );
+        assert_eq!(
+            TestQuery::url(Some(QueryParam {
+                size: Some(20),
+                ..Default::default()
+            })),
+            "/api/books?size=20"
+        );
+        assert_eq!(
+            TestQuery::url(Some(QueryParam {
+                page: Some(1),
+                size: Some(20),
+                ..Default::default()
+            })),
+            "/api/books?page=1&size=20"
+        );
+        assert_eq!(
+            TestQuery::url(Some(QueryParam {
+                comment: Some("&".to_string()), // must be escaped
+                ..Default::default()
+            })),
+            "/api/books?comment=%26"
         );
     }
 }
