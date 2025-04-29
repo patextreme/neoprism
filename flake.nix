@@ -107,7 +107,7 @@
               assets
             ];
             config = {
-              Env = [ "RUST_LOG=info,oura=warn,tracing::span=warn" ];
+              Env = [ "RUST_LOG=info,oura=warn" ];
               Entrypoint = [ "/bin/prism-node" ];
               Cmd = [
                 "--assets"
