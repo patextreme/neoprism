@@ -13,7 +13,7 @@ pub fn page_layout(network: Option<NetworkIdentifier>, body: Markup) -> Markup {
                 title { "NeoPRISM UI" }
                 link rel="stylesheet" href=(urls::AssetStyleSheet::new());
             }
-            body class="bg-base-100 text-base-content flex flex-col" {
+            body class="bg-base-100 flex flex-col" {
                 (navbar(network))
                 (body)
             }
@@ -33,7 +33,7 @@ fn navbar(network: Option<NetworkIdentifier>) -> Markup {
                         }
                         span { "Menu" }
                     }
-                    ul class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52" tabindex="0" {
+                    ul class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52 border" tabindex="0" {
                         li { a class="btn btn-ghost text-lg" href=(urls::Resolver::new()) { "Resolver" } }
                         li { a class="btn btn-ghost text-lg" href=(urls::Explorer::new()) { "Explore" } }
                         li { a class="btn btn-ghost text-lg" href=(urls::Swagger::new()) { "API Docs" } }
