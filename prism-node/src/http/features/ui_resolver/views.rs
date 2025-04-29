@@ -24,13 +24,13 @@ pub fn resolve(
     did_state: Result<(PrismDid, DidState), ResolutionError>,
     did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>,
 ) -> Markup {
-    let did_doc_body = match did_state.as_ref() {
-        Err(_) => html! {},
+    let resolution_body = match did_state.as_ref() {
+        Err(e) => resolution_error_body(e),
         Ok((_, state)) => did_document_body(did, &state),
     };
     let body = html! {
         (search_box(Some(did)))
-        (did_doc_body)
+        (resolution_body)
         (did_debug_body(did_debug))
     };
     components::page_layout("Resolver", network, body)
@@ -55,6 +55,25 @@ fn search_box(did: Option<&str>) -> Markup {
                         type="submit"
                         class="btn btn-primary"
                         { "Resolve" }
+                }
+            }
+        }
+    }
+}
+
+fn resolution_error_body(error: &ResolutionError) -> Markup {
+    let error_lines = Report::new(error)
+        .pretty(true)
+        .to_string()
+        .split("\n")
+        .map(|s| html! { (s) br; })
+        .collect::<Vec<_>>();
+    html! {
+        div class="flex justify-center min-w-screen" {
+            div class="w-9/12 min-w-xs m-4 space-y-4" {
+                p class="text-2xl font-bold" { "Resolution error" }
+                div class="bg-base-300 font-mono text-sm p-2" {
+                    @for line in error_lines { (line) }
                 }
             }
         }
@@ -185,10 +204,13 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Optio
         .map(|(metadata, signed_op, error)| {
             let block_time = metadata.block_metadata.cbt.to_rfc3339();
             let operation_payload = format!("{:?}", signed_op);
-            let error_report = error
+            let error_lines = error
                 .as_ref()
-                .map(|e| Report::new(e).pretty(true).to_string());
-            let error_report = format!("{:?}", error_report);
+                .map(|e| Report::new(e).pretty(true).to_string())
+                .unwrap_or_else(|| "-".to_string())
+                .split("\n")
+                .map(|s| html! { (s) br; })
+                .collect::<Vec<_>>();
             html! {
                 li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
                     strong { "Block time: " } (block_time)
@@ -208,8 +230,8 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Optio
                     }
                     strong { "Error: " }
                     br;
-                    div class="bg-base-300 p-2" {
-                        span class="font-mono text-sm" { (error_report) }
+                    div class="bg-base-300 font-mono text-sm p-2" {
+                        @for line in error_lines { (line) }
                     }
                 }
             }
