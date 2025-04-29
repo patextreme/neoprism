@@ -19,8 +19,8 @@ async fn index(Query(query): Query<ResolveQuery>, State(state): State<AppState>)
     match query.did.as_ref() {
         None => views::index(network),
         Some(did) => {
-            let (result, _) = state.did_service.resolve_did(did).await;
-            views::resolve(network, did, result)
+            let (state, debug) = state.did_service.resolve_did(did).await;
+            views::resolve(network, did, state, debug)
         }
     }
 }

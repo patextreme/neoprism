@@ -1,8 +1,13 @@
+use std::error::Report;
+
 use maud::{Markup, html};
 use prism_core::crypto::EncodeJwk;
 use prism_core::did::operation::{self, PublicKey};
 use prism_core::did::{DidState, PrismDid};
+use prism_core::dlt::OperationMetadata;
 use prism_core::dlt::cardano::NetworkIdentifier;
+use prism_core::proto::SignedAtalaOperation;
+use prism_core::protocol::error::ProcessError;
 
 use crate::app::service::error::ResolutionError;
 use crate::http::models::DidDocument;
@@ -17,6 +22,7 @@ pub fn resolve(
     network: Option<NetworkIdentifier>,
     did: &str,
     did_state: Result<(PrismDid, DidState), ResolutionError>,
+    did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>,
 ) -> Markup {
     let did_doc_body = match did_state.as_ref() {
         Err(_) => html! {},
@@ -25,6 +31,7 @@ pub fn resolve(
     let body = html! {
         (search_box(Some(did)))
         (did_doc_body)
+        (did_debug_body(did_debug))
     };
     components::page_layout("Resolver", network, body)
 }
@@ -61,7 +68,7 @@ fn did_document_body(did: &str, state: &DidState) -> Markup {
     html! {
         div class="flex justify-center min-w-screen" {
             div class="w-9/12 min-w-xs m-4 space-y-4" {
-                p class="text-2xl font-bold" { "DID Document" }
+                p class="text-2xl font-bold" { "DID document" }
                 (context_card(contexts))
                 (public_key_card(public_keys))
                 (service_card(&did_doc))
@@ -166,6 +173,55 @@ fn service_card(did_doc: &DidDocument) -> Markup {
                 }
                 ul class="space-y-2" {
                     @for elem in svc_elems { (elem) }
+                }
+            }
+        }
+    }
+}
+
+fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>) -> Markup {
+    let op_elems = did_debug
+        .iter()
+        .map(|(metadata, signed_op, error)| {
+            let block_time = metadata.block_metadata.cbt.to_rfc3339();
+            let operation_payload = format!("{:?}", signed_op);
+            let error_report = error
+                .as_ref()
+                .map(|e| Report::new(e).pretty(true).to_string());
+            let error_report = format!("{:?}", error_report);
+            html! {
+                li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
+                    strong { "Block time: " } (block_time)
+                    br;
+                    strong { "Slot no: " } (metadata.block_metadata.slot_number)
+                    br;
+                    strong { "Block no: " } (metadata.block_metadata.block_number)
+                    br;
+                    strong { "Block seq no: " } (metadata.block_metadata.absn)
+                    br;
+                    strong { "Operation seq no: " } (metadata.osn)
+                    br;
+                    strong { "Operation payload: " }
+                    br;
+                    div class="bg-base-300 p-2" {
+                        span class="font-mono text-sm" { (operation_payload) }
+                    }
+                    strong { "Error: " }
+                    br;
+                    div class="bg-base-300 p-2" {
+                        span class="font-mono text-sm" { (error_report) }
+                    }
+                }
+            }
+        })
+        .collect::<Vec<_>>();
+
+    html! {
+        div class="flex justify-center min-w-screen" {
+            div class="w-9/12 min-w-xs m-4 space-y-4" {
+                p class="text-2xl font-bold" { "Operation debug" }
+                ul class="space-y-2" {
+                    @for elem in op_elems { (elem) }
                 }
             }
         }
