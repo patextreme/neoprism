@@ -225,7 +225,7 @@
             '';
 
             # envs
-            RUST_LOG = "info,oura=warn,tracing::span=warn";
+            RUST_LOG = "info,oura=warn,tower_http::trace=debug";
           };
 
         devShells.diagrams = pkgs.mkShell {

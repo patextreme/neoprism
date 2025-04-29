@@ -7,6 +7,7 @@ use cli::CliArgs;
 use prism_core::dlt::DltCursor;
 use prism_core::dlt::cardano::{NetworkIdentifier, OuraN2NSource};
 use prism_storage::PostgresDb;
+use tower_http::trace::TraceLayer;
 
 use crate::app::worker::DltSyncWorker;
 
@@ -65,7 +66,9 @@ pub async fn start_server() -> anyhow::Result<()> {
     };
 
     // start server
-    let router = http::router(&cli.assets).with_state(state);
+    let router = http::router(&cli.assets)
+        .with_state(state)
+        .layer(TraceLayer::new_for_http());
     let bind_addr = format!("{}:{}", cli.address, cli.port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     tracing::info!("Server is listening on {}", bind_addr);
