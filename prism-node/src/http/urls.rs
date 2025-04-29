@@ -13,8 +13,8 @@ macro_rules! expand_axum_url {
 macro_rules! expand_make_url {
     ($(($ident:ident: $ty:ty)),*) => {
         #[allow(unused)]
-        pub fn make_url($($ident: $ty),*) -> String {
-            Self::axum_url().to_string()
+        pub fn new($($ident: $ty),*) -> String {
+            Self::AXUM.to_string()
                 $(.replace(
                         &format!("{{{}}}", stringify!($ident)),
                         &$ident.to_string()
@@ -34,9 +34,7 @@ macro_rules! url_def {
         pub struct $ident;
         impl $ident {
             #[allow(unused)]
-            pub fn axum_url() -> &'static str {
-                expand_axum_url!($($parts),*)
-            }
+            pub const AXUM: &str = expand_axum_url!($($parts),*);
 
             expand_make_url!($($parts),*);
         }
@@ -60,21 +58,21 @@ mod test {
 
     #[test]
     fn dynamic_url_axum_url() {
-        assert_eq!(TestLiveness::axum_url(), "/api/health/liveness");
-        assert_eq!(TestLiveness::axum_url(), TestLiveness::make_url());
+        assert_eq!(TestLiveness::AXUM, "/api/health/liveness");
+        assert_eq!(TestLiveness::AXUM, TestLiveness::new());
 
-        assert_eq!(TestReadiness::axum_url(), "/api/health/readiness");
-        assert_eq!(TestReadiness::axum_url(), TestReadiness::make_url());
+        assert_eq!(TestReadiness::AXUM, "/api/health/readiness");
+        assert_eq!(TestReadiness::AXUM, TestReadiness::new());
 
-        assert_eq!(TestBook::axum_url(), "/api/books/{book_id}");
-        assert_eq!(TestBook::make_url(123), "/api/books/123");
+        assert_eq!(TestBook::AXUM, "/api/books/{book_id}");
+        assert_eq!(TestBook::new(123), "/api/books/123");
 
-        assert_eq!(TestBookAuthor::axum_url(), "/api/books/{book_id}/author");
-        assert_eq!(TestBookAuthor::make_url(123), "/api/books/123/author");
+        assert_eq!(TestBookAuthor::AXUM, "/api/books/{book_id}/author");
+        assert_eq!(TestBookAuthor::new(123), "/api/books/123/author");
 
-        assert_eq!(TestGhPr::axum_url(), "/{org}/{repo}/pulls/{pull_id}");
+        assert_eq!(TestGhPr::AXUM, "/{org}/{repo}/pulls/{pull_id}");
         assert_eq!(
-            TestGhPr::make_url("tokio-rs".to_string(), "axum".to_string(), 123),
+            TestGhPr::new("tokio-rs".to_string(), "axum".to_string(), 123),
             "/tokio-rs/axum/pulls/123"
         );
     }

@@ -26,9 +26,9 @@ fn navbar(network: Option<NetworkIdentifier>) -> Markup {
     html! {
         nav class="navbar bg-base-100 shadow-sm" {
             div class="flex-1" {
-                a class="btn btn-ghost text-lg" href=(urls::Resolver::make_url()) { "Resolver" }
-                a class="btn btn-ghost text-lg" href=(urls::Explorer::make_url()) { "Explore" }
-                a class="btn btn-ghost text-lg" href=(urls::Swagger::make_url()) { "Swagger" }
+                a class="btn btn-ghost text-lg" href=(urls::Resolver::new()) { "Resolver" }
+                a class="btn btn-ghost text-lg" href=(urls::Explorer::new()) { "Explore" }
+                a class="btn btn-ghost text-lg" href=(urls::Swagger::new()) { "Swagger" }
             }
             div class="flex-none" {
                 div class="mr-4" {

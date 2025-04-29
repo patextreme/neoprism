@@ -12,8 +12,8 @@ mod urls;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route(
-            urls::Home::axum_url(),
-            get(Redirect::temporary(&urls::Resolver::make_url())),
+            urls::Home::AXUM,
+            get(Redirect::temporary(&urls::Resolver::new())),
         )
         .merge(api::router())
         .merge(ui_explorer::router())
