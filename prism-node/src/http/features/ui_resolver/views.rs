@@ -84,10 +84,12 @@ fn did_document_body(did: &str, state: &DidState) -> Markup {
     let did_doc = DidDocument::new(did, state);
     let contexts = state.context.as_slice();
     let public_keys = state.public_keys.as_slice();
+    let did_doc_url = urls::DidResolver::url(did.to_string());
     html! {
         div class="flex justify-center min-w-screen" {
             div class="w-9/12 min-w-xs m-4 space-y-4" {
                 p class="text-2xl font-bold" { "DID document" }
+                a class="btn btn-xs btn-outline" href=(did_doc_url) target="_blank" { "Resolver API" }
                 (context_card(contexts))
                 (public_key_card(public_keys))
                 (service_card(&did_doc))

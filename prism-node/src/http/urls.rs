@@ -1,4 +1,5 @@
 use crate::http::ui_resolver::models::ResolveQuery;
+use crate::http::ui_explorer::models::PageQueryParams;
 
 macro_rules! expand_axum_url {
     () => {
@@ -60,9 +61,9 @@ url_def!(AssetBase, "assets");
 url_def!(AssetStyleSheet, "assets" / "styles.css");
 
 url_def!(Home, "");
-url_def!(Explorer, "explorer");
-url_def!(Resolver, "resolver" ? Option<ResolveQuery>);
 url_def!(Swagger, "swagger-ui");
+url_def!(Explorer, "explorer" ? Option<PageQueryParams>);
+url_def!(Resolver, "resolver" ? Option<ResolveQuery>);
 url_def!(DidResolver, "api" / "dids" / (did: String));
 
 #[cfg(test)]
