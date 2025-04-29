@@ -64,8 +64,29 @@
         };
 
         packages = rec {
-          cargoDeps = rustPlatformMinimal.importCargoLock {
-            lockFile = ./Cargo.lock;
+          npmDeps = pkgs.buildNpmPackage {
+            name = "assets-nodemodules";
+            src = ./.;
+            npmDepsHash = "sha256-snC2EOnV3200x4fziwcj/1o9KoqSJkTFgJgAh9TWNpE=";
+            dontNpmBuild = true;
+            installPhase = ''
+              runHook preInstall
+              cp -r ./node_modules $out
+              runHook postInstall
+            '';
+          };
+
+          assets = pkgs.stdenv.mkDerivation {
+            name = "assets";
+            src = ./.;
+            buildInputs = with pkgs; [ tailwindcss_4 ];
+            installPhase = ''
+              mkdir -p ./node_modules
+              cp -r ${npmDeps}/* ./node_modules
+              cd prism-node
+              mkdir -p $out/assets
+              tailwindcss -i ./tailwind.css -o $out/assets/styles.css
+            '';
           };
 
           default = rustPlatformMinimal.buildRustPackage {
@@ -81,7 +102,7 @@
             name = "neoprism";
             tag = "0.1.0-SNAPSHOT";
             created = "now";
-            contents = [ default ];
+            contents = [ default assets ];
             config = {
               Env = [ "RUST_LOG=info,oura=warn,tracing::span=warn" ];
               Entrypoint = [ "/bin/prism-node" ];

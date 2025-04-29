@@ -1,8 +1,6 @@
 services:
   prism-node:
-    build:
-      dockerfile: ./docker/Dockerfile
-      context: ..
+    image: neoprism:0.1.0-SNAPSHOT
     restart: always
     ports:
       - 8080:8080
@@ -15,7 +13,7 @@ services:
       - --cardano
       - backbone.mainnet.cardanofoundation.org:3001
       - --assets
-      - /workspace/assets
+      - /assets
     depends_on:
       - db
 
