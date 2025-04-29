@@ -65,7 +65,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     };
 
     // start server
-    let router = http::router().with_state(state);
+    let router = http::router(&cli.assets).with_state(state);
     let bind_addr = format!("{}:{}", cli.address, cli.port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     tracing::info!("Server is listening on {}", bind_addr);

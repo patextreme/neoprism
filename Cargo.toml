@@ -25,6 +25,7 @@ strum = "0.27"
 tokio = "1"
 tracing = "0.1"
 tracing-subscriber = "0.3"
+tower-http = "0.5"
 uriparse = "0.6"
 # db
 sqlx = "0.8"

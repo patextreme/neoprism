@@ -118,7 +118,7 @@
 
               buildAssets = pkgs.writeShellScriptBin "buildAssets" ''
                 cd ${rootDir}/prism-node
-                # ${pkgs.nodePackages.tailwindcss}/bin/tailwindcss -i tailwind.css -o ./assets/tailwind.css
+                ${pkgs.tailwindcss_4}/bin/tailwindcss -i tailwind.css -o ./assets/styles.css
               '';
 
               build = pkgs.writeShellScriptBin "build" ''
@@ -178,9 +178,6 @@
                 protobuf
                 watchexec
                 which
-                # lsp
-                nil
-                taplo
                 # db
                 sqlfluff
                 sqlx-cli
@@ -191,10 +188,9 @@
                 cargo-udeps
                 protobuf
                 rust
-                # tailwind & html
+                # node
                 nodejs_20
-                nodePackages."@tailwindcss/language-server"
-                nodePackages.vscode-langservers-extracted
+                tailwindcss_4
               ]
               ++ (builtins.attrValues scripts);
 

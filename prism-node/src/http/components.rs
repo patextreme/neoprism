@@ -11,8 +11,7 @@ pub fn page_layout(network: Option<NetworkIdentifier>, body: Markup) -> Markup {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { "NeoPRISM UI" }
-                link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/full.css";
-                script src="https://cdn.tailwindcss.com" {}
+                link rel="stylesheet" href=(urls::AssetStyleSheet::new());
             }
             body class="bg-base-100 text-base-content flex flex-col" {
                 (navbar(network))
@@ -24,15 +23,15 @@ pub fn page_layout(network: Option<NetworkIdentifier>, body: Markup) -> Markup {
 
 fn navbar(network: Option<NetworkIdentifier>) -> Markup {
     html! {
-        nav class="navbar bg-base-200 border-neutral border-b" {
+        nav class="navbar bg-base-200" {
             div class="navbar-start" {
                 div class="dropdown" {
-                    label class="btn btn-ghost items-center flex-col" tabindex="0" {
-                        svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" {
+                    label class="btn btn-ghost" tabindex="0" {
+                        svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" {
                             path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" {
                             }
                         }
-                        span class="text-base font-medium" { "Menu" }
+                        span { "Menu" }
                     }
                     ul class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52" tabindex="0" {
                         li { a class="btn btn-ghost text-lg" href=(urls::Resolver::new()) { "Resolver" } }

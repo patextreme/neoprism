@@ -41,11 +41,13 @@ macro_rules! url_def {
     };
 }
 
+url_def!(AssetBase, "assets");
+url_def!(AssetStyleSheet, "assets" / "styles.css");
+
 url_def!(Home, "");
 url_def!(Explorer, "explorer");
 url_def!(Resolver, "resolver");
 url_def!(Swagger, "swagger-ui");
-
 url_def!(DidResolver, "api" / "dids" / (did: String));
 
 #[cfg(test)]
