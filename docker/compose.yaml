@@ -1,6 +1,8 @@
 services:
   prism-node:
-    image: neoprism:0.1.0-SNAPSHOT
+    build:
+      dockerfile: ./docker/Dockerfile
+      context: ..
     restart: always
     ports:
       - 8080:8080
