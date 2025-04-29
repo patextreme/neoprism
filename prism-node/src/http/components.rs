@@ -11,7 +11,7 @@ pub fn page_layout(network: Option<NetworkIdentifier>, body: Markup) -> Markup {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { "NeoPRISM UI" }
-                link rel="stylesheet" href=(urls::AssetStyleSheet::new());
+                link rel="stylesheet" href=(urls::AssetStyleSheet::url());
             }
             body class="bg-base-100 flex flex-col" {
                 (navbar(network))
@@ -34,9 +34,9 @@ fn navbar(network: Option<NetworkIdentifier>) -> Markup {
                         span { "Menu" }
                     }
                     ul class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52 border" tabindex="0" {
-                        li { a class="btn btn-ghost text-lg" href=(urls::Resolver::new()) { "Resolver" } }
-                        li { a class="btn btn-ghost text-lg" href=(urls::Explorer::new()) { "Explore" } }
-                        li { a class="btn btn-ghost text-lg" href=(urls::Swagger::new()) { "API Docs" } }
+                        li { a class="btn btn-ghost text-lg" href=(urls::Resolver::url()) { "Resolver" } }
+                        li { a class="btn btn-ghost text-lg" href=(urls::Explorer::url()) { "Explore" } }
+                        li { a class="btn btn-ghost text-lg" href=(urls::Swagger::url()) { "API Docs" } }
                     }
                 }
             }

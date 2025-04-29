@@ -102,7 +102,10 @@
             name = "neoprism";
             tag = "0.1.0-SNAPSHOT";
             created = "now";
-            contents = [ default assets ];
+            contents = [
+              default
+              assets
+            ];
             config = {
               Env = [ "RUST_LOG=info,oura=warn,tracing::span=warn" ];
               Entrypoint = [ "/bin/prism-node" ];

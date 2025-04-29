@@ -13,7 +13,7 @@ macro_rules! expand_axum_url {
 macro_rules! expand_make_url {
     ($(($ident:ident: $ty:ty)),*) => {
         #[allow(unused)]
-        pub fn new($($ident: $ty),*) -> String {
+        pub fn url($($ident: $ty),*) -> String {
             Self::AXUM.to_string()
                 $(.replace(
                         &format!("{{{}}}", stringify!($ident)),
@@ -61,20 +61,20 @@ mod test {
     #[test]
     fn dynamic_url_axum_url() {
         assert_eq!(TestLiveness::AXUM, "/api/health/liveness");
-        assert_eq!(TestLiveness::AXUM, TestLiveness::new());
+        assert_eq!(TestLiveness::AXUM, TestLiveness::url());
 
         assert_eq!(TestReadiness::AXUM, "/api/health/readiness");
-        assert_eq!(TestReadiness::AXUM, TestReadiness::new());
+        assert_eq!(TestReadiness::AXUM, TestReadiness::url());
 
         assert_eq!(TestBook::AXUM, "/api/books/{book_id}");
-        assert_eq!(TestBook::new(123), "/api/books/123");
+        assert_eq!(TestBook::url(123), "/api/books/123");
 
         assert_eq!(TestBookAuthor::AXUM, "/api/books/{book_id}/author");
-        assert_eq!(TestBookAuthor::new(123), "/api/books/123/author");
+        assert_eq!(TestBookAuthor::url(123), "/api/books/123/author");
 
         assert_eq!(TestGhPr::AXUM, "/{org}/{repo}/pulls/{pull_id}");
         assert_eq!(
-            TestGhPr::new("tokio-rs".to_string(), "axum".to_string(), 123),
+            TestGhPr::url("tokio-rs".to_string(), "axum".to_string(), 123),
             "/tokio-rs/axum/pulls/123"
         );
     }
