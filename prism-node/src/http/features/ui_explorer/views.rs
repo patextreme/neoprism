@@ -5,7 +5,6 @@ use crate::http::components;
 
 pub fn index(network: Option<NetworkIdentifier>) -> Markup {
     let body = html! {
-        h1 class="text-lg" { "hello explorer" }
     };
-    components::page_layout(network, body)
+    components::page_layout("Explorer", network, body)
 }

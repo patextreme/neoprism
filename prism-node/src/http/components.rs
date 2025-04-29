@@ -3,7 +3,7 @@ use prism_core::dlt::cardano::NetworkIdentifier;
 
 use crate::http::urls;
 
-pub fn page_layout(network: Option<NetworkIdentifier>, body: Markup) -> Markup {
+pub fn page_layout(title: &str, network: Option<NetworkIdentifier>, body: Markup) -> Markup {
     html! {
         (DOCTYPE)
         html data-theme="business" {
@@ -14,14 +14,14 @@ pub fn page_layout(network: Option<NetworkIdentifier>, body: Markup) -> Markup {
                 link rel="stylesheet" href=(urls::AssetStyleSheet::url());
             }
             body class="bg-base-100 flex flex-col" {
-                (navbar(network))
+                (navbar(title, network))
                 (body)
             }
         }
     }
 }
 
-fn navbar(network: Option<NetworkIdentifier>) -> Markup {
+fn navbar(title: &str, network: Option<NetworkIdentifier>) -> Markup {
     html! {
         nav class="navbar bg-base-200" {
             div class="navbar-start" {
@@ -33,18 +33,21 @@ fn navbar(network: Option<NetworkIdentifier>) -> Markup {
                         }
                         span { "Menu" }
                     }
-                    ul class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52 border" tabindex="0" {
-                        li { a class="btn btn-ghost btn-xl" href=(urls::Resolver::url()) { "Resolver" } }
-                        li { a class="btn btn-ghost btn-xl" href=(urls::Explorer::url()) { "Explore" } }
-                        li { a class="btn btn-ghost btn-xl" href=(urls::Swagger::url()) { "API Docs" } }
+                    ul class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-36 border" tabindex="0" {
+                        li { a class="btn btn-ghost" href=(urls::Resolver::url()) { "Resolver" } }
+                        li { a class="btn btn-ghost" href=(urls::Explorer::url()) { "Explore" } }
+                        li { a class="btn btn-ghost" href=(urls::Swagger::url()) { "API Docs" } }
                     }
                 }
+            }
+            div class="navbar-center" {
+                p class="text-xl" { (title) }
             }
             div class="navbar-end" {
                 div class="mr-4" {
                     @match network {
                         Some(nw) => span class="text-success" { (nw) },
-                        None => span class="text-error" { "offline" }
+                        None => span class="text-error" { "disconnected" }
                     }
                 }
             }

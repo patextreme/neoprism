@@ -9,8 +9,8 @@ use crate::http::models::DidDocument;
 use crate::http::{components, urls};
 
 pub fn index(network: Option<NetworkIdentifier>) -> Markup {
-    let body = title_and_search_box(None);
-    components::page_layout(network, body)
+    let body = search_box(None);
+    components::page_layout("Resolver", network, body)
 }
 
 pub fn resolve(
@@ -23,19 +23,15 @@ pub fn resolve(
         Ok((_, state)) => did_document_body(did, &state),
     };
     let body = html! {
-        (title_and_search_box(Some(did)))
-        div class="h-8" {}
+        (search_box(Some(did)))
         (did_doc_body)
     };
-    components::page_layout(network, body)
+    components::page_layout("Resolver", network, body)
 }
 
-fn title_and_search_box(did: Option<&str>) -> Markup {
+fn search_box(did: Option<&str>) -> Markup {
     html! {
-        div class="flex flex-col items-center min-w-screen" {
-            div class="my-8 text-2xl font-bold" {
-                "DID Resolver"
-            }
+        div class="flex flex-col items-center min-w-screen py-8" {
             form
                 method="GET"
                 action=(urls::Resolver::url())
@@ -64,7 +60,8 @@ fn did_document_body(did: &str, state: &DidState) -> Markup {
     let public_keys = state.public_keys.as_slice();
     html! {
         div class="flex justify-center min-w-screen" {
-            div class="w-9/12 min-w-xs" {
+            div class="w-9/12 min-w-xs m-4 space-y-4" {
+                p class="text-2xl font-bold" { "DID Document" }
                 (context_card(contexts))
                 (public_key_card(public_keys))
                 (service_card(&did_doc))
@@ -75,17 +72,15 @@ fn did_document_body(did: &str, state: &DidState) -> Markup {
 
 fn context_card(context: &[String]) -> Markup {
     html! {
-        div class="m-4" {
-            div class="card bg-base-200 border border-gray-700" {
-                div class="card-body" {
-                    h2 class="card-title" { "@context" }
-                    @if context.is_empty() {
-                        p class="text-info" { "Empty" }
-                    }
-                    ul class="list-disc list-inside" {
-                        @for ctx in context {
-                            li { (ctx) }
-                        }
+        div class="card bg-base-200 border border-gray-700" {
+            div class="card-body" {
+                h2 class="card-title" { "@context" }
+                @if context.is_empty() {
+                    p class="text-info" { "Empty" }
+                }
+                ul class="list-disc list-inside" {
+                    @for ctx in context {
+                        li { (ctx) }
                     }
                 }
             }
@@ -126,7 +121,7 @@ fn public_key_card(public_keys: &[PublicKey]) -> Markup {
         .collect::<Vec<_>>();
 
     html! {
-        div class="card bg-base-200 border border-gray-700 m-4" {
+        div class="card bg-base-200 border border-gray-700" {
             div class="card-body" {
                 h2 class="card-title" { "Public Keys" }
                 @if pk_elems.is_empty() {
@@ -163,7 +158,7 @@ fn service_card(did_doc: &DidDocument) -> Markup {
         .collect::<Vec<_>>();
 
     html! {
-        div class="card bg-base-200 border border-gray-700 m-4" {
+        div class="card bg-base-200 border border-gray-700" {
             div class="card-body" {
                 h2 class="card-title" { "Services" }
                 @if svc_elems.is_empty() {
