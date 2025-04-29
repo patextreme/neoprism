@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ResolveQuery {
+pub struct DidQuery {
     pub did: Option<String>,
 }

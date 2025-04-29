@@ -2,7 +2,7 @@ use axum::Router;
 use axum::extract::{Query, State};
 use axum::routing::get;
 use maud::Markup;
-use models::PageQueryParams;
+use models::PageQuery;
 
 use crate::AppState;
 use crate::http::urls;
@@ -14,16 +14,24 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route(urls::Explorer::AXUM, get(index))
         .route(urls::ExplorerDltCursor::AXUM, get(dlt_cursor))
+        .route(urls::ExplorerDidList::AXUM, get(did_list))
 }
 
-async fn index(Query(page): Query<PageQueryParams>, State(state): State<AppState>) -> Markup {
+async fn index(Query(page): Query<PageQuery>, State(state): State<AppState>) -> Markup {
+    let page = page.page.map(|i| i.max(1) - 1);
     let network = state.network;
     let cursor = state.cursor_rx.as_ref().and_then(|rx| rx.borrow().to_owned());
-    let _dids = state.did_service.get_all_dids(page.page).await.unwrap(); // FIXME: unwrap
-    views::index(network, cursor)
+    let dids = state.did_service.get_all_dids(page).await.unwrap(); // FIXME: unwrap
+    views::index(network, cursor, dids)
 }
 
 async fn dlt_cursor(State(state): State<AppState>) -> Markup {
     let cursor = state.cursor_rx.as_ref().and_then(|rx| rx.borrow().to_owned());
     views::dlt_cursor_card(cursor)
+}
+
+async fn did_list(Query(page): Query<PageQuery>, State(state): State<AppState>) -> Markup {
+    let page = page.page.map(|i| i.max(1) - 1);
+    let dids = state.did_service.get_all_dids(page).await.unwrap(); // FIXME: unwrap
+    views::did_list(dids)
 }

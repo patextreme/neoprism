@@ -72,7 +72,7 @@ fn resolution_error_body(error: &ResolutionError) -> Markup {
         div class="flex justify-center min-w-screen" {
             div class="w-9/12 min-w-xs m-4 space-y-4" {
                 p class="text-2xl font-bold" { "Resolution error" }
-                div class="bg-base-300 font-mono text-sm p-2" {
+                div class="bg-base-300 border font-mono text-sm p-3" {
                     @for line in error_lines { (line) }
                 }
             }
@@ -84,7 +84,7 @@ fn did_document_body(did: &str, state: &DidState) -> Markup {
     let did_doc = DidDocument::new(did, state);
     let contexts = state.context.as_slice();
     let public_keys = state.public_keys.as_slice();
-    let did_doc_url = urls::DidResolver::url(did.to_string());
+    let did_doc_url = urls::ApiDid::url(did.to_string());
     html! {
         div class="flex justify-center min-w-screen" {
             div class="w-9/12 min-w-xs m-4 space-y-4" {
@@ -104,7 +104,7 @@ fn context_card(context: &[String]) -> Markup {
             div class="card-body" {
                 h2 class="card-title" { "@context" }
                 @if context.is_empty() {
-                    p class="text-info" { "Empty" }
+                    p class="text-neutral-content" { "Empty" }
                 }
                 ul class="list-disc list-inside" {
                     @for ctx in context {
@@ -153,7 +153,7 @@ fn public_key_card(public_keys: &[PublicKey]) -> Markup {
             div class="card-body" {
                 h2 class="card-title" { "Public Keys" }
                 @if pk_elems.is_empty() {
-                    p class="text-info" { "Empty" }
+                    p class="text-neutral-content" { "Empty" }
                 }
                 ul class="space-y-2" {
                     @for elem in pk_elems { (elem) }
@@ -190,7 +190,7 @@ fn service_card(did_doc: &DidDocument) -> Markup {
             div class="card-body" {
                 h2 class="card-title" { "Services" }
                 @if svc_elems.is_empty() {
-                    p class="text-info" { "Empty" }
+                    p class="text-neutral-content" { "Empty" }
                 }
                 ul class="space-y-2" {
                     @for elem in svc_elems { (elem) }
@@ -214,7 +214,7 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Optio
                 .map(|s| html! { (s) br; })
                 .collect::<Vec<_>>();
             html! {
-                li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
+                li class="border p-2 rounded-md bg-base-200 border-gray-700 wrap-anywhere" {
                     strong { "Block time: " } (block_time)
                     br;
                     strong { "Slot no: " } (metadata.block_metadata.slot_number)
@@ -227,12 +227,12 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Optio
                     br;
                     strong { "Operation payload: " }
                     br;
-                    div class="bg-base-300 p-2" {
-                        span class="font-mono text-sm" { (operation_payload) }
+                    div class="bg-base-300 font-mono text-sm text-neutral-content p-3" {
+                        (operation_payload)
                     }
                     strong { "Error: " }
                     br;
-                    div class="bg-base-300 font-mono text-sm p-2" {
+                    div class="bg-base-300 font-mono text-sm text-neutral-content p-3" {
                         @for line in error_lines { (line) }
                     }
                 }

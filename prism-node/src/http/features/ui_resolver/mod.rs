@@ -2,7 +2,7 @@ use axum::Router;
 use axum::extract::{Query, State};
 use axum::routing::get;
 use maud::Markup;
-use models::ResolveQuery;
+use models::DidQuery;
 
 use crate::AppState;
 use crate::http::urls;
@@ -14,7 +14,7 @@ pub fn router() -> Router<AppState> {
     Router::new().route(urls::Resolver::AXUM, get(index))
 }
 
-async fn index(Query(query): Query<ResolveQuery>, State(state): State<AppState>) -> Markup {
+async fn index(Query(query): Query<DidQuery>, State(state): State<AppState>) -> Markup {
     let network = state.network;
     match query.did.as_ref() {
         None => views::index(network),
