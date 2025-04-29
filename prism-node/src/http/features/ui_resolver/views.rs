@@ -97,13 +97,19 @@ fn public_key_card(public_keys: &[PublicKey]) -> Markup {
             let key_id = pk.id.to_string();
             let key_usage = format!("{:?}", pk.usage());
             let curve = jwk.crv;
+            let encoded_x = jwk.x.unwrap_or_default();
+            let encoded_y = jwk.y.unwrap_or_default();
             html! {
                 li class="border p-2 rounded-md border-gray-700" {
-                    strong { "ID: " (key_id) }
+                    strong { "ID: " } (key_id)
                     br;
-                    strong { "Usage: " (key_usage) }
+                    strong { "Usage: " } (key_usage)
                     br;
-                    strong { "Curve: " (curve) }
+                    strong { "Curve: " } (curve)
+                    br;
+                    strong { "X: " } (encoded_x)
+                    br;
+                    strong { "Y: " } (encoded_y)
                 }
             }
         })
