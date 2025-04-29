@@ -57,14 +57,20 @@ macro_rules! url_def {
     };
 }
 
+// assets
 url_def!(AssetBase, "assets");
 url_def!(AssetStyleSheet, "assets" / "styles.css");
 
+// misc
 url_def!(Home, "");
 url_def!(Swagger, "swagger-ui");
-url_def!(Explorer, "explorer" ? Option<PageQueryParams>);
-url_def!(Resolver, "resolver" ? Option<ResolveQuery>);
 url_def!(DidResolver, "api" / "dids" / (did: String));
+url_def!(Resolver, "resolver" ? Option<ResolveQuery>);
+
+// explorer
+url_def!(Explorer, "explorer" ? Option<PageQueryParams>);
+url_def!(ExplorerDltCursor, "explorer" / "dlt-cursor");
+
 
 #[cfg(test)]
 mod test {

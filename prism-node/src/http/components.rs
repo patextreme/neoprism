@@ -6,12 +6,17 @@ use crate::http::urls;
 pub fn page_layout(title: &str, network: Option<NetworkIdentifier>, body: Markup) -> Markup {
     html! {
         (DOCTYPE)
-        html data-theme="business" {
+        html {
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { "NeoPRISM UI" }
                 link rel="stylesheet" href=(urls::AssetStyleSheet::url());
+                script
+                    src="https://unpkg.com/htmx.org@2.0.4"
+                    integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+                    crossorigin="anonymous"
+                    {}
             }
             body class="bg-base-100 flex flex-col" {
                 (navbar(title, network))
@@ -41,13 +46,13 @@ fn navbar(title: &str, network: Option<NetworkIdentifier>) -> Markup {
                 }
             }
             div class="navbar-center" {
-                p class="text-xl" { (title) }
+                p class="text-xl font-bold" { (title) }
             }
             div class="navbar-end" {
                 div class="mr-4" {
                     @match network {
-                        Some(nw) => span class="text-success" { (nw) },
-                        None => span class="text-error" { "disconnected" }
+                        Some(nw) => span class="text-sm text-success" { (nw) },
+                        None => span class="text-sm text-error" { "disconnected" }
                     }
                 }
             }
