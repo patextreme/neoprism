@@ -1,6 +1,6 @@
 use maud::{Markup, html};
 use prism_core::crypto::EncodeJwk;
-use prism_core::did::operation::{self, PublicKey};
+use prism_core::did::operation::{self, PublicKey, Service};
 use prism_core::did::{DidState, PrismDid};
 use prism_core::dlt::cardano::NetworkIdentifier;
 
@@ -39,13 +39,13 @@ fn title_and_search_box(did: Option<&str>) -> Markup {
                 method="GET"
                 action=(urls::Resolver::url())
                 class="form-control w-full" {
-                div class="flex flex-wrap justify-center space-x-2 space-y-2" {
+                div class="flex flex-col flex-wrap items-center space-x-2 space-y-2" {
                     input
                         type="text"
                         name="did"
                         placeholder="Enter PRISM DID"
                         value=[did]
-                        class="input input-bordered w-10/12 max-w-xl"
+                        class="input input-bordered w-9/12 max-w-xl"
                         required;
                     button
                         type="submit"
@@ -60,9 +60,15 @@ fn title_and_search_box(did: Option<&str>) -> Markup {
 fn did_document_body(state: &DidState) -> Markup {
     let contexts = state.context.as_slice();
     let public_keys = state.public_keys.as_slice();
+    let services = state.services.as_slice();
     html! {
-        (context_card(contexts))
-        (public_key_card(public_keys))
+        div class="flex justify-center min-w-screen" {
+            div class="w-9/12 min-w-xs" {
+                (context_card(contexts))
+                (public_key_card(public_keys))
+                (service_card(services))
+            }
+        }
     }
 }
 
@@ -124,6 +130,40 @@ fn public_key_card(public_keys: &[PublicKey]) -> Markup {
                 }
                 ul class="space-y-2" {
                     @for elem in pk_elems { (elem) }
+                }
+            }
+        }
+    }
+}
+
+fn service_card(services: &[Service]) -> Markup {
+    let svc_elems = services
+        .iter()
+        .map(|svc| {
+            let svc_id = svc.id.to_string();
+            let svc_ty = format!("{:?}", svc.r#type) ;
+            let svc_ep = format!("{:?}", svc.service_endpoint) ;
+            html! {
+                li class="border p-2 rounded-md border-gray-700" {
+                    strong { "ID: " } (svc_id)
+                    br;
+                    strong { "Type: " } (svc_ty)
+                    br;
+                    strong { "Endpoint: " } (svc_ep)
+                }
+            }
+        })
+        .collect::<Vec<_>>();
+
+    html! {
+        div class="card bg-base-200 border border-gray-700 m-4" {
+            div class="card-body" {
+                h2 class="card-title" { "Services" }
+                @if svc_elems.is_empty() {
+                    p class="text-info" { "Empty" }
+                }
+                ul class="space-y-2" {
+                    @for elem in svc_elems { (elem) }
                 }
             }
         }
