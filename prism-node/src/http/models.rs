@@ -9,29 +9,29 @@ use utoipa::ToSchema;
 #[serde(rename_all = "camelCase")]
 pub struct DidDocument {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
-    context: Vec<String>,
-    id: String,
-    verification_method: Vec<serde_json::Value>,
-    authentication: Option<Vec<String>>,
-    assertion_method: Option<Vec<String>>,
-    key_agreement: Option<Vec<String>>,
-    capability_invocation: Option<Vec<String>>,
-    capability_delegation: Option<Vec<String>>,
-    service: Option<Vec<Service>>,
+    pub context: Vec<String>,
+    pub id: String,
+    pub verification_method: Vec<serde_json::Value>,
+    pub authentication: Option<Vec<String>>,
+    pub assertion_method: Option<Vec<String>>,
+    pub key_agreement: Option<Vec<String>>,
+    pub capability_invocation: Option<Vec<String>>,
+    pub capability_delegation: Option<Vec<String>>,
+    pub service: Option<Vec<Service>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Service {
-    id: String,
-    r#type: serde_json::Value,
-    service_endpoint: serde_json::Value,
+    pub id: String,
+    pub r#type: serde_json::Value,
+    pub service_endpoint: serde_json::Value,
 }
 
 impl DidDocument {
-    pub fn new(did: &str, did_state: DidState) -> Self {
+    pub fn new(did: &str, did_state: &DidState) -> Self {
         let mut context = vec!["https://www.w3.org/ns/did/v1".to_string()];
-        context.extend(did_state.context);
+        context.extend(did_state.context.clone());
 
         let get_relationship = |usage: KeyUsage| -> Vec<String> {
             did_state

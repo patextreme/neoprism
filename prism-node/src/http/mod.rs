@@ -11,6 +11,7 @@ use crate::AppState;
 mod components;
 mod features;
 mod urls;
+mod models;
 
 pub fn router(assets_dir: &Path) -> Router<AppState> {
     tracing::info!("Serving static asset from {:?}", assets_dir);

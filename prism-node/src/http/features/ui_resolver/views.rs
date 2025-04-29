@@ -1,10 +1,11 @@
 use maud::{Markup, html};
 use prism_core::crypto::EncodeJwk;
-use prism_core::did::operation::{self, PublicKey, Service};
+use prism_core::did::operation::{self, PublicKey};
 use prism_core::did::{DidState, PrismDid};
 use prism_core::dlt::cardano::NetworkIdentifier;
 
 use crate::app::service::error::ResolutionError;
+use crate::http::models::DidDocument;
 use crate::http::{components, urls};
 
 pub fn index(network: Option<NetworkIdentifier>) -> Markup {
@@ -19,7 +20,7 @@ pub fn resolve(
 ) -> Markup {
     let did_doc_body = match did_state.as_ref() {
         Err(_) => html! {},
-        Ok((_, state)) => did_document_body(&state),
+        Ok((_, state)) => did_document_body(did, &state),
     };
     let body = html! {
         (title_and_search_box(Some(did)))
@@ -57,16 +58,16 @@ fn title_and_search_box(did: Option<&str>) -> Markup {
     }
 }
 
-fn did_document_body(state: &DidState) -> Markup {
+fn did_document_body(did: &str, state: &DidState) -> Markup {
+    let did_doc = DidDocument::new(did, state);
     let contexts = state.context.as_slice();
     let public_keys = state.public_keys.as_slice();
-    let services = state.services.as_slice();
     html! {
         div class="flex justify-center min-w-screen" {
             div class="w-9/12 min-w-xs" {
                 (context_card(contexts))
                 (public_key_card(public_keys))
-                (service_card(services))
+                (service_card(&did_doc))
             }
         }
     }
@@ -77,11 +78,11 @@ fn context_card(context: &[String]) -> Markup {
         div class="m-4" {
             div class="card bg-base-200 border border-gray-700" {
                 div class="card-body" {
-                    h2 class="card-title text-white" { "@context" }
+                    h2 class="card-title" { "@context" }
                     @if context.is_empty() {
                         p class="text-info" { "Empty" }
                     }
-                    ul class="list-disc list-inside text-white" {
+                    ul class="list-disc list-inside" {
                         @for ctx in context {
                             li { (ctx) }
                         }
@@ -93,7 +94,10 @@ fn context_card(context: &[String]) -> Markup {
 }
 
 fn public_key_card(public_keys: &[PublicKey]) -> Markup {
-    let pk_elems = public_keys
+    let mut sorted_pks = public_keys.to_vec();
+    sorted_pks.sort_by_key(|i| i.id.to_string());
+
+    let pk_elems = sorted_pks
         .iter()
         .map(|pk| {
             let jwk = match &pk.data {
@@ -106,7 +110,7 @@ fn public_key_card(public_keys: &[PublicKey]) -> Markup {
             let encoded_x = jwk.x.unwrap_or_default();
             let encoded_y = jwk.y.unwrap_or_default();
             html! {
-                li class="border p-2 rounded-md border-gray-700" {
+                li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
                     strong { "ID: " } (key_id)
                     br;
                     strong { "Usage: " } (key_usage)
@@ -136,20 +140,23 @@ fn public_key_card(public_keys: &[PublicKey]) -> Markup {
     }
 }
 
-fn service_card(services: &[Service]) -> Markup {
+fn service_card(did_doc: &DidDocument) -> Markup {
+    let mut services = did_doc.service.clone().unwrap_or_default();
+    services.sort_by_key(|i| i.id.to_string());
+
     let svc_elems = services
         .iter()
         .map(|svc| {
-            let svc_id = svc.id.to_string();
-            let svc_ty = format!("{:?}", svc.r#type) ;
-            let svc_ep = format!("{:?}", svc.service_endpoint) ;
+            let svc_id = &svc.id;
+            let svc_ty = serde_json::to_string_pretty(&svc.r#type).unwrap_or_default();
+            let svc_ep = serde_json::to_string_pretty(&svc.service_endpoint).unwrap_or_default();
             html! {
-                li class="border p-2 rounded-md border-gray-700" {
+                li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
                     strong { "ID: " } (svc_id)
                     br;
-                    strong { "Type: " } (svc_ty)
+                    strong { "Type: " } span class="font-mono" { (svc_ty) }
                     br;
-                    strong { "Endpoint: " } (svc_ep)
+                    strong { "Endpoint: " } span class="font-mono" { (svc_ep) }
                 }
             }
         })

@@ -34,9 +34,9 @@ fn navbar(network: Option<NetworkIdentifier>) -> Markup {
                         span { "Menu" }
                     }
                     ul class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52 border" tabindex="0" {
-                        li { a class="btn btn-ghost text-lg" href=(urls::Resolver::url()) { "Resolver" } }
-                        li { a class="btn btn-ghost text-lg" href=(urls::Explorer::url()) { "Explore" } }
-                        li { a class="btn btn-ghost text-lg" href=(urls::Swagger::url()) { "API Docs" } }
+                        li { a class="btn btn-ghost btn-xl" href=(urls::Resolver::url()) { "Resolver" } }
+                        li { a class="btn btn-ghost btn-xl" href=(urls::Explorer::url()) { "Explore" } }
+                        li { a class="btn btn-ghost btn-xl" href=(urls::Swagger::url()) { "API Docs" } }
                     }
                 }
             }
