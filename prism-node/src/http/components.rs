@@ -6,7 +6,7 @@ use crate::http::urls;
 pub fn page_layout(network: Option<NetworkIdentifier>, body: Markup) -> Markup {
     html! {
         (DOCTYPE)
-        html data-theme="dark" {
+        html data-theme="business" {
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
@@ -24,13 +24,24 @@ pub fn page_layout(network: Option<NetworkIdentifier>, body: Markup) -> Markup {
 
 fn navbar(network: Option<NetworkIdentifier>) -> Markup {
     html! {
-        nav class="navbar bg-base-100 shadow-sm" {
-            div class="flex-1" {
-                a class="btn btn-ghost text-lg" href=(urls::Resolver::new()) { "Resolver" }
-                a class="btn btn-ghost text-lg" href=(urls::Explorer::new()) { "Explore" }
-                a class="btn btn-ghost text-lg" href=(urls::Swagger::new()) { "Swagger" }
+        nav class="navbar bg-base-200 border-neutral border-b" {
+            div class="navbar-start" {
+                div class="dropdown" {
+                    label class="btn btn-ghost items-center flex-col" tabindex="0" {
+                        svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" {
+                            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" {
+                            }
+                        }
+                        span class="text-base font-medium" { "Menu" }
+                    }
+                    ul class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52" tabindex="0" {
+                        li { a class="btn btn-ghost text-lg" href=(urls::Resolver::new()) { "Resolver" } }
+                        li { a class="btn btn-ghost text-lg" href=(urls::Explorer::new()) { "Explore" } }
+                        li { a class="btn btn-ghost text-lg" href=(urls::Swagger::new()) { "API Docs" } }
+                    }
+                }
             }
-            div class="flex-none" {
+            div class="navbar-end" {
                 div class="mr-4" {
                     @match network {
                         Some(nw) => span class="text-success" { (nw) },
