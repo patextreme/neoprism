@@ -90,7 +90,7 @@ fn did_document_body(did: &str, state: &DidState) -> Markup {
     let public_keys = state.public_keys.as_slice();
     let did_doc_url = urls::ApiDid::url(did.to_string());
     html! {
-        div class="flex justify-center" {
+        div class="flex justify-center w-full" {
             div class="w-full m-4 space-y-4" {
                 p class="text-2xl font-bold" { "DID document" }
                 a class="btn btn-xs btn-outline" href=(did_doc_url) target="_blank" { "Resolver API" }
@@ -245,7 +245,7 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Optio
         .collect::<Vec<_>>();
 
     html! {
-        div class="flex justify-center" {
+        div class="flex justify-center w-full" {
             div class="w-full m-4 space-y-4" {
                 p class="text-2xl font-bold" { "Operation debug" }
                 ul class="space-y-2" {
