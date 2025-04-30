@@ -2,9 +2,9 @@ FROM node:20 AS assets-builder
 COPY . /workspace
 WORKDIR /workspace
 RUN npm install
-RUN npm install -D tailwindcss@3.4.17
+RUN npm install -D tailwindcss@4.1.4 @tailwindcss/cli@4.1.4
 WORKDIR /workspace/prism-node
-RUN npx tailwindcss -i tailwind.css -o ./assets/tailwind.css
+RUN npx @tailwindcss/cli -i tailwind.css -o ./assets/styles.css
 
 FROM rust:1.84 AS builder
 RUN rustup default nightly-2025-04-23
@@ -26,6 +26,5 @@ RUN cargo b -r
 
 FROM debian:bookworm
 COPY --from=builder /workspace/target/release/prism-node /usr/local/bin/prism-node
-COPY --from=assets-builder /workspace/prism-node/assets /workspace/assets
+COPY --from=assets-builder /workspace/prism-node/assets /assets
 ENTRYPOINT prism-node
-

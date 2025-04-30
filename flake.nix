@@ -31,13 +31,13 @@
           ];
           targets = [ ];
         };
-        rustPlatformMinimal = pkgs.makeRustPlatform {
-          cargo = rustMinimal;
-          rustc = rustMinimal;
-        };
         rustPlatform = pkgs.makeRustPlatform {
           cargo = rust;
           rustc = rust;
+        };
+        rustPlatformMinimal = pkgs.makeRustPlatform {
+          cargo = rustMinimal;
+          rustc = rustMinimal;
         };
       in
       {
@@ -45,9 +45,7 @@
           default = rustPlatform.buildRustPackage {
             name = "neoprism-checks";
             src = pkgs.lib.cleanSource ./.;
-            cargoLock = {
-              lockFile = ./Cargo.lock;
-            };
+            cargoLock.lockFile = ./Cargo.lock;
             nativeBuildInputs = with pkgs; [
               protobuf
               sqlfluff
@@ -66,23 +64,38 @@
         };
 
         packages = rec {
-          default = rustPlatformMinimal.buildRustPackage {
-            name = "neoprism";
-            cargoLock = {
-              lockFile = ./Cargo.lock;
-            };
-            src = pkgs.lib.cleanSource ./.;
-            buildInputs = [ pkgs.protobuf ];
-            PROTOC = "${pkgs.protobuf}/bin/protoc";
+          npmDeps = pkgs.buildNpmPackage {
+            name = "assets-nodemodules";
+            src = ./.;
+            npmDepsHash = "sha256-snC2EOnV3200x4fziwcj/1o9KoqSJkTFgJgAh9TWNpE=";
+            dontNpmBuild = true;
+            installPhase = ''
+              runHook preInstall
+              cp -r ./node_modules $out
+              runHook postInstall
+            '';
           };
 
           assets = pkgs.stdenv.mkDerivation {
-            name = "neoprism-assets";
-            src = pkgs.lib.cleanSource ./.;
+            name = "assets";
+            src = ./.;
+            buildInputs = with pkgs; [ tailwindcss_4 ];
             installPhase = ''
+              mkdir -p ./node_modules
+              cp -r ${npmDeps}/* ./node_modules
+              cd prism-node
               mkdir -p $out/assets
-              cp prism-node/assets/tailwind.css $out/assets/tailwind.css
+              tailwindcss -i ./tailwind.css -o $out/assets/styles.css
             '';
+          };
+
+          default = rustPlatformMinimal.buildRustPackage {
+            name = "neoprism";
+            src = pkgs.lib.cleanSource ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+            nativeBuildInputs = [ pkgs.protobuf ];
+            doCheck = false;
+            PROTOC = "${pkgs.protobuf}/bin/protoc";
           };
 
           dockerImage = pkgs.dockerTools.buildLayeredImage {
@@ -90,11 +103,11 @@
             tag = "0.1.0-SNAPSHOT";
             created = "now";
             contents = [
-              assets
               default
+              assets
             ];
             config = {
-              Env = [ "RUST_LOG=info,oura=warn,tracing::span=warn" ];
+              Env = [ "RUST_LOG=info,oura=warn" ];
               Entrypoint = [ "/bin/prism-node" ];
               Cmd = [
                 "--assets"
@@ -129,7 +142,7 @@
 
               buildAssets = pkgs.writeShellScriptBin "buildAssets" ''
                 cd ${rootDir}/prism-node
-                ${pkgs.nodePackages.tailwindcss}/bin/tailwindcss -i tailwind.css -o ./assets/tailwind.css
+                ${pkgs.tailwindcss_4}/bin/tailwindcss -i tailwind.css -o ./assets/styles.css
               '';
 
               build = pkgs.writeShellScriptBin "build" ''
@@ -189,23 +202,19 @@
                 protobuf
                 watchexec
                 which
-                # lsp
-                nil
-                taplo
                 # db
                 sqlfluff
                 sqlx-cli
                 # rust
                 cargo-edit
+                cargo-expand
                 cargo-license
                 cargo-udeps
-                dioxus-cli
                 protobuf
                 rust
-                # tailwind & html
+                # node
                 nodejs_20
-                nodePackages."@tailwindcss/language-server"
-                nodePackages.vscode-langservers-extracted
+                tailwindcss_4
               ]
               ++ (builtins.attrValues scripts);
 
@@ -216,7 +225,7 @@
             '';
 
             # envs
-            RUST_LOG = "info,oura=warn,tracing::span=warn";
+            RUST_LOG = "info,oura=warn,tower_http::trace=debug";
           };
 
         devShells.diagrams = pkgs.mkShell {

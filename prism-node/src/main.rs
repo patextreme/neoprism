@@ -1,7 +1,8 @@
-use prism_node::build_rocket;
-use rocket::launch;
+use prism_node::start_server;
 
-#[launch]
-fn rocket() -> _ {
-    build_rocket()
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+    start_server().await?;
+    Ok(())
 }

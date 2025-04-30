@@ -15,7 +15,7 @@ services:
       - --cardano
       - backbone.mainnet.cardanofoundation.org:3001
       - --assets
-      - /workspace/assets
+      - /assets
     depends_on:
       - db
 

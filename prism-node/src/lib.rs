@@ -7,100 +7,72 @@ use cli::CliArgs;
 use prism_core::dlt::DltCursor;
 use prism_core::dlt::cardano::{NetworkIdentifier, OuraN2NSource};
 use prism_storage::PostgresDb;
-use rocket::fairing::AdHoc;
-use rocket::fs::FileServer;
-use rocket::{Build, Rocket};
+use tower_http::trace::TraceLayer;
 
 use crate::app::worker::DltSyncWorker;
-use crate::http::routes;
 
 mod app;
 mod cli;
 mod http;
 
+#[derive(Clone)]
 struct AppState {
     did_service: DidService,
     cursor_rx: Option<tokio::sync::watch::Receiver<Option<DltCursor>>>,
     network: Option<NetworkIdentifier>,
 }
 
-pub fn build_rocket() -> Rocket<Build> {
-    tracing_subscriber::fmt::init();
-
+pub async fn start_server() -> anyhow::Result<()> {
     let cli = CliArgs::parse();
 
-    rocket::custom(cli.rocket_config())
-        .manage(cli)
-        .attach(init_database())
-        .attach(init_state())
-        .attach(init_endpoints())
-}
+    let db = PostgresDb::connect(&cli.db)
+        .await
+        .expect("Unable to connect to database");
 
-fn init_database() -> AdHoc {
-    AdHoc::on_ignite("Database Setup", |rocket| async move {
-        let cli = rocket.state::<CliArgs>().expect("No CLI arguments provided");
-        let db = PostgresDb::connect(&cli.db)
+    // init migrations
+    if cli.skip_migration {
+        tracing::info!("Skipping database migrations");
+    } else {
+        tracing::info!("Applying database migrations");
+        db.migrate().await.expect("Failed to apply migrations");
+        tracing::info!("Applied database migrations successfully");
+    }
+
+    // init state
+    let did_service = DidService::new(&db);
+    let mut cursor_rx = None;
+    let mut network = None;
+    if let Some(address) = &cli.cardano {
+        let network_identifier = cli.network.to_owned();
+
+        tracing::info!(
+            "Starting DLT sync worker on {} from cardano address {}",
+            network_identifier,
+            address
+        );
+        let source = OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, &network_identifier)
             .await
-            .expect("Unable to connect to database");
-        if cli.skip_migration {
-            tracing::info!("Skipping database migrations");
-        } else {
-            tracing::info!("Applying database migrations");
-            db.migrate().await.expect("Failed to apply migrations");
-            tracing::info!("Applied database migrations successfully");
-        }
-        rocket.manage(db)
-    })
-}
+            .expect("Failed to create DLT source");
 
-fn init_state() -> AdHoc {
-    AdHoc::on_ignite("AppState Setup", |rocket| async move {
-        let cli = rocket.state::<CliArgs>().expect("No CLI arguments provided");
-        let db = rocket.state::<PostgresDb>().expect("No PostgresDb provided");
-        let did_service = DidService::new(db);
+        cursor_rx = Some(source.cursor_receiver());
+        network = Some(network_identifier);
+        let sync_app = DltSyncWorker::new(db.clone(), source);
+        tokio::spawn(sync_app.run());
+    }
+    let state = AppState {
+        did_service,
+        cursor_rx,
+        network,
+    };
 
-        let mut cursor_rx = None;
-        let mut network = None;
-        if let Some(address) = &cli.cardano {
-            let network_identifier = cli.network.to_owned();
+    // start server
+    let router = http::router(&cli.assets)
+        .with_state(state)
+        .layer(TraceLayer::new_for_http());
+    let bind_addr = format!("{}:{}", cli.address, cli.port);
+    let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
+    tracing::info!("Server is listening on {}", bind_addr);
+    axum::serve(listener, router).await?;
 
-            tracing::info!(
-                "Starting DLT sync worker on {} from cardano address {}",
-                network_identifier,
-                address
-            );
-            let source = OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, &network_identifier)
-                .await
-                .expect("Failed to create DLT source");
-
-            cursor_rx = Some(source.cursor_receiver());
-            network = Some(network_identifier);
-            let sync_app = DltSyncWorker::new(db.clone(), source);
-            tokio::spawn(sync_app.run());
-        }
-
-        let state = AppState {
-            did_service,
-            cursor_rx,
-            network,
-        };
-        rocket.manage(state)
-    })
-}
-
-fn init_endpoints() -> AdHoc {
-    AdHoc::on_ignite("Endpoints Setup", |rocket| async move {
-        let cli = rocket.state::<CliArgs>().expect("No CLI arguments provided");
-        let file_server = FileServer::from(cli.assets.clone());
-        rocket.mount("/assets", file_server).mount(
-            "/",
-            rocket::routes!(
-                routes::explorer,
-                routes::hx::rpc,
-                routes::index,
-                routes::resolver,
-                routes::api::resolver,
-            ),
-        )
-    })
+    Ok(())
 }
