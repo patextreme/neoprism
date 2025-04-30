@@ -30,8 +30,12 @@ pub fn resolve(
     };
     let body = html! {
         (search_box(Some(did)))
-        (resolution_body)
-        (did_debug_body(did_debug))
+        div class="flex flex-row w-screen justify-center" {
+            div class="flex flex-col w-full max-w-4xl items-center" {
+                (resolution_body)
+                (did_debug_body(did_debug))
+            }
+        }
     };
     components::page_layout("Resolver", network, body)
 }
@@ -69,8 +73,8 @@ fn resolution_error_body(error: &ResolutionError) -> Markup {
         .map(|s| html! { (s) br; })
         .collect::<Vec<_>>();
     html! {
-        div class="flex justify-center min-w-screen" {
-            div class="w-9/12 min-w-xs m-4 space-y-4" {
+        div class="flex justify-center" {
+            div class="w-screen m-4 space-y-4" {
                 p class="text-2xl font-bold" { "Resolution error" }
                 div class="bg-base-300 border font-mono text-sm p-3" {
                     @for line in error_lines { (line) }
@@ -86,8 +90,8 @@ fn did_document_body(did: &str, state: &DidState) -> Markup {
     let public_keys = state.public_keys.as_slice();
     let did_doc_url = urls::ApiDid::url(did.to_string());
     html! {
-        div class="flex justify-center min-w-screen" {
-            div class="w-9/12 min-w-xs m-4 space-y-4" {
+        div class="flex justify-center" {
+            div class="w-full m-4 space-y-4" {
                 p class="text-2xl font-bold" { "DID document" }
                 a class="btn btn-xs btn-outline" href=(did_doc_url) target="_blank" { "Resolver API" }
                 (context_card(contexts))
@@ -241,8 +245,8 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Optio
         .collect::<Vec<_>>();
 
     html! {
-        div class="flex justify-center min-w-screen" {
-            div class="w-9/12 min-w-xs m-4 space-y-4" {
+        div class="flex justify-center" {
+            div class="w-full m-4 space-y-4" {
                 p class="text-2xl font-bold" { "Operation debug" }
                 ul class="space-y-2" {
                     @for elem in op_elems { (elem) }
