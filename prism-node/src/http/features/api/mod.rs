@@ -17,8 +17,8 @@ struct OpenApiDoc;
 pub fn router() -> Router<AppState> {
     let openapi = OpenApiDoc::openapi();
     Router::new()
-        .merge(SwaggerUi::new(urls::Swagger::AXUM).url("/api/openapi.json", openapi))
-        .route(urls::ApiDid::AXUM, get(resolve_did))
+        .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", openapi))
+        .route(urls::ApiDid::AXUM_PATH, get(resolve_did))
 }
 
 #[utoipa::path(

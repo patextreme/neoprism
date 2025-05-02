@@ -11,7 +11,7 @@ pub(in crate::http) mod models;
 mod views;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route(urls::Resolver::AXUM, get(index))
+    Router::new().route(urls::Resolver::AXUM_PATH, get(index))
 }
 
 async fn index(Query(query): Query<DidQuery>, State(state): State<AppState>) -> Markup {

@@ -45,7 +45,7 @@ fn search_box(did: Option<&str>) -> Markup {
         div class="flex flex-col items-center min-w-screen py-8" {
             form
                 method="GET"
-                action=(urls::Resolver::url(None))
+                action=(urls::Resolver::new_uri(None))
                 class="form-control w-full" {
                 div class="flex flex-col flex-wrap items-center space-x-2 space-y-2" {
                     input
@@ -88,7 +88,7 @@ fn did_document_body(did: &str, state: &DidState) -> Markup {
     let did_doc = DidDocument::new(did, state);
     let contexts = state.context.as_slice();
     let public_keys = state.public_keys.as_slice();
-    let did_doc_url = urls::ApiDid::url(did.to_string());
+    let did_doc_url = urls::ApiDid::new_uri(did.to_string());
     html! {
         div class="flex justify-center w-full" {
             div class="w-full m-4 space-y-4" {

@@ -18,8 +18,11 @@ pub fn router(assets_dir: &Path) -> Router<AppState> {
 
     let serve_dir = ServeDir::new(assets_dir);
     Router::new()
-        .nest_service(urls::AssetBase::AXUM, serve_dir)
-        .route(urls::Home::AXUM, get(Redirect::temporary(&urls::Resolver::url(None))))
+        .nest_service(urls::AssetBase::AXUM_PATH, serve_dir)
+        .route(
+            urls::Home::AXUM_PATH,
+            get(Redirect::temporary(&urls::Resolver::new_uri(None))),
+        )
         .merge(api::router())
         .merge(ui_explorer::router())
         .merge(ui_resolver::router())

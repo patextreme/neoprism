@@ -23,7 +23,7 @@ pub fn index(
 
 pub fn did_list(dids: Paginated<CanonicalPrismDid>) -> Markup {
     let did_elems = dids.items.iter().map(|did| {
-        let uri = urls::Resolver::url(Some(DidQuery {
+        let uri = urls::Resolver::new_uri(Some(DidQuery {
             did: Some(did.to_string()),
         }));
         html! {
@@ -58,7 +58,7 @@ pub fn did_list(dids: Paginated<CanonicalPrismDid>) -> Markup {
                 }
             } else {
                 let userfacing_page = i + 1;
-                let goto_uri = urls::Explorer::url(Some(PageQuery {
+                let goto_uri = urls::Explorer::new_uri(Some(PageQuery {
                     page: Some(userfacing_page),
                 }));
                 html! { a href=(goto_uri) class=(classes) { (userfacing_page) } }
@@ -69,7 +69,7 @@ pub fn did_list(dids: Paginated<CanonicalPrismDid>) -> Markup {
             @for i in pagination_items { (i) }
         }
     };
-    let hx_url = urls::ExplorerDidList::url(Some(PageQuery {
+    let hx_url = urls::ExplorerDidList::new_uri(Some(PageQuery {
         page: Some(dids.current_page + 1),
     }));
     html! {
@@ -105,7 +105,7 @@ pub fn dlt_cursor_card(cursor: Option<DltCursor>) -> Markup {
         div
             id="dlt-cursor-card"
             class="flex flex-row justify-center min-w-screen py-8 px-2"
-            hx-get=(urls::ExplorerDltCursor::url())
+            hx-get=(urls::ExplorerDltCursor::new_uri())
             hx-swap="outerHTML"
             hx-trigger="load delay:2s"
         {

@@ -11,7 +11,7 @@ pub fn page_layout(title: &str, network: Option<NetworkIdentifier>, body: Markup
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { "NeoPRISM UI" }
-                link rel="stylesheet" href=(urls::AssetStyleSheet::url());
+                link rel="stylesheet" href=(urls::AssetStyleSheet::new_uri());
                 script
                     src="https://unpkg.com/htmx.org@2.0.4"
                     integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
@@ -39,9 +39,9 @@ fn navbar(title: &str, network: Option<NetworkIdentifier>) -> Markup {
                         span { "Menu" }
                     }
                     ul class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-36 border" tabindex="0" {
-                        li { a class="btn btn-ghost" href=(urls::Resolver::url(None)) { "Resolver" } }
-                        li { a class="btn btn-ghost" href=(urls::Explorer::url(None)) { "Explorer" } }
-                        li { a class="btn btn-ghost" href=(urls::Swagger::url()) { "API Docs" } }
+                        li { a class="btn btn-ghost" href=(urls::Resolver::new_uri(None)) { "Resolver" } }
+                        li { a class="btn btn-ghost" href=(urls::Explorer::new_uri(None)) { "Explorer" } }
+                        li { a class="btn btn-ghost" href=(urls::Swagger::new_uri()) { "API Docs" } }
                     }
                 }
             }

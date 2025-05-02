@@ -18,6 +18,7 @@ derive_more = { workspace = true, features = [
   "display",
   "error",
 ] }
+lazybe = { workspace = true }
 maud = { workspace = true, features = ["axum"] }
 prism-core = { path = "../prism-core", features = ["full"] }
 prism-storage = { path = "../prism-storage" }
