@@ -2185,7 +2185,6 @@ dependencies = [
  "prism-storage",
  "serde",
  "serde_json",
- "serde_qs",
  "sqlx",
  "tokio",
  "tower-http",
