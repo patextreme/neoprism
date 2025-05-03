@@ -73,10 +73,10 @@ fn resolution_error_body(error: &ResolutionError) -> Markup {
         .map(|s| html! { (s) br; })
         .collect::<Vec<_>>();
     html! {
-        div class="flex justify-center" {
-            div class="w-screen m-4 space-y-4" {
+        div class="flex justify-center w-full" {
+            div class="w-full m-4 space-y-4" {
                 p class="text-2xl font-bold" { "Resolution error" }
-                div class="bg-base-300 border font-mono text-sm p-3" {
+                div class="card bg-base-200 border border-gray-700 font-mono text-sm p-3" {
                     @for line in error_lines { (line) }
                 }
             }
