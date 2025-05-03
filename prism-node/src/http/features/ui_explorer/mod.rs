@@ -12,9 +12,9 @@ mod views;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route(urls::Explorer::AXUM, get(index))
-        .route(urls::ExplorerDltCursor::AXUM, get(dlt_cursor))
-        .route(urls::ExplorerDidList::AXUM, get(did_list))
+        .route(urls::Explorer::AXUM_PATH, get(index))
+        .route(urls::ExplorerDltCursor::AXUM_PATH, get(dlt_cursor))
+        .route(urls::ExplorerDidList::AXUM_PATH, get(did_list))
 }
 
 async fn index(Query(page): Query<PageQuery>, State(state): State<AppState>) -> Markup {
