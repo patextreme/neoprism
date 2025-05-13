@@ -1,4 +1,5 @@
-{ pkgs, rust }:
+{ pkgs, rust, ... }:
+
 {
   default =
     let
@@ -109,19 +110,4 @@
       # envs
       RUST_LOG = "info,oura=warn,tower_http::trace=debug";
     };
-
-  diagrams = pkgs.mkShell {
-    packages = with pkgs; [
-      graphviz
-      uv
-      ruff
-      python312
-      (python312.withPackages (p: with p; [ python-lsp-server ]))
-    ];
-
-    shellHook = ''
-      export ROOT_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel)
-      cd $ROOT_DIR/docs/diagrams
-    '';
-  };
 }
