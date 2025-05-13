@@ -9,6 +9,7 @@
 
   outputs =
     {
+      self,
       nixpkgs,
       rust-overlay,
       flake-utils,
@@ -64,32 +65,32 @@
         };
 
         packages = rec {
-          npmDeps = pkgs.buildNpmPackage {
-            name = "assets-nodemodules";
-            src = ./.;
-            npmDepsHash = "sha256-snC2EOnV3200x4fziwcj/1o9KoqSJkTFgJgAh9TWNpE=";
-            dontNpmBuild = true;
-            installPhase = ''
-              runHook preInstall
-              cp -r ./node_modules $out
-              runHook postInstall
-            '';
-          };
+          resolver-ui-assets =
+            let
+              npmDeps = pkgs.buildNpmPackage {
+                name = "assets-nodemodules";
+                src = ./.;
+                npmDepsHash = "sha256-snC2EOnV3200x4fziwcj/1o9KoqSJkTFgJgAh9TWNpE=";
+                dontNpmBuild = true;
+                installPhase = ''
+                  cp -r ./node_modules $out
+                '';
+              };
+            in
+            pkgs.stdenv.mkDerivation {
+              name = "assets";
+              src = ./.;
+              buildInputs = with pkgs; [ tailwindcss_4 ];
+              installPhase = ''
+                mkdir -p ./node_modules
+                cp -r ${npmDeps}/* ./node_modules
+                cd prism-node
+                mkdir -p $out/assets
+                tailwindcss -i ./tailwind.css -o $out/assets/styles.css
+              '';
+            };
 
-          assets = pkgs.stdenv.mkDerivation {
-            name = "assets";
-            src = ./.;
-            buildInputs = with pkgs; [ tailwindcss_4 ];
-            installPhase = ''
-              mkdir -p ./node_modules
-              cp -r ${npmDeps}/* ./node_modules
-              cd prism-node
-              mkdir -p $out/assets
-              tailwindcss -i ./tailwind.css -o $out/assets/styles.css
-            '';
-          };
-
-          default = rustPlatformMinimal.buildRustPackage {
+          resolver-bin = rustPlatformMinimal.buildRustPackage {
             name = "neoprism";
             src = pkgs.lib.cleanSource ./.;
             cargoLock.lockFile = ./Cargo.lock;
@@ -98,13 +99,13 @@
             PROTOC = "${pkgs.protobuf}/bin/protoc";
           };
 
-          dockerImage = pkgs.dockerTools.buildLayeredImage {
+          resolver-docker = pkgs.dockerTools.buildLayeredImage {
             name = "neoprism";
             tag = "0.1.0-SNAPSHOT";
             created = "now";
             contents = [
-              default
-              assets
+              resolver-bin
+              resolver-ui-assets
             ];
             config = {
               Env = [ "RUST_LOG=info,oura=warn" ];
