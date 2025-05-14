@@ -38,7 +38,7 @@ impl EncodeJwk for X25519PublicKey {
         Jwk {
             kty: "OKP".to_string(),
             crv: "X25519".to_string(),
-            x: Some(Base64UrlStrNoPad::from(x).to_string()),
+            x: Some(Base64UrlStrNoPad::from(x)),
             y: None,
         }
     }

@@ -19,7 +19,10 @@ pub struct Error {
 /// assert!(b64.to_string() == "aGVsbG8gd29ybGQ=");
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Into, derive_more::AsRef)]
-pub struct Base64UrlStr(String);
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Base64UrlStr(
+    #[cfg_attr(feature = "serde", serde(deserialize_with = "serde_impl::deserialize_base64_url"))] String,
+);
 
 impl Base64UrlStr {
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -70,7 +73,14 @@ impl FromStr for Base64UrlStr {
 /// assert!(b64.to_string() == "aGVsbG8gd29ybGQ");
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Into, derive_more::AsRef)]
-pub struct Base64UrlStrNoPad(String);
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Base64UrlStrNoPad(
+    #[cfg_attr(
+        feature = "serde",
+        serde(deserialize_with = "serde_impl::deserialize_base64_url_no_pad")
+    )]
+    String,
+);
 
 impl Base64UrlStrNoPad {
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -109,5 +119,34 @@ impl FromStr for Base64UrlStrNoPad {
             value: s.to_string(),
         })?;
         Ok(bytes.as_slice().into())
+    }
+}
+
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use std::str::FromStr;
+
+    use serde::{Deserialize, Deserializer};
+
+    use super::{Base64UrlStr, Base64UrlStrNoPad};
+
+    pub fn deserialize_base64_url<'de, D>(deserializer: D) -> Result<String, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Base64UrlStr::from_str(&raw)
+            .map(|i| i.to_string())
+            .map_err(|e| serde::de::Error::custom(e.to_string()))
+    }
+
+    pub fn deserialize_base64_url_no_pad<'de, D>(deserializer: D) -> Result<String, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Base64UrlStrNoPad::from_str(&raw)
+            .map(|i| i.to_string())
+            .map_err(|e| serde::de::Error::custom(e.to_string()))
     }
 }

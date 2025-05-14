@@ -1,3 +1,4 @@
+use apollo::base64::Base64UrlStrNoPad;
 use enum_dispatch::enum_dispatch;
 
 pub mod ed25519;
@@ -7,8 +8,8 @@ pub mod x25519;
 pub struct Jwk {
     pub kty: String,
     pub crv: String,
-    pub x: Option<String>,
-    pub y: Option<String>,
+    pub x: Option<Base64UrlStrNoPad>,
+    pub y: Option<Base64UrlStrNoPad>,
 }
 
 #[enum_dispatch]

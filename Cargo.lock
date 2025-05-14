@@ -110,6 +110,7 @@ dependencies = [
  "base64",
  "derive_more",
  "hex",
+ "serde",
 ]
 
 [[package]]
@@ -686,6 +687,10 @@ dependencies = [
  "syn 2.0.101",
  "unicode-xid",
 ]
+
+[[package]]
+name = "did-core"
+version = "0.1.0"
 
 [[package]]
 name = "digest"

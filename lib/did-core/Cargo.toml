@@ -1,0 +1,6 @@
+[package]
+name = "did-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

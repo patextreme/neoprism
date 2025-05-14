@@ -121,8 +121,8 @@ impl EncodeJwk for Secp256k1PublicKey {
         Jwk {
             kty: "EC".to_string(),
             crv: "secp256k1".to_string(),
-            x: Some(Base64UrlStrNoPad::from(point.x).to_string()),
-            y: Some(Base64UrlStrNoPad::from(point.y).to_string()),
+            x: Some(Base64UrlStrNoPad::from(point.x)),
+            y: Some(Base64UrlStrNoPad::from(point.y)),
         }
     }
 }

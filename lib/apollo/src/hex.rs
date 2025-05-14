@@ -17,7 +17,8 @@ pub struct Error {
 /// assert!(hexstr.to_string() == "68656c6c6f20776f726c64");
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Into, derive_more::AsRef)]
-pub struct HexStr(String);
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct HexStr(#[cfg_attr(feature = "serde", serde(deserialize_with = "serde_impl::deserialize_hex"))] String);
 
 impl HexStr {
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -54,5 +55,24 @@ impl FromStr for HexStr {
             value: s.to_string(),
         })?;
         Ok(bytes.as_slice().into())
+    }
+}
+
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use std::str::FromStr;
+
+    use serde::{Deserialize, Deserializer};
+
+    use super::HexStr;
+
+    pub fn deserialize_hex<'de, D>(deserializer: D) -> Result<String, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        HexStr::from_str(&raw)
+            .map(|i| i.to_string())
+            .map_err(|e| serde::de::Error::custom(e.to_string()))
     }
 }
