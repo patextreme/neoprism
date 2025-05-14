@@ -111,6 +111,7 @@ dependencies = [
  "derive_more",
  "hex",
  "serde",
+ "utoipa",
 ]
 
 [[package]]
@@ -694,6 +695,8 @@ version = "0.1.0"
 dependencies = [
  "apollo",
  "serde",
+ "serde_json",
+ "utoipa",
 ]
 
 [[package]]
@@ -2166,7 +2169,6 @@ version = "0.1.0"
 dependencies = [
  "apollo",
  "async-trait",
- "base64",
  "chrono",
  "derive_more",
  "ed25519-dalek",
@@ -2198,6 +2200,7 @@ dependencies = [
  "chrono",
  "clap 4.5.37",
  "derive_more",
+ "did-core",
  "lazybe",
  "maud",
  "prism-core",

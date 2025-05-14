@@ -7,7 +7,6 @@ edition.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-apollo = { workspace = true, features = ["hex", "jwk"] }
 axum = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 chrono = { workspace = true }
@@ -31,5 +30,8 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tower-http = { workspace = true, features = ["fs", "trace"] }
 
-utoipa = { version = "5", features = ["chrono"] }
+utoipa = { workspace = true, features = ["chrono"] }
 utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
+
+apollo = { workspace = true, features = ["hex", "jwk"] }
+did-core = { workspace = true, features = ["openapi"] }

@@ -20,6 +20,7 @@ pub struct Error {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Into, derive_more::AsRef)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct Base64UrlStr(
     #[cfg_attr(feature = "serde", serde(deserialize_with = "serde_impl::deserialize_base64_url"))] String,
 );
@@ -74,6 +75,7 @@ impl FromStr for Base64UrlStr {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Into, derive_more::AsRef)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct Base64UrlStrNoPad(
     #[cfg_attr(
         feature = "serde",

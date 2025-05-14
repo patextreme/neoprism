@@ -12,10 +12,11 @@ derive_more = { workspace = true, features = [
   "display",
   "error",
 ] }
-
-base64 = { workspace = true, optional = true }
-hex = { workspace = true, optional = true }
 serde = { workspace = true, optional = true, features = ["derive"] }
+utoipa = { workspace = true, optional = true }
+
+base64 = { version = "0.22", optional = true }
+hex = { version = "0.4", optional = true }
 
 [features]
 default = []
@@ -23,3 +24,4 @@ serde = ["dep:serde"]
 hex = ["dep:hex"]
 base64 = ["dep:base64"]
 jwk = ["base64"]
+openapi = ["serde", "dep:utoipa"]

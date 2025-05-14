@@ -1,6 +1,7 @@
 use std::error::Report;
 
 use apollo::jwk::EncodeJwk;
+use did_core::DidDocument;
 use maud::{Markup, html};
 use prism_core::did::operation::{self, PublicKey};
 use prism_core::did::{DidState, PrismDid};
@@ -10,7 +11,7 @@ use prism_core::proto::SignedAtalaOperation;
 use prism_core::protocol::error::ProcessError;
 
 use crate::app::service::error::ResolutionError;
-use crate::http::models::DidDocument;
+use crate::http::models::new_did_document;
 use crate::http::{components, urls};
 
 pub fn index(network: Option<NetworkIdentifier>) -> Markup {
@@ -85,7 +86,7 @@ fn resolution_error_body(error: &ResolutionError) -> Markup {
 }
 
 fn did_document_body(did: &str, state: &DidState) -> Markup {
-    let did_doc = DidDocument::new(did, state);
+    let did_doc = new_did_document(did, state);
     let contexts = state.context.as_slice();
     let public_keys = state.public_keys.as_slice();
     let did_doc_url = urls::ApiDid::new_uri(did.to_string());

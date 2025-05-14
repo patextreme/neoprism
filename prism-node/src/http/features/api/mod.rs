@@ -2,12 +2,13 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
+use did_core::DidDocument;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::AppState;
 use crate::app::service::error::ResolutionError;
-use crate::http::models::DidDocument;
+use crate::http::models::new_did_document;
 use crate::http::urls;
 
 #[derive(OpenApi)]
@@ -41,6 +42,6 @@ async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>) -> 
         Err(ResolutionError::InvalidDid { .. }) => Err(StatusCode::BAD_REQUEST),
         Err(ResolutionError::NotFound) => Err(StatusCode::NOT_FOUND),
         Err(ResolutionError::InternalError { .. }) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-        Ok((did, did_state)) => Ok(Json(DidDocument::new(&did.to_string(), &did_state))),
+        Ok((did, did_state)) => Ok(Json(new_did_document(&did.to_string(), &did_state))),
     }
 }

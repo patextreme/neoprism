@@ -18,6 +18,7 @@ pub struct Error {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Into, derive_more::AsRef)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct HexStr(#[cfg_attr(feature = "serde", serde(deserialize_with = "serde_impl::deserialize_hex"))] String);
 
 impl HexStr {

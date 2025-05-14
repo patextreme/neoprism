@@ -4,5 +4,12 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-apollo = { workspace = true, features = ["base64", "serde"] }
+apollo = { workspace = true, features = ["base64", "serde", "jwk"] }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+utoipa = { workspace = true, optional = true }
+
+[features]
+default = []
+openapi = ["dep:utoipa", "apollo/openapi"]
