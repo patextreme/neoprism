@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 async-trait = { workspace = true }
+apollo = { workspace = true, features = ["hex"] }
 chrono = { workspace = true, features = ["serde"] }
 derive_more = { workspace = true, features = ["from", "display", "error"] }
 lazybe = { workspace = true, features = ["postgres"] }

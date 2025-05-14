@@ -2,6 +2,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::mpsc::RecvTimeoutError;
 
+use apollo::hex::HexStr;
 use oura::model::{Event, EventData};
 use oura::pipelining::{SourceProvider, StageReceiver};
 use oura::sources::n2n::Config;
@@ -15,11 +16,11 @@ use super::error::DltError;
 use super::{DltCursor, DltSource, PublishedAtalaObject};
 use crate::location;
 use crate::repo::DltCursorRepo;
-use crate::utils::codec::HexStr;
 
 mod model {
     use std::str::FromStr;
 
+    use apollo::hex::HexStr;
     use chrono::{DateTime, Utc};
     use oura::model::{EventContext, MetadataRecord};
     use prost::Message;
@@ -28,7 +29,6 @@ mod model {
     use crate::dlt::error::MetadataReadError;
     use crate::dlt::{BlockMetadata, PublishedAtalaObject};
     use crate::proto::AtalaObject;
-    use crate::utils::codec::HexStr;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct MetadataEvent {

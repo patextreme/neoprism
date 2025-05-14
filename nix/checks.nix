@@ -10,7 +10,7 @@ in
   default = rustPlatform.buildRustPackage {
     name = "neoprism-checks";
     src = pkgs.lib.cleanSource ./..;
-    cargoLock.lockFile = ./Cargo.lock;
+    cargoLock.lockFile = ../Cargo.lock;
     nativeBuildInputs = with pkgs; [
       protobuf
       sqlfluff

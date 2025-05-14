@@ -24,7 +24,7 @@ pub(crate) enum MetadataReadError {
     },
     #[display("cannot decode atala_block hex on block {block_hash:?} tx {tx_idx:?}")]
     AtalaBlockHexDecode {
-        source: crate::utils::codec::Error,
+        source: apollo::hex::Error,
         block_hash: Option<String>,
         tx_idx: Option<usize>,
     },

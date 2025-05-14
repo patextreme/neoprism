@@ -1,8 +1,8 @@
+use apollo::hex::HexStr;
 use chrono::{DateTime, Utc};
 use lazybe::macros::{Entity, Newtype};
 use lazybe::uuid::Uuid;
 use prism_core::did::CanonicalPrismDid;
-use prism_core::utils::codec::HexStr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Newtype, derive_more::From)]

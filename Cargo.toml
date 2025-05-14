@@ -1,9 +1,10 @@
 [workspace]
-members = ["prism-core", "prism-node", "prism-storage"]
 resolver = "3"
-
+members = ["lib/apollo", "prism-core", "prism-node", "prism-storage"]
 
 [workspace.dependencies]
+# internal
+apollo = { path = "lib/apollo" }
 # general
 anyhow = "1"
 async-trait = "0.1"

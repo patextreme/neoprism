@@ -1,7 +1,8 @@
+use apollo::hex::HexStr;
+
 use super::CanonicalPrismDid;
 use super::operation::PublicKeyId;
 use crate::error::InvalidInputSizeError;
-use crate::utils::codec::HexStr;
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum Error {
@@ -31,10 +32,7 @@ pub enum DidSyntaxError {
         suffix: HexStr,
     },
     #[display("did suffix {suffix} is not valid")]
-    DidSuffixInvalidStr {
-        source: crate::utils::codec::Error,
-        suffix: String,
-    },
+    DidSuffixInvalidStr { source: apollo::hex::Error, suffix: String },
     #[display("did encoded state {encoded_state} is not valid")]
     DidEncodedStateInvalidStr {
         source: crate::utils::codec::Error,
