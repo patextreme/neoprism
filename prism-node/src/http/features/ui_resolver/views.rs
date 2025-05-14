@@ -1,7 +1,7 @@
 use std::error::Report;
 
+use apollo::jwk::EncodeJwk;
 use maud::{Markup, html};
-use prism_core::crypto::EncodeJwk;
 use prism_core::did::operation::{self, PublicKey};
 use prism_core::did::{DidState, PrismDid};
 use prism_core::dlt::OperationMetadata;

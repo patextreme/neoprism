@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+use apollo::jwk::EncodeJwk;
 use enum_dispatch::enum_dispatch;
 use regex::Regex;
 
@@ -12,7 +13,7 @@ use super::error::{
 use crate::crypto::ed25519::Ed25519PublicKey;
 use crate::crypto::secp256k1::Secp256k1PublicKey;
 use crate::crypto::x25519::X25519PublicKey;
-use crate::crypto::{EncodeJwk, EncodeVec, Error as CryptoError, Jwk, ToPublicKey};
+use crate::crypto::{EncodeVec, Error as CryptoError, ToPublicKey};
 use crate::error::InvalidInputSizeError;
 use crate::location;
 use crate::prelude::{AtalaOperation, SignedAtalaOperation};
@@ -369,7 +370,7 @@ impl PublicKey {
         let Some(key_data) = &public_key.key_data else {
             Err(PublicKeyError::MissingKeyData { id: id.clone() })?
         };
-        let pk = NonMasterPublicKey::from_key_data(key_data).map_err(|e| PublicKeyError::Crypto {
+        let pk = NonMasterPublicKey::parse(key_data).map_err(|e| PublicKeyError::Crypto {
             source: e,
             id: id.clone(),
         })?;
@@ -391,7 +392,7 @@ impl PublicKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[enum_dispatch(EncodeJwk, EncodeVec)]
+#[enum_dispatch(EncodeVec)]
 pub enum NonMasterPublicKey {
     Secp256k1(Secp256k1PublicKey),
     Ed25519(Ed25519PublicKey),
@@ -399,7 +400,7 @@ pub enum NonMasterPublicKey {
 }
 
 impl NonMasterPublicKey {
-    pub fn from_key_data(key_data: &KeyData) -> Result<Self, CryptoError> {
+    pub fn parse(key_data: &KeyData) -> Result<Self, CryptoError> {
         let curve_name: &str = match key_data {
             KeyData::EcKeyData(k) => &k.curve,
             KeyData::CompressedEcKeyData(k) => &k.curve,
@@ -441,6 +442,16 @@ impl NonMasterPublicKey {
             KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
         };
         Ok(pk)
+    }
+}
+
+impl EncodeJwk for NonMasterPublicKey {
+    fn encode_jwk(&self) -> apollo::jwk::Jwk {
+        match self {
+            NonMasterPublicKey::Secp256k1(pk) => pk.encode_jwk(),
+            NonMasterPublicKey::Ed25519(pk) => pk.encode_jwk(),
+            NonMasterPublicKey::X25519(pk) => pk.encode_jwk(),
+        }
     }
 }
 

@@ -4,3 +4,5 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+apollo = { workspace = true, features = ["base64", "serde"] }
+serde = { workspace = true, features = ["derive"] }

@@ -1,11 +1,12 @@
 use std::fmt::Debug;
 
 use apollo::base64::Base64UrlStrNoPad;
+use apollo::jwk::{EncodeJwk, Jwk};
 use k256::Secp256k1;
 use k256::ecdsa::signature::Verifier;
 use k256::elliptic_curve::sec1::{EncodedPoint, ToEncodedPoint};
 
-use super::{EncodeArray, EncodeJwk, EncodeVec, Error, Jwk, ToPublicKey, Verifiable};
+use super::{EncodeArray, EncodeVec, Error, ToPublicKey, Verifiable};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Secp256k1PublicKey(k256::PublicKey);

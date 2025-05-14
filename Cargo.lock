@@ -691,6 +691,10 @@ dependencies = [
 [[package]]
 name = "did-core"
 version = "0.1.0"
+dependencies = [
+ "apollo",
+ "serde",
+]
 
 [[package]]
 name = "digest"

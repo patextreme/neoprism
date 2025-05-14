@@ -1,4 +1,4 @@
-use prism_core::crypto::EncodeJwk;
+use apollo::jwk::EncodeJwk;
 use prism_core::did::operation::KeyUsage;
 use prism_core::did::{DidState, operation};
 use serde::{Deserialize, Serialize};

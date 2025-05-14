@@ -1,21 +1,8 @@
-use apollo::base64::Base64UrlStrNoPad;
 use enum_dispatch::enum_dispatch;
 
 pub mod ed25519;
 pub mod secp256k1;
 pub mod x25519;
-
-pub struct Jwk {
-    pub kty: String,
-    pub crv: String,
-    pub x: Option<Base64UrlStrNoPad>,
-    pub y: Option<Base64UrlStrNoPad>,
-}
-
-#[enum_dispatch]
-pub trait EncodeJwk {
-    fn encode_jwk(&self) -> Jwk;
-}
 
 #[enum_dispatch]
 pub trait EncodeVec {

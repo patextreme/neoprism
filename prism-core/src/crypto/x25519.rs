@@ -1,6 +1,7 @@
 use apollo::base64::Base64UrlStrNoPad;
+use apollo::jwk::{EncodeJwk, Jwk};
 
-use super::{EncodeArray, EncodeJwk, EncodeVec, Error, Jwk, ToPublicKey};
+use super::{EncodeArray, EncodeVec, Error, ToPublicKey};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct X25519PublicKey(x25519_dalek::PublicKey);
