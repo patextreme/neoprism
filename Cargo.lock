@@ -107,6 +107,7 @@ checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
 name = "apollo"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "derive_more",
  "hex",
 ]
@@ -2161,7 +2162,6 @@ dependencies = [
  "derive_more",
  "ed25519-dalek",
  "enum_dispatch",
- "hex",
  "im-rc",
  "k256",
  "oura",

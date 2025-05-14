@@ -35,7 +35,7 @@ pub enum DidSyntaxError {
     DidSuffixInvalidStr { source: apollo::hex::Error, suffix: String },
     #[display("did encoded state {encoded_state} is not valid")]
     DidEncodedStateInvalidStr {
-        source: crate::utils::codec::Error,
+        source: apollo::base64::Error,
         encoded_state: String,
     },
     #[display("did suffix {did} cannot be decoded into protobuf message")]

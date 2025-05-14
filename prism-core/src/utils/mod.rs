@@ -3,7 +3,6 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
-pub mod codec;
 pub mod hash;
 pub mod paging;
 

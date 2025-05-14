@@ -3,18 +3,16 @@ use std::str::FromStr;
 use base64::Engine;
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
-pub enum Error {
-    #[display("unable to base64 decode '{value}' to type {type_name}")]
-    DecodeBase64 {
-        source: base64::DecodeError,
-        type_name: &'static str,
-        value: String,
-    },
+#[display("unable to base64 decode '{value}' to type {type_name}")]
+pub struct Error {
+    source: base64::DecodeError,
+    type_name: &'static str,
+    value: String,
 }
 
 /// # Example
 /// ```
-/// use prism_core::utils::codec::Base64UrlStr;
+/// use apollo::base64::Base64UrlStr;
 ///
 /// let b = b"hello world";
 /// let b64 = Base64UrlStr::from(b);
@@ -41,20 +39,20 @@ impl<B: AsRef<[u8]>> From<B> for Base64UrlStr {
 /// ```
 /// use std::str::FromStr;
 ///
-/// use prism_core::utils::codec::{Base64UrlStr, Error};
+/// use apollo::base64::{Base64UrlStr, Error};
 ///
 /// let b64 = Base64UrlStr::from_str("aGVsbG8gd29ybGQ=").unwrap();
 /// assert_eq!(b64, Base64UrlStr::from(b"hello world"));
 ///
-/// let err = Base64UrlStr::from_str("invalid").err().unwrap();
-/// assert!(matches!(err, Error::DecodeBase64 { .. }));
+/// let b64 = Base64UrlStr::from_str("invalid");
+/// assert!(b64.is_err());
 /// ```
 impl FromStr for Base64UrlStr {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let engine = base64::engine::general_purpose::URL_SAFE;
-        let bytes = engine.decode(s.as_bytes()).map_err(|e| Error::DecodeBase64 {
+        let bytes = engine.decode(s.as_bytes()).map_err(|e| Error {
             source: e,
             type_name: std::any::type_name::<Self>(),
             value: s.to_string(),
@@ -65,7 +63,7 @@ impl FromStr for Base64UrlStr {
 
 /// # Example
 /// ```
-/// use prism_core::utils::codec::Base64UrlStrNoPad;
+/// use apollo::base64::Base64UrlStrNoPad;
 ///
 /// let b = b"hello world";
 /// let b64 = Base64UrlStrNoPad::from(b);
@@ -92,20 +90,20 @@ impl<B: AsRef<[u8]>> From<B> for Base64UrlStrNoPad {
 /// ```
 /// use std::str::FromStr;
 ///
-/// use prism_core::utils::codec::{Base64UrlStrNoPad, Error};
+/// use apollo::base64::{Base64UrlStrNoPad, Error};
 ///
 /// let b64 = Base64UrlStrNoPad::from_str("aGVsbG8gd29ybGQ").unwrap();
 /// assert_eq!(b64, Base64UrlStrNoPad::from(b"hello world"));
 ///
-/// let err = Base64UrlStrNoPad::from_str("invalid").err().unwrap();
-/// assert!(matches!(err, Error::DecodeBase64 { .. }));
+/// let b64 = Base64UrlStrNoPad::from_str("invalid");
+/// assert!(b64.is_err());
 /// ```
 impl FromStr for Base64UrlStrNoPad {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let engine = base64::engine::general_purpose::URL_SAFE_NO_PAD;
-        let bytes = engine.decode(s.as_bytes()).map_err(|e| Error::DecodeBase64 {
+        let bytes = engine.decode(s.as_bytes()).map_err(|e| Error {
             source: e,
             type_name: std::any::type_name::<Self>(),
             value: s.to_string(),

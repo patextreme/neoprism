@@ -12,8 +12,11 @@ derive_more = { workspace = true, features = [
   "display",
   "error",
 ] }
+
+base64 = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
 
 [features]
 default = []
 hex = ["dep:hex"]
+base64 = ["dep:base64"]

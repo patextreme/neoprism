@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+use apollo::base64::Base64UrlStrNoPad;
 use apollo::hex::HexStr;
 use enum_dispatch::enum_dispatch;
 use error::DidSyntaxError;
@@ -10,7 +11,6 @@ use regex::Regex;
 use self::operation::{PublicKey, Service};
 use crate::proto::AtalaOperation;
 use crate::proto::atala_operation::Operation;
-use crate::utils::codec::Base64UrlStrNoPad;
 use crate::utils::hash::{Sha256Digest, sha256};
 
 pub mod error;
