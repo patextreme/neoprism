@@ -12,7 +12,7 @@ pub struct Error {
 
 /// # Example
 /// ```
-/// use apollo::base64::Base64UrlStr;
+/// use identus_apollo::base64::Base64UrlStr;
 ///
 /// let b = b"hello world";
 /// let b64 = Base64UrlStr::from(b);
@@ -43,7 +43,7 @@ impl<B: AsRef<[u8]>> From<B> for Base64UrlStr {
 /// ```
 /// use std::str::FromStr;
 ///
-/// use apollo::base64::{Base64UrlStr, Error};
+/// use identus_apollo::base64::{Base64UrlStr, Error};
 ///
 /// let b64 = Base64UrlStr::from_str("aGVsbG8gd29ybGQ=").unwrap();
 /// assert_eq!(b64, Base64UrlStr::from(b"hello world"));
@@ -67,7 +67,7 @@ impl FromStr for Base64UrlStr {
 
 /// # Example
 /// ```
-/// use apollo::base64::Base64UrlStrNoPad;
+/// use identus_apollo::base64::Base64UrlStrNoPad;
 ///
 /// let b = b"hello world";
 /// let b64 = Base64UrlStrNoPad::from(b);
@@ -102,7 +102,7 @@ impl<B: AsRef<[u8]>> From<B> for Base64UrlStrNoPad {
 /// ```
 /// use std::str::FromStr;
 ///
-/// use apollo::base64::{Base64UrlStrNoPad, Error};
+/// use identus_apollo::base64::{Base64UrlStrNoPad, Error};
 ///
 /// let b64 = Base64UrlStrNoPad::from_str("aGVsbG8gd29ybGQ").unwrap();
 /// assert_eq!(b64, Base64UrlStrNoPad::from(b"hello world"));

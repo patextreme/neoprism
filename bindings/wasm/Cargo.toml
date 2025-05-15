@@ -1,0 +1,15 @@
+[package]
+name = "identus-binding-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = { version = "0.2" }
+serde-wasm-bindgen = { version = "0.4" }
+
+identus-did-core = { workspace = true }

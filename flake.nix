@@ -29,7 +29,7 @@
             "rust-src"
             "rust-analyzer"
           ];
-          targets = [ ];
+          targets = [ "wasm32-unknown-unknown" ];
         };
       in
       {

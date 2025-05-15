@@ -10,7 +10,7 @@ pub struct Error {
 
 /// # Example
 /// ```
-/// use apollo::hex::HexStr;
+/// use identus_apollo::hex::HexStr;
 ///
 /// let b = b"hello world";
 /// let hexstr = HexStr::from(b);
@@ -38,7 +38,7 @@ impl<B: AsRef<[u8]>> From<B> for HexStr {
 /// ```
 /// use std::str::FromStr;
 ///
-/// use apollo::hex::{Error, HexStr};
+/// use identus_apollo::hex::{Error, HexStr};
 ///
 /// let hexstr = HexStr::from_str("68656c6c6f20776f726c64").unwrap();
 /// assert_eq!(hexstr, HexStr::from(b"hello world"));
