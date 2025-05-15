@@ -2,7 +2,7 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
-use did_core::DidDocument;
+use identus_did_core::DidDocument;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 

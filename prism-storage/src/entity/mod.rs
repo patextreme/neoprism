@@ -1,5 +1,5 @@
-use apollo::hex::HexStr;
 use chrono::{DateTime, Utc};
+use identus_apollo::hex::HexStr;
 use lazybe::macros::{Entity, Newtype};
 use lazybe::uuid::Uuid;
 use prism_core::did::CanonicalPrismDid;

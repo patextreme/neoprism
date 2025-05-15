@@ -1,4 +1,4 @@
-use apollo::hex::HexStr;
+use identus_apollo::hex::HexStr;
 
 use super::CanonicalPrismDid;
 use super::operation::PublicKeyId;
@@ -32,10 +32,13 @@ pub enum DidSyntaxError {
         suffix: HexStr,
     },
     #[display("did suffix {suffix} is not valid")]
-    DidSuffixInvalidStr { source: apollo::hex::Error, suffix: String },
+    DidSuffixInvalidStr {
+        source: identus_apollo::hex::Error,
+        suffix: String,
+    },
     #[display("did encoded state {encoded_state} is not valid")]
     DidEncodedStateInvalidStr {
-        source: apollo::base64::Error,
+        source: identus_apollo::base64::Error,
         encoded_state: String,
     },
     #[display("did suffix {did} cannot be decoded into protobuf message")]

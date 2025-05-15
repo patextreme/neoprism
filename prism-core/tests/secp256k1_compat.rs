@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use apollo::hex::HexStr;
+use identus_apollo::hex::HexStr;
 use prism_core::crypto::secp256k1::Secp256k1PublicKey;
 use prism_core::crypto::{ToPublicKey, Verifiable};
 

@@ -1,5 +1,7 @@
-use apollo::jwk::EncodeJwk;
-use did_core::{DidDocument, Service, ServiceEndpoint, ServiceType, StringOrMap, VerificationMethod};
+use identus_apollo::jwk::EncodeJwk;
+use identus_did_core::{
+    DidDocument, Service, ServiceEndpoint, ServiceType, StringOrMap, VerificationMethod, VerificationMethodOrRef,
+};
 use prism_core::did::operation::KeyUsage;
 use prism_core::did::{DidState, operation};
 
@@ -7,12 +9,12 @@ pub fn new_did_document(did: &str, did_state: &DidState) -> DidDocument {
     let mut context = vec!["https://www.w3.org/ns/did/v1".to_string()];
     context.extend(did_state.context.clone());
 
-    let get_relationship = |usage: KeyUsage| -> Vec<String> {
+    let get_relationship = |usage: KeyUsage| -> Vec<VerificationMethodOrRef> {
         did_state
             .public_keys
             .iter()
             .filter(|k| k.usage() == usage)
-            .map(|k| format!("{}#{}", did, k.id))
+            .map(|k| VerificationMethodOrRef::Ref(format!("{}#{}", did, k.id)))
             .collect()
     };
     let verification_method = did_state

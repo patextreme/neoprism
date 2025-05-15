@@ -1,10 +1,10 @@
 use std::str::FromStr;
 use std::sync::LazyLock;
 
-use apollo::base64::Base64UrlStrNoPad;
-use apollo::hex::HexStr;
 use enum_dispatch::enum_dispatch;
 use error::DidSyntaxError;
+use identus_apollo::base64::Base64UrlStrNoPad;
+use identus_apollo::hex::HexStr;
 use prost::Message;
 use regex::Regex;
 

@@ -5,9 +5,9 @@ edition.workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
-apollo = { workspace = true, features = ["hex"] }
 chrono = { workspace = true, features = ["serde"] }
 derive_more = { workspace = true, features = ["from", "display", "error"] }
+identus-apollo = { workspace = true, features = ["hex"] }
 lazybe = { workspace = true, features = ["postgres"] }
 prism-core = { path = "../prism-core" }
 prost = { workspace = true }

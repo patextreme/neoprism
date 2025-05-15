@@ -1,4 +1,4 @@
-use apollo::jwk::Jwk;
+use identus_apollo::jwk::Jwk;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -9,11 +9,11 @@ pub struct DidDocument {
     pub context: Vec<String>,
     pub id: String,
     pub verification_method: Vec<VerificationMethod>,
-    pub authentication: Option<Vec<String>>,
-    pub assertion_method: Option<Vec<String>>,
-    pub key_agreement: Option<Vec<String>>,
-    pub capability_invocation: Option<Vec<String>>,
-    pub capability_delegation: Option<Vec<String>>,
+    pub authentication: Option<Vec<VerificationMethodOrRef>>,
+    pub assertion_method: Option<Vec<VerificationMethodOrRef>>,
+    pub key_agreement: Option<Vec<VerificationMethodOrRef>>,
+    pub capability_invocation: Option<Vec<VerificationMethodOrRef>>,
+    pub capability_delegation: Option<Vec<VerificationMethodOrRef>>,
     pub service: Option<Vec<Service>>,
 }
 
@@ -32,7 +32,7 @@ pub struct VerificationMethod {
 #[serde(untagged)]
 pub enum VerificationMethodOrRef {
     Embedded(VerificationMethod),
-    Referenced(String),
+    Ref(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

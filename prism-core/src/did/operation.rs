@@ -1,8 +1,8 @@
 use std::str::FromStr;
 use std::sync::LazyLock;
 
-use apollo::jwk::EncodeJwk;
 use enum_dispatch::enum_dispatch;
+use identus_apollo::jwk::EncodeJwk;
 use regex::Regex;
 
 use super::CanonicalPrismDid;
@@ -446,7 +446,7 @@ impl NonMasterPublicKey {
 }
 
 impl EncodeJwk for NonMasterPublicKey {
-    fn encode_jwk(&self) -> apollo::jwk::Jwk {
+    fn encode_jwk(&self) -> identus_apollo::jwk::Jwk {
         match self {
             NonMasterPublicKey::Secp256k1(pk) => pk.encode_jwk(),
             NonMasterPublicKey::Ed25519(pk) => pk.encode_jwk(),

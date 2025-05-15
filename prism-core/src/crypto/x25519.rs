@@ -1,5 +1,5 @@
-use apollo::base64::Base64UrlStrNoPad;
-use apollo::jwk::{EncodeJwk, Jwk};
+use identus_apollo::base64::Base64UrlStrNoPad;
+use identus_apollo::jwk::{EncodeJwk, Jwk};
 
 use super::{EncodeArray, EncodeVec, Error, ToPublicKey};
 

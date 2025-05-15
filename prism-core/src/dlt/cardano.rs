@@ -2,7 +2,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::mpsc::RecvTimeoutError;
 
-use apollo::hex::HexStr;
+use identus_apollo::hex::HexStr;
 use oura::model::{Event, EventData};
 use oura::pipelining::{SourceProvider, StageReceiver};
 use oura::sources::n2n::Config;
@@ -20,8 +20,8 @@ use crate::repo::DltCursorRepo;
 mod model {
     use std::str::FromStr;
 
-    use apollo::hex::HexStr;
     use chrono::{DateTime, Utc};
+    use identus_apollo::hex::HexStr;
     use oura::model::{EventContext, MetadataRecord};
     use prost::Message;
     use serde::{Deserialize, Serialize};

@@ -7,7 +7,6 @@ edition.workspace = true
 
 [dependencies]
 # general
-apollo = { workspace = true, features = ["base64", "hex", "jwk"] }
 async-trait = { workspace = true }
 chrono = { workspace = true }
 derive_more = { workspace = true, features = [
@@ -19,6 +18,7 @@ derive_more = { workspace = true, features = [
   "error",
 ] }
 enum_dispatch = { workspace = true }
+identus-apollo = { workspace = true, features = ["base64", "hex", "jwk"] }
 im-rc = { workspace = true }
 prost-types = { workspace = true }
 prost = { workspace = true }

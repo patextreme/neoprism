@@ -104,17 +104,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
 
 [[package]]
-name = "apollo"
-version = "0.1.0"
-dependencies = [
- "base64",
- "derive_more",
- "hex",
- "serde",
- "utoipa",
-]
-
-[[package]]
 name = "arbitrary"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -687,16 +676,6 @@ dependencies = [
  "quote",
  "syn 2.0.101",
  "unicode-xid",
-]
-
-[[package]]
-name = "did-core"
-version = "0.1.0"
-dependencies = [
- "apollo",
- "serde",
- "serde_json",
- "utoipa",
 ]
 
 [[package]]
@@ -1382,6 +1361,27 @@ name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
+
+[[package]]
+name = "identus-apollo"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "derive_more",
+ "hex",
+ "serde",
+ "utoipa",
+]
+
+[[package]]
+name = "identus-did-core"
+version = "0.1.0"
+dependencies = [
+ "identus-apollo",
+ "serde",
+ "serde_json",
+ "utoipa",
+]
 
 [[package]]
 name = "idna"
@@ -2167,12 +2167,12 @@ dependencies = [
 name = "prism-core"
 version = "0.1.0"
 dependencies = [
- "apollo",
  "async-trait",
  "chrono",
  "derive_more",
  "ed25519-dalek",
  "enum_dispatch",
+ "identus-apollo",
  "im-rc",
  "k256",
  "oura",
@@ -2195,12 +2195,12 @@ name = "prism-node"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "apollo",
  "axum",
  "chrono",
  "clap 4.5.37",
  "derive_more",
- "did-core",
+ "identus-apollo",
+ "identus-did-core",
  "lazybe",
  "maud",
  "prism-core",
@@ -2220,10 +2220,10 @@ dependencies = [
 name = "prism-storage"
 version = "0.1.0"
 dependencies = [
- "apollo",
  "async-trait",
  "chrono",
  "derive_more",
+ "identus-apollo",
  "lazybe",
  "prism-core",
  "prost",

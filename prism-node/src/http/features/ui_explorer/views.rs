@@ -1,4 +1,4 @@
-use apollo::hex::HexStr;
+use identus_apollo::hex::HexStr;
 use maud::{Markup, html};
 use prism_core::did::CanonicalPrismDid;
 use prism_core::dlt::DltCursor;

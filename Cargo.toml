@@ -15,8 +15,8 @@ license = "Apache-2.0"
 
 [workspace.dependencies]
 # internal
-apollo = { path = "lib/apollo" }
-did-core = { path = "lib/did-core" }
+identus-apollo = { path = "lib/apollo" }
+identus-did-core = { path = "lib/did-core" }
 # general
 anyhow = "1"
 async-trait = "0.1"
