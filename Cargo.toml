@@ -3,7 +3,6 @@ resolver = "3"
 members = [
   "lib/apollo",
   "lib/did-core",
-  "bindings/wasm",
   "prism-core",
   "prism-node",
   "prism-storage",

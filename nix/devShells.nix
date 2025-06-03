@@ -32,13 +32,6 @@
           cd ${rootDir}
           ${buildAssets}/bin/buildAssets
           ${rust}/bin/cargo build --all-features
-          ${pkgs.wasm-pack}/bin/wasm-pack build bindings/wasm --target bundler
-        '';
-
-        buildWasm = pkgs.writeShellScriptBin "buildWasm" ''
-          cd ${rootDir}
-          rm -rf bindings/wasm/pkg
-          ${pkgs.wasm-pack}/bin/wasm-pack build bindings/wasm --target bundler
         '';
 
         clean = pkgs.writeShellScriptBin "clean" ''
