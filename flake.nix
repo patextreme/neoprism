@@ -22,7 +22,7 @@
           config.unfree = true;
           overlays = [ (import rust-overlay) ];
         };
-        nightlyVersion = "2025-04-23";
+        nightlyVersion = "2025-06-01";
         rustMinimal = pkgs.rust-bin.nightly.${nightlyVersion}.minimal;
         rust = pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
           extensions = [

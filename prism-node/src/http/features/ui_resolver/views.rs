@@ -210,7 +210,7 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Optio
         .iter()
         .map(|(metadata, signed_op, error)| {
             let block_time = metadata.block_metadata.cbt.to_rfc3339();
-            let operation_payload = format!("{:?}", signed_op);
+            let operation_payload = format!("{signed_op:?}");
             let error_lines = error
                 .as_ref()
                 .map(|e| Report::new(e).pretty(true).to_string())
