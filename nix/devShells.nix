@@ -16,15 +16,15 @@
           find . | grep '\.nix$' | xargs -I _ bash -c "echo running nixfmt on _ && ${pkgs.nixfmt-rfc-style}/bin/nixfmt _"
           find . | grep '\.toml$' | xargs -I _ bash -c "echo running taplo on _ && ${pkgs.taplo}/bin/taplo format _"
 
-          ${pkgs.sqlfluff}/bin/sqlfluff fix ./prism-storage/migrations
-          ${pkgs.sqlfluff}/bin/sqlfluff lint ./prism-storage/migrations
+          ${pkgs.sqlfluff}/bin/sqlfluff fix ./indexer-storage/migrations
+          ${pkgs.sqlfluff}/bin/sqlfluff lint ./indexer-storage/migrations
 
           ${pkgs.dioxus-cli}/bin/dx fmt
           ${rust}/bin/cargo fmt
         '';
 
         buildAssets = pkgs.writeShellScriptBin "buildAssets" ''
-          cd ${rootDir}/prism-node
+          cd ${rootDir}/indexer-node
           ${pkgs.tailwindcss_4}/bin/tailwindcss -i tailwind.css -o ./assets/styles.css
         '';
 
@@ -63,14 +63,10 @@
           ${pkgs.postgresql_16}/bin/pg_restore -h localhost -p ${toString localDb.port} -U ${localDb.username} -w -d ${localDb.dbName} ${rootDir}/postgres.dump
         '';
 
-        migrate = pkgs.writeShellScriptBin "migrate" ''
-          ${pkgs.sea-orm-cli}/bin/sea-orm-cli migrate up -d prism-migration --database-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName}
-        '';
-
         runNode = pkgs.writeShellScriptBin "runNode" ''
           cd ${rootDir}
           ${buildAssets}/bin/buildAssets
-          ${rust}/bin/cargo run --bin prism-node -- --db postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
+          ${rust}/bin/cargo run --bin indexer-node -- --db postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
         '';
       };
     in

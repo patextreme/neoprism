@@ -1,4 +1,4 @@
-use prism_node::start_server;
+use indexer_node::start_server;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

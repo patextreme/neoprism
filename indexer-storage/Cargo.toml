@@ -1,5 +1,5 @@
 [package]
-name = "prism-storage"
+name = "indexer-storage"
 version.workspace = true
 edition.workspace = true
 

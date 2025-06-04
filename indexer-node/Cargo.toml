@@ -1,5 +1,5 @@
 [package]
-name = "prism-node"
+name = "indexer-node"
 version.workspace = true
 edition.workspace = true
 
@@ -20,7 +20,6 @@ derive_more = { workspace = true, features = [
 ] }
 lazybe = { workspace = true }
 maud = { workspace = true, features = ["axum"] }
-prism-storage = { path = "../prism-storage" }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 sqlx = { workspace = true, features = ["runtime-tokio"] }
@@ -35,3 +34,4 @@ utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
 identus-apollo = { workspace = true, features = ["hex", "jwk"] }
 identus-did-core = { workspace = true, features = ["openapi"] }
 identus-did-prism = { workspace = true, features = ["cardano"] }
+indexer-storage = { workspace = true }

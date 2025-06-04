@@ -26,7 +26,7 @@ rec {
       installPhase = ''
         mkdir -p ./node_modules
         cp -r ${npmDeps}/* ./node_modules
-        cd prism-node
+        cd indexer-node
         mkdir -p $out/assets
         tailwindcss -i ./tailwind.css -o $out/assets/styles.css
       '';
@@ -51,7 +51,7 @@ rec {
     ];
     config = {
       Env = [ "RUST_LOG=info,oura=warn" ];
-      Entrypoint = [ "/bin/prism-node" ];
+      Entrypoint = [ "/bin/indexer-node" ];
       Cmd = [
         "--assets"
         "/assets"

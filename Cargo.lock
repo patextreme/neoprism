@@ -1718,6 +1718,49 @@ dependencies = [
 ]
 
 [[package]]
+name = "indexer-node"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "chrono",
+ "clap 4.5.37",
+ "derive_more",
+ "identus-apollo",
+ "identus-did-core",
+ "identus-did-prism",
+ "indexer-storage",
+ "lazybe",
+ "maud",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "utoipa",
+ "utoipa-swagger-ui",
+]
+
+[[package]]
+name = "indexer-storage"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "derive_more",
+ "identus-apollo",
+ "identus-did-prism",
+ "lazybe",
+ "prost",
+ "sea-query",
+ "serde",
+ "sqlx",
+ "tracing",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2530,49 +2573,6 @@ checksum = "664ec5419c51e34154eec046ebcba56312d5a2fc3b09a06da188e1ad21afadf6"
 dependencies = [
  "proc-macro2",
  "syn 2.0.101",
-]
-
-[[package]]
-name = "prism-node"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "chrono",
- "clap 4.5.37",
- "derive_more",
- "identus-apollo",
- "identus-did-core",
- "identus-did-prism",
- "lazybe",
- "maud",
- "prism-storage",
- "serde",
- "serde_json",
- "sqlx",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "utoipa",
- "utoipa-swagger-ui",
-]
-
-[[package]]
-name = "prism-storage"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "chrono",
- "derive_more",
- "identus-apollo",
- "identus-did-prism",
- "lazybe",
- "prost",
- "sea-query",
- "serde",
- "sqlx",
- "tracing",
 ]
 
 [[package]]
