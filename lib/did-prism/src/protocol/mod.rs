@@ -45,6 +45,7 @@ impl Default for ProtocolParameter {
 #[derive(Debug, Clone)]
 struct Revocable<T> {
     inner: T,
+    #[allow(unused)]
     added_at: OperationMetadata,
     revoked_at: Option<OperationMetadata>,
 }

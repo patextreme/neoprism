@@ -1,6 +1,4 @@
-// TODO: remove
-#![feature(error_generic_member_access, split_array, error_reporter)]
-#![allow(dead_code)]
+#![feature(error_reporter)]
 
 pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/proto.rs"));
