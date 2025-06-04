@@ -1,4 +1,4 @@
-use prism_core::{did, protocol};
+use identus_did_prism::{did, protocol};
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum ResolutionError {

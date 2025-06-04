@@ -1660,6 +1660,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "identus-did-prism"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "derive_more",
+ "enum_dispatch",
+ "identus-apollo",
+ "im-rc",
+ "oura",
+ "prost",
+ "prost-build",
+ "prost-types",
+ "regex",
+ "serde",
+ "serde_json",
+ "strum 0.27.1",
+ "tokio",
+ "tracing",
+ "uriparse",
+]
+
+[[package]]
 name = "idna"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2510,29 +2533,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "prism-core"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "chrono",
- "derive_more",
- "enum_dispatch",
- "identus-apollo",
- "im-rc",
- "oura",
- "prost",
- "prost-build",
- "prost-types",
- "regex",
- "serde",
- "serde_json",
- "strum 0.27.1",
- "tokio",
- "tracing",
- "uriparse",
-]
-
-[[package]]
 name = "prism-node"
 version = "0.1.0"
 dependencies = [
@@ -2543,9 +2543,9 @@ dependencies = [
  "derive_more",
  "identus-apollo",
  "identus-did-core",
+ "identus-did-prism",
  "lazybe",
  "maud",
- "prism-core",
  "prism-storage",
  "serde",
  "serde_json",
@@ -2566,8 +2566,8 @@ dependencies = [
  "chrono",
  "derive_more",
  "identus-apollo",
+ "identus-did-prism",
  "lazybe",
- "prism-core",
  "prost",
  "sea-query",
  "serde",

@@ -20,7 +20,6 @@ derive_more = { workspace = true, features = [
 ] }
 lazybe = { workspace = true }
 maud = { workspace = true, features = ["axum"] }
-prism-core = { path = "../prism-core", features = ["cardano"] }
 prism-storage = { path = "../prism-storage" }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -35,3 +34,4 @@ utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
 
 identus-apollo = { workspace = true, features = ["hex", "jwk"] }
 identus-did-core = { workspace = true, features = ["openapi"] }
+identus-did-prism = { workspace = true, features = ["cardano"] }

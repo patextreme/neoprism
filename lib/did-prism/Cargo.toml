@@ -1,5 +1,5 @@
 [package]
-name = "prism-core"
+name = "identus-did-prism"
 version.workspace = true
 edition.workspace = true
 

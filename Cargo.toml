@@ -3,7 +3,7 @@ resolver = "3"
 members = [
   "lib/apollo",
   "lib/did-core",
-  "prism-core",
+  "lib/did-prism",
   "prism-node",
   "prism-storage",
 ]
@@ -17,6 +17,7 @@ license = "Apache-2.0"
 # internal
 identus-apollo = { path = "lib/apollo" }
 identus-did-core = { path = "lib/did-core" }
+identus-did-prism = { path = "lib/did-prism" }
 # general
 anyhow = "1"
 async-trait = "0.1"

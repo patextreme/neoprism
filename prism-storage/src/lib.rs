@@ -1,18 +1,18 @@
 #![feature(error_generic_member_access)]
 
+use identus_did_prism::did::Error as DidError;
+use identus_did_prism::did::error::DidSyntaxError;
+use identus_did_prism::did::operation::get_did_from_signed_operation;
+use identus_did_prism::dlt::{BlockMetadata, DltCursor, OperationMetadata};
+use identus_did_prism::prelude::*;
+use identus_did_prism::proto::SignedAtalaOperation;
+use identus_did_prism::repo::{DltCursorRepo, OperationRepo};
+use identus_did_prism::utils::paging::Paginated;
 use lazybe::db::DbOps;
 use lazybe::db::postgres::PostgresDbCtx;
 use lazybe::filter::Filter;
 use lazybe::page::PaginationInput;
 use lazybe::sort::Sort;
-use prism_core::did::Error as DidError;
-use prism_core::did::error::DidSyntaxError;
-use prism_core::did::operation::get_did_from_signed_operation;
-use prism_core::dlt::{BlockMetadata, DltCursor, OperationMetadata};
-use prism_core::prelude::*;
-use prism_core::proto::SignedAtalaOperation;
-use prism_core::repo::{DltCursorRepo, OperationRepo};
-use prism_core::utils::paging::Paginated;
 use sqlx::PgPool;
 
 mod entity;

@@ -136,7 +136,7 @@ impl FromStr for PrismDid {
     /// ```
     /// use std::str::FromStr;
     ///
-    /// use prism_core::did::PrismDid;
+    /// use identus_did_prism::did::PrismDid;
     ///
     /// let did = PrismDid::from_str("did:prism:1234567890abcdef");
     /// assert!(did.is_err());

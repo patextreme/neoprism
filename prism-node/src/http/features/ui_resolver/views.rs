@@ -2,13 +2,13 @@ use std::error::Report;
 
 use identus_apollo::jwk::EncodeJwk;
 use identus_did_core::DidDocument;
+use identus_did_prism::did::operation::{self, PublicKey};
+use identus_did_prism::did::{DidState, PrismDid};
+use identus_did_prism::dlt::OperationMetadata;
+use identus_did_prism::dlt::cardano::NetworkIdentifier;
+use identus_did_prism::proto::SignedAtalaOperation;
+use identus_did_prism::protocol::error::ProcessError;
 use maud::{Markup, html};
-use prism_core::did::operation::{self, PublicKey};
-use prism_core::did::{DidState, PrismDid};
-use prism_core::dlt::OperationMetadata;
-use prism_core::dlt::cardano::NetworkIdentifier;
-use prism_core::proto::SignedAtalaOperation;
-use prism_core::protocol::error::ProcessError;
 
 use crate::app::service::error::ResolutionError;
 use crate::http::models::new_did_document;

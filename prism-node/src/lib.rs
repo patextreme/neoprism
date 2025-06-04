@@ -4,8 +4,8 @@
 use app::service::DidService;
 use clap::Parser;
 use cli::CliArgs;
-use prism_core::dlt::DltCursor;
-use prism_core::dlt::cardano::{NetworkIdentifier, OuraN2NSource};
+use identus_did_prism::dlt::DltCursor;
+use identus_did_prism::dlt::cardano::{NetworkIdentifier, OuraN2NSource};
 use prism_storage::PostgresDb;
 use tower_http::trace::TraceLayer;
 

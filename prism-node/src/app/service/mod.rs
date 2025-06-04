@@ -1,8 +1,8 @@
 use error::{InvalidDid, ResolutionError};
-use prism_core::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidLike};
-use prism_core::protocol::resolver::{ResolutionDebug, resolve_published, resolve_unpublished};
-use prism_core::repo::OperationRepo;
-use prism_core::utils::paging::Paginated;
+use identus_did_prism::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidLike};
+use identus_did_prism::protocol::resolver::{ResolutionDebug, resolve_published, resolve_unpublished};
+use identus_did_prism::repo::OperationRepo;
+use identus_did_prism::utils::paging::Paginated;
 use prism_storage::PostgresDb;
 
 pub mod error;

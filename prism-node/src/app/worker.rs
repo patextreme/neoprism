@@ -1,5 +1,5 @@
-use prism_core::dlt::{DltSource, OperationMetadata};
-use prism_core::repo::OperationRepo;
+use identus_did_prism::dlt::{DltSource, OperationMetadata};
+use identus_did_prism::repo::OperationRepo;
 use prism_storage::PostgresDb;
 
 pub struct DltSyncWorker<Src> {

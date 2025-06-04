@@ -1,5 +1,5 @@
+use identus_did_prism::dlt::cardano::NetworkIdentifier;
 use maud::{DOCTYPE, Markup, html};
-use prism_core::dlt::cardano::NetworkIdentifier;
 
 use crate::http::urls;
 

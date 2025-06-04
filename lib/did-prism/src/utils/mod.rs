@@ -13,7 +13,7 @@ static URI_FRAGMENT_RE: LazyLock<Regex> = LazyLock::new(|| {
 ///
 /// # Examples
 /// ```
-/// use prism_core::utils::is_slice_unique;
+/// use identus_did_prism::utils::is_slice_unique;
 /// assert_eq!(is_slice_unique(&[1, 2, 3]), true);
 /// assert_eq!(is_slice_unique(&[1, 2, 2]), false);
 /// assert_eq!(is_slice_unique(&[1, 1, 1]), false);
@@ -31,7 +31,7 @@ where
 ///
 /// # Example
 /// ```
-/// use prism_core::utils::is_uri;
+/// use identus_did_prism::utils::is_uri;
 ///
 /// assert_eq!(is_uri("http://example.com"), true);
 /// assert_eq!(is_uri("ftps://example.com/help?q=example"), true);
@@ -54,7 +54,7 @@ pub fn is_uri(s: &str) -> bool {
 /// # Example
 ///
 /// ```
-/// use prism_core::utils::is_uri_fragment;
+/// use identus_did_prism::utils::is_uri_fragment;
 ///
 /// assert_eq!(is_uri_fragment("hello"), true);
 /// assert_eq!(is_uri_fragment("hello%20world"), true);

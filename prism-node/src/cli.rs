@@ -2,7 +2,7 @@ use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
 use clap::Parser;
-use prism_core::dlt::cardano::NetworkIdentifier;
+use identus_did_prism::dlt::cardano::NetworkIdentifier;
 
 #[derive(Parser)]
 pub struct CliArgs {
@@ -35,7 +35,7 @@ pub struct CliArgs {
 mod parser {
     use std::str::FromStr;
 
-    use prism_core::dlt::cardano::NetworkIdentifier;
+    use identus_did_prism::dlt::cardano::NetworkIdentifier;
 
     pub fn parse_network_identifier(s: &str) -> Result<NetworkIdentifier, String> {
         let values = NetworkIdentifier::variants()

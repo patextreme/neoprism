@@ -9,7 +9,6 @@ chrono = { workspace = true, features = ["serde"] }
 derive_more = { workspace = true, features = ["from", "display", "error"] }
 identus-apollo = { workspace = true, features = ["hex"] }
 lazybe = { workspace = true, features = ["postgres"] }
-prism-core = { path = "../prism-core" }
 prost = { workspace = true }
 sea-query = { workspace = true, features = [
   "backend-postgres",
@@ -19,3 +18,5 @@ sea-query = { workspace = true, features = [
 serde = { workspace = true }
 sqlx = { workspace = true, features = ["postgres", "uuid", "chrono"] }
 tracing = { workspace = true }
+
+identus-did-prism = { workspace = true }

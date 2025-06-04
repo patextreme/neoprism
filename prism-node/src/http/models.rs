@@ -2,8 +2,8 @@ use identus_apollo::jwk::EncodeJwk;
 use identus_did_core::{
     DidDocument, Service, ServiceEndpoint, ServiceType, StringOrMap, VerificationMethod, VerificationMethodOrRef,
 };
-use prism_core::did::operation::KeyUsage;
-use prism_core::did::{DidState, operation};
+use identus_did_prism::did::operation::KeyUsage;
+use identus_did_prism::did::{DidState, operation};
 
 pub fn new_did_document(did: &str, did_state: &DidState) -> DidDocument {
     let mut context = vec!["https://www.w3.org/ns/did/v1".to_string()];

@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
 use identus_apollo::hex::HexStr;
+use identus_did_prism::did::CanonicalPrismDid;
 use lazybe::macros::{Entity, Newtype};
 use lazybe::uuid::Uuid;
-use prism_core::did::CanonicalPrismDid;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Newtype, derive_more::From)]

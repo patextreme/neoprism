@@ -1,9 +1,9 @@
 use identus_apollo::hex::HexStr;
+use identus_did_prism::did::CanonicalPrismDid;
+use identus_did_prism::dlt::DltCursor;
+use identus_did_prism::dlt::cardano::NetworkIdentifier;
+use identus_did_prism::utils::paging::Paginated;
 use maud::{Markup, html};
-use prism_core::did::CanonicalPrismDid;
-use prism_core::dlt::DltCursor;
-use prism_core::dlt::cardano::NetworkIdentifier;
-use prism_core::utils::paging::Paginated;
 
 use crate::http::features::ui_explorer::models::PageQuery;
 use crate::http::features::ui_resolver::models::DidQuery;
