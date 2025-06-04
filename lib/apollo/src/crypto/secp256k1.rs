@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
-use identus_apollo::base64::Base64UrlStrNoPad;
-use identus_apollo::jwk::{EncodeJwk, Jwk};
+use crate::base64::Base64UrlStrNoPad;
+use crate::jwk::{EncodeJwk, Jwk};
 use k256::Secp256k1;
 use k256::ecdsa::signature::Verifier;
 use k256::elliptic_curve::sec1::{EncodedPoint, ToEncodedPoint};

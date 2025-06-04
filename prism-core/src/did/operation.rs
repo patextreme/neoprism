@@ -2,6 +2,10 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 
 use enum_dispatch::enum_dispatch;
+use identus_apollo::crypto::ed25519::Ed25519PublicKey;
+use identus_apollo::crypto::secp256k1::Secp256k1PublicKey;
+use identus_apollo::crypto::x25519::X25519PublicKey;
+use identus_apollo::crypto::{Error as CryptoError, ToPublicKey};
 use identus_apollo::jwk::EncodeJwk;
 use regex::Regex;
 
@@ -10,10 +14,6 @@ use super::error::{
     CreateOperationError, DeactivateOperationError, Error, PublicKeyError, PublicKeyIdError, ServiceEndpointError,
     ServiceError, ServiceIdError, ServiceTypeError, UpdateOperationError,
 };
-use crate::crypto::ed25519::Ed25519PublicKey;
-use crate::crypto::secp256k1::Secp256k1PublicKey;
-use crate::crypto::x25519::X25519PublicKey;
-use crate::crypto::{EncodeVec, Error as CryptoError, ToPublicKey};
 use crate::error::InvalidInputSizeError;
 use crate::location;
 use crate::prelude::{AtalaOperation, SignedAtalaOperation};
@@ -370,10 +370,12 @@ impl PublicKey {
         let Some(key_data) = &public_key.key_data else {
             Err(PublicKeyError::MissingKeyData { id: id.clone() })?
         };
-        let pk = NonMasterPublicKey::parse(key_data).map_err(|e| PublicKeyError::Crypto {
-            source: e,
-            id: id.clone(),
-        })?;
+        let pk = NonMasterPublicKey::parse(key_data)
+            .map_err(|e| PublicKeyError::InvalidKeyData {
+                source: e,
+                id: id.clone(),
+            })?
+            .ok_or_else(|| PublicKeyError::UnsupportedCurve { id: id.clone() })?;
         let data = match (usage, pk) {
             (KeyUsage::MasterKey, NonMasterPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
             (KeyUsage::MasterKey, _) => Err(PublicKeyError::MasterKeyNotSecp256k1 { id: id.clone() })?,
@@ -400,17 +402,17 @@ pub enum NonMasterPublicKey {
 }
 
 impl NonMasterPublicKey {
-    pub fn parse(key_data: &KeyData) -> Result<Self, CryptoError> {
+    pub fn parse(key_data: &KeyData) -> Result<Option<Self>, CryptoError> {
         let curve_name: &str = match key_data {
             KeyData::EcKeyData(k) => &k.curve,
             KeyData::CompressedEcKeyData(k) => &k.curve,
         };
 
         match curve_name {
-            "secp256k1" => Ok(Self::Secp256k1(Self::convert_secp256k1(key_data)?)),
-            "Ed25519" => Ok(Self::Ed25519(Self::convert_ed25519(key_data)?)),
-            "X25519" => Ok(Self::X25519(Self::convert_x25519(key_data)?)),
-            c => Err(CryptoError::UnsupportedCurve { curve: c.to_string() }),
+            "secp256k1" => Ok(Some(Self::Secp256k1(Self::convert_secp256k1(key_data)?))),
+            "Ed25519" => Ok(Some(Self::Ed25519(Self::convert_ed25519(key_data)?))),
+            "X25519" => Ok(Some(Self::X25519(Self::convert_x25519(key_data)?))),
+            _ => Ok(None),
         }
     }
 

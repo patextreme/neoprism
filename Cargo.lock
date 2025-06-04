@@ -1638,9 +1638,12 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "derive_more",
+ "ed25519-dalek",
  "hex",
+ "k256",
  "serde",
  "utoipa",
+ "x25519-dalek",
 ]
 
 [[package]]
@@ -2512,11 +2515,9 @@ dependencies = [
  "async-trait",
  "chrono",
  "derive_more",
- "ed25519-dalek",
  "enum_dispatch",
  "identus-apollo",
  "im-rc",
- "k256",
  "oura",
  "prost",
  "prost-build",
@@ -2529,7 +2530,6 @@ dependencies = [
  "tokio",
  "tracing",
  "uriparse",
- "x25519-dalek",
 ]
 
 [[package]]

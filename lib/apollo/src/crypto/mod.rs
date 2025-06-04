@@ -1,10 +1,10 @@
-use enum_dispatch::enum_dispatch;
-
+#[cfg(feature = "ed25519")]
 pub mod ed25519;
+#[cfg(feature = "secp256k1")]
 pub mod secp256k1;
+#[cfg(feature = "x25519")]
 pub mod x25519;
 
-#[enum_dispatch]
 pub trait EncodeVec {
     fn encode_vec(&self) -> Vec<u8>;
 }
@@ -25,14 +25,14 @@ pub enum Error {
         actual: usize,
         key_type: &'static str,
     },
+    #[cfg(feature = "ed25519")]
     #[from]
     #[display("unable to parse Ed25519 key")]
     Ed25519KeyParsing { source: ed25519_dalek::SignatureError },
+    #[cfg(feature = "secp256k1")]
     #[from]
     #[display("unable to parse secp256k1 key")]
     Secp256k1KeyParsing { source: ::k256::elliptic_curve::Error },
-    #[display("unsupported curve {curve}")]
-    UnsupportedCurve { curve: String },
 }
 
 pub trait ToPublicKey<Pk> {

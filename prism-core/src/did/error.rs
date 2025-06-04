@@ -126,12 +126,13 @@ pub enum PublicKeyError {
         #[error(not(source))]
         id: PublicKeyId,
     },
-    #[from]
     #[display("unable to parse key data to a public key for id {id}")]
-    Crypto {
-        source: crate::crypto::Error,
+    InvalidKeyData {
+        source: identus_apollo::crypto::Error,
         id: PublicKeyId,
     },
+    #[display("unsupported curve for key id {id}")]
+    UnsupportedCurve { id: PublicKeyId },
 }
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]

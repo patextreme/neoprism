@@ -17,11 +17,17 @@ utoipa = { workspace = true, optional = true }
 
 base64 = { version = "0.22", optional = true }
 hex = { version = "0.4", optional = true }
+ed25519-dalek = { version = "2", optional = true }
+k256 = { version = "0.13", optional = true, features = ["arithmetic", "ecdsa"] }
+x25519-dalek = { version = "2", optional = true }
 
 [features]
 default = []
-serde = ["dep:serde"]
-hex = ["dep:hex"]
 base64 = ["dep:base64"]
+ed25519 = ["jwk", "dep:ed25519-dalek"]
+hex = ["dep:hex"]
 jwk = ["base64"]
 openapi = ["serde", "dep:utoipa"]
+secp256k1 = ["jwk", "dep:k256"]
+serde = ["dep:serde"]
+x25519 = ["jwk", "dep:x25519-dalek"]

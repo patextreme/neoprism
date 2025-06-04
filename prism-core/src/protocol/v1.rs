@@ -3,7 +3,7 @@ use prost::Message;
 use super::{
     DidStateConflictError, DidStateRc, OperationProcessor, OperationProcessorVariants, ProcessError, ProtocolParameter,
 };
-use crate::crypto::Verifiable;
+use identus_apollo::crypto::Verifiable;
 use crate::did::Error as DidError;
 use crate::did::operation::{
     CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId, UpdateOperation, UpdateOperationAction,

@@ -1,7 +1,6 @@
-use identus_apollo::base64::Base64UrlStrNoPad;
-use identus_apollo::jwk::{EncodeJwk, Jwk};
-
 use super::{EncodeArray, EncodeVec, Error, ToPublicKey};
+use crate::base64::Base64UrlStrNoPad;
+use crate::jwk::{EncodeJwk, Jwk};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct X25519PublicKey(x25519_dalek::PublicKey);

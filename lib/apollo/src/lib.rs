@@ -1,3 +1,7 @@
+#![feature(split_array)]
+
+pub mod crypto;
+
 #[cfg(feature = "hex")]
 pub mod hex;
 
