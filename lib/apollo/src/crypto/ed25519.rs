@@ -1,7 +1,6 @@
+use super::{EncodeArray, EncodeVec, Error, ToPublicKey, Verifiable};
 use crate::base64::Base64UrlStrNoPad;
 use crate::jwk::{EncodeJwk, Jwk};
-
-use super::{EncodeArray, EncodeVec, Error, ToPublicKey, Verifiable};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ed25519PublicKey(ed25519_dalek::VerifyingKey);

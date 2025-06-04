@@ -1,7 +1,14 @@
 use ring::digest;
 
-use crate::error::InvalidInputSizeError;
-use crate::location;
+#[derive(Debug, derive_more::Display, derive_more::Error)]
+pub enum Error {
+    #[display("hash operation encounter invalid input size")]
+    InvalidByteSize {
+        type_name: &'static str,
+        expected: usize,
+        actual: usize,
+    },
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::From)]
 pub struct Sha256Digest([u8; 32]);
@@ -25,20 +32,19 @@ impl Sha256Digest {
     /// # Example
     ///
     /// ```
-    /// use prism_core::utils::hash::Sha256Digest;
+    /// use identus_apollo::hash::Sha256Digest;
     /// let digest = Sha256Digest::from_bytes(&vec![42u8; 32]).unwrap();
     /// assert_eq!(digest.as_bytes(), vec![42u8; 32]);
     ///
     /// let digest = Sha256Digest::from_bytes(&vec![42u8; 31]);
     /// assert!(digest.is_err());
     /// ```
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, InvalidInputSizeError> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != 32 {
-            Err(InvalidInputSizeError::NotExact {
+            Err(Error::InvalidByteSize {
+                type_name: std::any::type_name::<Self>(),
                 expected: 32,
                 actual: bytes.len(),
-                type_name: std::any::type_name::<Self>(),
-                location: location!(),
             })?
         }
 

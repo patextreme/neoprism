@@ -42,8 +42,6 @@ utoipa = "5"
 # db
 sqlx = "0.8"
 sea-query = "0.32"
-# crypto
-ring = "0.17" # hash
 # proto
 prost = "0.13"
 prost-types = "0.13"

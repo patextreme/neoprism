@@ -1,9 +1,10 @@
+use identus_apollo::crypto::Verifiable;
+use identus_apollo::hash::sha256;
 use prost::Message;
 
 use super::{
     DidStateConflictError, DidStateRc, OperationProcessor, OperationProcessorVariants, ProcessError, ProtocolParameter,
 };
-use identus_apollo::crypto::Verifiable;
 use crate::did::Error as DidError;
 use crate::did::operation::{
     CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId, UpdateOperation, UpdateOperationAction,
@@ -15,7 +16,6 @@ use crate::proto::{
     CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation, SignedAtalaOperation,
     UpdateDidOperation,
 };
-use crate::utils::hash::sha256;
 
 #[derive(Debug, Clone, Default)]
 pub struct V1Processor {

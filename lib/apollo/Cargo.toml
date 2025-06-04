@@ -15,6 +15,7 @@ derive_more = { workspace = true, features = [
 serde = { workspace = true, optional = true, features = ["derive"] }
 utoipa = { workspace = true, optional = true }
 
+ring = { version = "0.17", optional = true }
 base64 = { version = "0.22", optional = true }
 hex = { version = "0.4", optional = true }
 ed25519-dalek = { version = "2", optional = true }
@@ -25,6 +26,7 @@ x25519-dalek = { version = "2", optional = true }
 default = []
 base64 = ["dep:base64"]
 ed25519 = ["jwk", "dep:ed25519-dalek"]
+hash = ["dep:ring"]
 hex = ["dep:hex"]
 jwk = ["base64"]
 openapi = ["serde", "dep:utoipa"]

@@ -18,7 +18,13 @@ derive_more = { workspace = true, features = [
   "error",
 ] }
 enum_dispatch = { workspace = true }
-identus-apollo = { workspace = true, features = ["hex", "secp256k1", "ed25519", "x25519"] }
+identus-apollo = { workspace = true, features = [
+  "hash",
+  "hex",
+  "secp256k1",
+  "ed25519",
+  "x25519",
+] }
 im-rc = { workspace = true }
 prost-types = { workspace = true }
 prost = { workspace = true }
@@ -29,8 +35,6 @@ strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
 tracing = { workspace = true }
 uriparse = { workspace = true }
-# crypto
-ring = { workspace = true }
 # cardano
 oura = { workspace = true, optional = true }
 

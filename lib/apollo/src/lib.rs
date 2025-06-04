@@ -2,6 +2,9 @@
 
 pub mod crypto;
 
+#[cfg(feature = "hash")]
+pub mod hash;
+
 #[cfg(feature = "hex")]
 pub mod hex;
 

@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
-use identus_apollo::hex::HexStr;
 use identus_apollo::crypto::secp256k1::Secp256k1PublicKey;
 use identus_apollo::crypto::{ToPublicKey, Verifiable};
+use identus_apollo::hex::HexStr;
 
 /// test vector from https://github.com/hyperledger/identus-apollo/pull/154/files
 const TEST_VECTOR: [TestInput; 50] = [

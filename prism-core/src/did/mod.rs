@@ -4,6 +4,7 @@ use std::sync::LazyLock;
 use enum_dispatch::enum_dispatch;
 use error::DidSyntaxError;
 use identus_apollo::base64::Base64UrlStrNoPad;
+use identus_apollo::hash::{Sha256Digest, sha256};
 use identus_apollo::hex::HexStr;
 use prost::Message;
 use regex::Regex;
@@ -11,7 +12,6 @@ use regex::Regex;
 use self::operation::{PublicKey, Service};
 use crate::proto::AtalaOperation;
 use crate::proto::atala_operation::Operation;
-use crate::utils::hash::{Sha256Digest, sha256};
 
 pub mod error;
 pub mod operation;

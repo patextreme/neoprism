@@ -28,7 +28,7 @@ pub enum Error {
 pub enum DidSyntaxError {
     #[display("did suffix {suffix} has invalid length")]
     DidSuffixInvalidHex {
-        source: InvalidInputSizeError,
+        source: identus_apollo::hash::Error,
         suffix: HexStr,
     },
     #[display("did suffix {suffix} is not valid")]
@@ -79,8 +79,9 @@ pub enum CreateOperationError {
 pub enum UpdateOperationError {
     #[display("update action does not exist in UpdateOperation")]
     EmptyAction,
+    #[from]
     #[display("invalid previous operation hash in UpdateOperation")]
-    InvalidPreviousOperationHash { source: InvalidInputSizeError },
+    InvalidPreviousOperationHash { source: identus_apollo::hash::Error },
     #[from]
     #[display("did provided in UpdateOperation is not valid")]
     InvalidDidSyntax { source: DidSyntaxError },
@@ -100,7 +101,7 @@ pub enum UpdateOperationError {
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum DeactivateOperationError {
     #[display("invalid previous operation hash in DeactivateOperation")]
-    InvalidPreviousOperationHash { source: InvalidInputSizeError },
+    InvalidPreviousOperationHash { source: identus_apollo::hash::Error },
     #[from]
     #[display("did provided in DeactivateOperation is not valid")]
     InvalidDidSyntax { source: DidSyntaxError },

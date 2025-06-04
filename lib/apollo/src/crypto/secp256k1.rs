@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 
-use crate::base64::Base64UrlStrNoPad;
-use crate::jwk::{EncodeJwk, Jwk};
 use k256::Secp256k1;
 use k256::ecdsa::signature::Verifier;
 use k256::elliptic_curve::sec1::{EncodedPoint, ToEncodedPoint};
 
 use super::{EncodeArray, EncodeVec, Error, ToPublicKey, Verifiable};
+use crate::base64::Base64UrlStrNoPad;
+use crate::jwk::{EncodeJwk, Jwk};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Secp256k1PublicKey(k256::PublicKey);

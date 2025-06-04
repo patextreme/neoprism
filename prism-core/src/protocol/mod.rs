@@ -4,6 +4,7 @@ use std::rc::Rc;
 use chrono::DateTime;
 use enum_dispatch::enum_dispatch;
 use error::{DidStateConflictError, ProcessError};
+use identus_apollo::hash::Sha256Digest;
 
 use self::v1::V1Processor;
 use crate::did::operation::{PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType};
@@ -15,7 +16,6 @@ use crate::proto::{
     CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation, SignedAtalaOperation,
     UpdateDidOperation,
 };
-use crate::utils::hash::Sha256Digest;
 
 pub mod error;
 pub mod resolver;

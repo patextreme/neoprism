@@ -3,7 +3,6 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
-pub mod hash;
 pub mod paging;
 
 static URI_FRAGMENT_RE: LazyLock<Regex> = LazyLock::new(|| {

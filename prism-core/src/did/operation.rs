@@ -6,6 +6,7 @@ use identus_apollo::crypto::ed25519::Ed25519PublicKey;
 use identus_apollo::crypto::secp256k1::Secp256k1PublicKey;
 use identus_apollo::crypto::x25519::X25519PublicKey;
 use identus_apollo::crypto::{Error as CryptoError, ToPublicKey};
+use identus_apollo::hash::Sha256Digest;
 use identus_apollo::jwk::EncodeJwk;
 use regex::Regex;
 
@@ -22,7 +23,6 @@ use crate::proto::public_key::KeyData;
 use crate::proto::update_did_action::Action;
 use crate::proto::{self, CreateDidOperation, DeactivateDidOperation, UpdateDidAction, UpdateDidOperation};
 use crate::protocol::ProtocolParameter;
-use crate::utils::hash::Sha256Digest;
 use crate::utils::{is_slice_unique, is_uri, is_uri_fragment};
 
 static SERVICE_TYPE_NAME_RE: LazyLock<Regex> =
