@@ -1,9 +1,9 @@
 use std::error::Report;
 
 use identus_apollo::jwk::EncodeJwk;
-use identus_did_core::DidDocument;
+use identus_did_core::{Did, DidDocument};
 use identus_did_prism::did::operation::{self, PublicKey};
-use identus_did_prism::did::{DidState, PrismDid};
+use identus_did_prism::did::{DidState, PrismDid, PrismDidOps};
 use identus_did_prism::dlt::OperationMetadata;
 use identus_did_prism::dlt::cardano::NetworkIdentifier;
 use identus_did_prism::proto::SignedAtalaOperation;
@@ -21,16 +21,16 @@ pub fn index(network: Option<NetworkIdentifier>) -> Markup {
 
 pub fn resolve(
     network: Option<NetworkIdentifier>,
-    did: &str,
+    did_str: &str,
     did_state: Result<(PrismDid, DidState), ResolutionError>,
     did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>,
 ) -> Markup {
     let resolution_body = match did_state.as_ref() {
         Err(e) => resolution_error_body(e),
-        Ok((_, state)) => did_document_body(did, state),
+        Ok((did, state)) => did_document_body(&did.to_did(), state),
     };
     let body = html! {
-        (search_box(Some(did)))
+        (search_box(Some(did_str)))
         div class="flex flex-row w-screen justify-center" {
             div class="flex flex-col w-full max-w-4xl items-center" {
                 (resolution_body)
@@ -85,7 +85,7 @@ fn resolution_error_body(error: &ResolutionError) -> Markup {
     }
 }
 
-fn did_document_body(did: &str, state: &DidState) -> Markup {
+fn did_document_body(did: &Did, state: &DidState) -> Markup {
     let did_doc = new_did_document(did, state);
     let contexts = state.context.as_slice();
     let public_keys = state.public_keys.as_slice();

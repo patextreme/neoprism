@@ -18,13 +18,6 @@ derive_more = { workspace = true, features = [
   "error",
 ] }
 enum_dispatch = { workspace = true }
-identus-apollo = { workspace = true, features = [
-  "hash",
-  "hex",
-  "secp256k1",
-  "ed25519",
-  "x25519",
-] }
 im-rc = { workspace = true }
 prost-types = { workspace = true }
 prost = { workspace = true }
@@ -37,6 +30,15 @@ tracing = { workspace = true }
 uriparse = { workspace = true }
 # cardano
 oura = { workspace = true, optional = true }
+
+identus-did-core = { workspace = true }
+identus-apollo = { workspace = true, features = [
+  "hash",
+  "hex",
+  "secp256k1",
+  "ed25519",
+  "x25519",
+] }
 
 [build-dependencies]
 prost-build = { workspace = true }

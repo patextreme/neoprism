@@ -6,6 +6,7 @@ use error::DidSyntaxError;
 use identus_apollo::base64::Base64UrlStrNoPad;
 use identus_apollo::hash::{Sha256Digest, sha256};
 use identus_apollo::hex::HexStr;
+use identus_did_core::Did;
 use prost::Message;
 use regex::Regex;
 
@@ -23,7 +24,7 @@ static CANONICAL_SUFFIX_RE: LazyLock<Regex> =
 static LONG_FORM_SUFFIX_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^([0-9a-f]{64}):([A-Za-z0-9_-]+$)").expect("LONG_FORM_SUFFIX_RE regex is invalid"));
 
-#[enum_dispatch(PrismDidLike)]
+#[enum_dispatch(PrismDidOps)]
 #[derive(Clone, PartialEq, Eq, Hash, derive_more::Debug, derive_more::Display)]
 pub enum PrismDid {
     #[display("{_0}")]
@@ -50,7 +51,7 @@ pub struct LongFormPrismDid {
 }
 
 #[enum_dispatch]
-pub trait PrismDidLike {
+pub trait PrismDidOps: std::fmt::Display {
     fn suffix(&self) -> &Sha256Digest;
 
     fn method(&self) -> &'static str {
@@ -62,9 +63,14 @@ pub trait PrismDidLike {
     }
 
     fn into_canonical(self) -> CanonicalPrismDid;
+
+    fn to_did(&self) -> Did {
+        let s = self.to_string();
+        Did::from_str(&s).expect("type implement PrismDidOps does not construct a valid DID syntax")
+    }
 }
 
-impl PrismDidLike for CanonicalPrismDid {
+impl PrismDidOps for CanonicalPrismDid {
     fn suffix(&self) -> &Sha256Digest {
         &self.suffix
     }
@@ -74,7 +80,7 @@ impl PrismDidLike for CanonicalPrismDid {
     }
 }
 
-impl PrismDidLike for LongFormPrismDid {
+impl PrismDidOps for LongFormPrismDid {
     fn suffix(&self) -> &Sha256Digest {
         &self.suffix
     }

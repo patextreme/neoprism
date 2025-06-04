@@ -1,11 +1,11 @@
 use identus_apollo::jwk::EncodeJwk;
 use identus_did_core::{
-    DidDocument, Service, ServiceEndpoint, ServiceType, StringOrMap, VerificationMethod, VerificationMethodOrRef,
+    Did, DidDocument, Service, ServiceEndpoint, ServiceType, StringOrMap, VerificationMethod, VerificationMethodOrRef,
 };
 use identus_did_prism::did::operation::KeyUsage;
 use identus_did_prism::did::{DidState, operation};
 
-pub fn new_did_document(did: &str, did_state: &DidState) -> DidDocument {
+pub fn new_did_document(did: &Did, did_state: &DidState) -> DidDocument {
     let mut context = vec!["https://www.w3.org/ns/did/v1".to_string()];
     context.extend(did_state.context.clone());
 
@@ -34,7 +34,7 @@ pub fn new_did_document(did: &str, did_state: &DidState) -> DidDocument {
         .collect();
     DidDocument {
         context,
-        id: did.to_string(),
+        id: did.clone(),
         verification_method,
         authentication: Some(get_relationship(KeyUsage::AuthenticationKey)),
         assertion_method: Some(get_relationship(KeyUsage::IssuingKey)),
@@ -45,7 +45,7 @@ pub fn new_did_document(did: &str, did_state: &DidState) -> DidDocument {
     }
 }
 
-fn transform_key_jwk(did: &str, key: &operation::PublicKey) -> Option<VerificationMethod> {
+fn transform_key_jwk(did: &Did, key: &operation::PublicKey) -> Option<VerificationMethod> {
     match &key.data {
         operation::PublicKeyData::Master { .. } => None,
         operation::PublicKeyData::Other { data, .. } => {

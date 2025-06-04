@@ -1,5 +1,5 @@
 use error::{InvalidDid, ResolutionError};
-use identus_did_prism::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidLike};
+use identus_did_prism::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidOps};
 use identus_did_prism::protocol::resolver::{ResolutionDebug, resolve_published, resolve_unpublished};
 use identus_did_prism::repo::OperationRepo;
 use identus_did_prism::utils::paging::Paginated;

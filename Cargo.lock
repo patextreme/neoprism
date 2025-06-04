@@ -1668,6 +1668,7 @@ dependencies = [
  "derive_more",
  "enum_dispatch",
  "identus-apollo",
+ "identus-did-core",
  "im-rc",
  "oura",
  "prost",

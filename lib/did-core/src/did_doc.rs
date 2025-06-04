@@ -1,13 +1,15 @@
 use identus_apollo::jwk::Jwk;
 use serde::{Deserialize, Serialize};
 
+use crate::Did;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocument {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
     pub context: Vec<String>,
-    pub id: String,
+    pub id: Did,
     pub verification_method: Vec<VerificationMethod>,
     pub authentication: Option<Vec<VerificationMethodOrRef>>,
     pub assertion_method: Option<Vec<VerificationMethodOrRef>>,

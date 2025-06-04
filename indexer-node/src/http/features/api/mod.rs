@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
 use identus_did_core::DidDocument;
+use identus_did_prism::did::PrismDidOps;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -42,6 +43,6 @@ async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>) -> 
         Err(ResolutionError::InvalidDid { .. }) => Err(StatusCode::BAD_REQUEST),
         Err(ResolutionError::NotFound) => Err(StatusCode::NOT_FOUND),
         Err(ResolutionError::InternalError { .. }) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-        Ok((did, did_state)) => Ok(Json(new_did_document(&did.to_string(), &did_state))),
+        Ok((did, did_state)) => Ok(Json(new_did_document(&did.to_did(), &did_state))),
     }
 }
