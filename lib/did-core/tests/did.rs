@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use identity_did::CoreDID;
 use identus_did_core::{Did, DidOps, DidUrl};
 
 #[test]
@@ -10,10 +9,18 @@ fn parse_did() {
     assert_eq!(did.method(), "example");
     assert_eq!(did.method_id(), "abcdefghi");
 
-    let did: Did = "did:prism:9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595".parse().unwrap();
-    assert_eq!(did.to_string(), "did:prism:9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595");
+    let did: Did = "did:prism:9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595"
+        .parse()
+        .unwrap();
+    assert_eq!(
+        did.to_string(),
+        "did:prism:9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595"
+    );
     assert_eq!(did.method(), "prism");
-    assert_eq!(did.method_id(), "9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595");
+    assert_eq!(
+        did.method_id(),
+        "9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595"
+    );
 }
 
 #[test]
@@ -35,8 +42,13 @@ fn parse_did_url() {
     // assert_eq!(did.method(), "example");
     // assert_eq!(did.method_id(), "abcdefghi");
 
-    let did: DidUrl = "did:prism:9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595".parse().unwrap();
-    assert_eq!(did.to_string(), "did:prism:9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595");
+    let did: DidUrl = "did:prism:9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595"
+        .parse()
+        .unwrap();
+    assert_eq!(
+        did.to_string(),
+        "did:prism:9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595"
+    );
     // assert_eq!(did.method(), "prism");
     // assert_eq!(did.method_id(), "9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595");
 }
