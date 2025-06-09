@@ -18,10 +18,7 @@ use crate::location;
 use crate::repo::DltCursorRepo;
 
 mod model {
-    use std::str::FromStr;
-
     use chrono::{DateTime, Utc};
-    use identus_apollo::hex::HexStr;
     use oura::model::{EventContext, MetadataRecord};
     use prost::Message;
     use serde::{Deserialize, Serialize};
@@ -101,31 +98,40 @@ mod model {
         };
 
         // parse atala_block
-        let hex_group = match metadata.content {
-            oura::model::MetadatumRendition::MapJson(json) => {
-                let meta = serde_json::from_value::<MetadataMapJson>(json).map_err(|e| {
-                    MetadataReadError::InvalidJsonType {
-                        source: e.into(),
-                        block_hash: block_hash.clone(),
-                        tx_idx,
-                    }
-                })?;
-                meta.c
-            }
-            _ => Err(MetadataReadError::InvalidJsonType {
-                source: "Metadata is not a MapJson type".to_string().into(),
-                block_hash: block_hash.clone(),
-                tx_idx,
-            })?,
-        };
-        let hex = hex_group.join("");
-        let bytes = HexStr::from_str(&hex)
-            .map_err(|e| MetadataReadError::AtalaBlockHexDecode {
-                source: e,
-                block_hash: block_hash.clone(),
-                tx_idx,
-            })?
-            .to_bytes();
+        let byte_group = match metadata.metadadum {
+            pallas_primitives::alonzo::Metadatum::Map(kv) => kv
+                .to_vec()
+                .into_iter()
+                .find(|(k, _)| match k {
+                    pallas_primitives::alonzo::Metadatum::Text(k) => k == "c",
+                    _ => false,
+                })
+                .and_then(|(_, v)| match v {
+                    pallas_primitives::alonzo::Metadatum::Array(ms) => Some(ms),
+                    _ => None,
+                })
+                .and_then(|byte_group| {
+                    byte_group
+                        .into_iter()
+                        .map(|b| match b {
+                            pallas_primitives::alonzo::Metadatum::Bytes(bytes) => Some(bytes.to_vec()),
+                            _ => None,
+                        })
+                        .collect::<Option<Vec<_>>>()
+                }),
+            _ => None,
+        }
+        .ok_or(MetadataReadError::InvalidMetadataType {
+            source: "Metadata is not a valid type".to_string().into(),
+            block_hash: block_hash.clone(),
+            tx_idx,
+        })?;
+
+        let mut bytes = Vec::with_capacity(64 * byte_group.len());
+        for mut b in byte_group.into_iter() {
+            bytes.append(&mut b);
+        }
+
         let atala_object =
             AtalaObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::AtalaBlockProtoDecode {
                 source: e,

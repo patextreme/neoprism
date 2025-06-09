@@ -30,7 +30,6 @@ enum_dispatch = "0.3"
 im-rc = "15"
 lazybe = "0.2"
 maud = "0.27"
-oura = "1.9"
 regex = "1"
 serde = "1"
 serde_json = "1"
@@ -44,6 +43,9 @@ utoipa = "5"
 # db
 sqlx = "0.8"
 sea-query = "0.32"
+# cardano
+oura = { git = "https://github.com/patextreme/oura.git", rev = "dd10323ecf95dcd7dd45edb46ef566d19af2eff8" }
+pallas-primitives = "0.30"
 # proto
 prost = "0.13"
 prost-types = "0.13"

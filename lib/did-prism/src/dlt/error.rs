@@ -18,7 +18,7 @@ pub enum DltError {
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub(crate) enum MetadataReadError {
     #[display("metadata is not a valid json on block {block_hash:?} tx {tx_idx:?}")]
-    InvalidJsonType {
+    InvalidMetadataType {
         source: StdError,
         block_hash: Option<String>,
         tx_idx: Option<usize>,

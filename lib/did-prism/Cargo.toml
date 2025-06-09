@@ -30,6 +30,7 @@ tracing = { workspace = true }
 uriparse = { workspace = true }
 # cardano
 oura = { workspace = true, optional = true }
+pallas-primitives = { workspace = true, optional = true }
 
 identus-did-core = { workspace = true }
 identus-apollo = { workspace = true, features = [
@@ -45,4 +46,4 @@ prost-build = { workspace = true }
 
 [features]
 default = []
-oura = ["dep:oura", "tokio/rt", "tokio/time"]
+oura = ["dep:oura", "dep:pallas-primitives", "tokio/rt", "tokio/time"]
