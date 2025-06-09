@@ -14,6 +14,7 @@ pub enum DltError {
 }
 
 /// This is an internal error type that should be handled when streaming from DLT source.
+#[allow(unused)]
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub(crate) enum MetadataReadError {
     #[display("metadata is not a valid json on block {block_hash:?} tx {tx_idx:?}")]
