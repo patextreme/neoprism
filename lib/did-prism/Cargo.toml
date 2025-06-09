@@ -45,4 +45,4 @@ prost-build = { workspace = true }
 
 [features]
 default = []
-cardano = ["dep:oura", "tokio/rt", "tokio/time"]
+oura = ["dep:oura", "tokio/rt", "tokio/time"]

@@ -1,12 +1,13 @@
 use chrono::{DateTime, Utc};
+use strum::VariantArray;
 use tokio::sync::mpsc::Receiver;
 
 use crate::proto::AtalaObject;
 
 pub mod error;
 
-#[cfg(feature = "cardano")]
-pub mod cardano;
+#[cfg(feature = "oura")]
+pub mod oura;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DltCursor {
@@ -63,4 +64,20 @@ pub trait DltSource {
 
 pub trait DltSink {
     fn send(&mut self, atala_object: AtalaObject);
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
+pub enum NetworkIdentifier {
+    #[strum(serialize = "mainnet")]
+    Mainnet,
+    #[strum(serialize = "preprod")]
+    Preprod,
+    #[strum(serialize = "preview")]
+    Preview,
+}
+
+impl NetworkIdentifier {
+    pub fn variants() -> &'static [Self] {
+        Self::VARIANTS
+    }
 }

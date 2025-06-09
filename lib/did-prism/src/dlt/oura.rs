@@ -8,12 +8,12 @@ use oura::pipelining::{SourceProvider, StageReceiver};
 use oura::sources::n2n::Config;
 use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
 use oura::utils::{ChainWellKnownInfo, Utils, WithUtils};
-use strum::VariantArray;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
 use super::error::DltError;
 use super::{DltCursor, DltSource, PublishedAtalaObject};
+use crate::dlt::NetworkIdentifier;
 use crate::location;
 use crate::repo::DltCursorRepo;
 
@@ -140,21 +140,7 @@ mod model {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
-pub enum NetworkIdentifier {
-    #[strum(serialize = "mainnet")]
-    Mainnet,
-    #[strum(serialize = "preprod")]
-    Preprod,
-    #[strum(serialize = "preview")]
-    Preview,
-}
-
 impl NetworkIdentifier {
-    pub fn variants() -> &'static [Self] {
-        Self::VARIANTS
-    }
-
     fn magic_args(&self) -> MagicArg {
         let chain_magic = MagicArg::from_str(&self.to_string());
         chain_magic.expect("The chain magic value cannot be parsed")

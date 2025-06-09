@@ -1,7 +1,6 @@
 use identus_apollo::hex::HexStr;
 use identus_did_prism::did::CanonicalPrismDid;
-use identus_did_prism::dlt::DltCursor;
-use identus_did_prism::dlt::cardano::NetworkIdentifier;
+use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
 use identus_did_prism::utils::paging::Paginated;
 use maud::{Markup, html};
 
