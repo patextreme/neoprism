@@ -1,0 +1,37 @@
+[package]
+name = "indexer-node"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+axum = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+chrono = { workspace = true }
+derive_more = { workspace = true, features = [
+  "as_ref",
+  "from",
+  "into",
+  "debug",
+  "display",
+  "error",
+] }
+lazybe = { workspace = true }
+maud = { workspace = true, features = ["axum"] }
+serde_json = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+sqlx = { workspace = true, features = ["runtime-tokio"] }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tower-http = { workspace = true, features = ["fs", "trace"] }
+
+utoipa = { workspace = true, features = ["chrono"] }
+utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
+
+identus-apollo = { workspace = true, features = ["hex", "jwk"] }
+identus-did-core = { workspace = true, features = ["openapi"] }
+identus-did-prism = { workspace = true, features = ["oura"] }
+indexer-storage = { workspace = true }

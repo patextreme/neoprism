@@ -1,19 +1,32 @@
 [workspace]
-members = ["prism-core", "prism-node", "prism-storage"]
 resolver = "3"
+members = [
+  "lib/apollo",
+  "lib/did-core",
+  "lib/did-prism",
+  "indexer-node",
+  "indexer-storage",
+]
 
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
 
 [workspace.dependencies]
+# internal
+identus-apollo = { path = "lib/apollo" }
+identus-did-core = { path = "lib/did-core" }
+identus-did-prism = { path = "lib/did-prism" }
+indexer-storage = { path = "indexer-storage" }
 # general
 anyhow = "1"
 async-trait = "0.1"
 axum = "0.8"
-base64 = "0.22"
 chrono = "0.4"
 clap = "4"
 derive_more = "2"
 enum_dispatch = "0.3"
-hex = "0.4"
 im-rc = "15"
 lazybe = "0.2"
 maud = "0.27"
@@ -23,18 +36,14 @@ serde = "1"
 serde_json = "1"
 strum = "0.27"
 tokio = "1"
+tower-http = "0.6"
 tracing = "0.1"
 tracing-subscriber = "0.3"
-tower-http = "0.6"
 uriparse = "0.6"
+utoipa = "5"
 # db
 sqlx = "0.8"
 sea-query = "0.32"
-# crypto
-ed25519-dalek = "2"
-k256 = "0.13"
-ring = "0.17"
-x25519-dalek = "2"
 # proto
 prost = "0.13"
 prost-types = "0.13"
