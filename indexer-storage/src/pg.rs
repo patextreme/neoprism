@@ -1,7 +1,7 @@
 use identus_did_prism::did::operation::get_did_from_signed_operation;
 use identus_did_prism::dlt::{BlockMetadata, DltCursor, OperationMetadata};
 use identus_did_prism::prelude::*;
-use identus_did_prism::proto::SignedAtalaOperation;
+use identus_did_prism::proto::SignedPrismOperation;
 use identus_did_prism::repo::{DltCursorRepo, OperationRepo};
 use identus_did_prism::utils::paging::Paginated;
 use lazybe::db::DbOps;
@@ -71,7 +71,7 @@ impl OperationRepo for PostgresDb {
     async fn get_operations_by_did(
         &self,
         did: &CanonicalPrismDid,
-    ) -> Result<Vec<(OperationMetadata, SignedAtalaOperation)>, Self::Error> {
+    ) -> Result<Vec<(OperationMetadata, SignedPrismOperation)>, Self::Error> {
         let suffix_bytes = did.suffix().to_vec();
         let mut tx = self.pool.begin().await?;
         let result = self
@@ -98,11 +98,11 @@ impl OperationRepo for PostgresDb {
                     },
                     osn: model.osn.try_into().expect("osn value does not fit in u32"),
                 };
-                SignedAtalaOperation::decode(model.signed_operation_data.as_slice())
+                SignedPrismOperation::decode(model.signed_operation_data.as_slice())
                     .map(|op| (metadata, op))
                     .map_err(|e| Error::ProtobufDecode {
                         source: e,
-                        target_type: std::any::type_name::<SignedAtalaOperation>(),
+                        target_type: std::any::type_name::<SignedPrismOperation>(),
                     })
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -112,7 +112,7 @@ impl OperationRepo for PostgresDb {
 
     async fn insert_operations(
         &self,
-        operations: Vec<(OperationMetadata, SignedAtalaOperation)>,
+        operations: Vec<(OperationMetadata, SignedPrismOperation)>,
     ) -> Result<(), Self::Error> {
         let mut tx = self.pool.begin().await?;
         for (metadata, signed_operation) in operations {

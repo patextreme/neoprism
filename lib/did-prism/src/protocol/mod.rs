@@ -10,11 +10,10 @@ use self::v1::V1Processor;
 use crate::did::operation::{PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType};
 use crate::did::{CanonicalPrismDid, DidState};
 use crate::dlt::{BlockMetadata, OperationMetadata};
-use crate::prelude::AtalaOperation;
-use crate::proto::atala_operation::Operation;
+use crate::prelude::PrismOperation;
+use crate::proto::prism_operation::Operation;
 use crate::proto::{
-    CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation, SignedAtalaOperation,
-    UpdateDidOperation,
+    ProtoCreateDid, ProtoDeactivateDid, ProtoProtocolVersionUpdate, ProtoUpdateDid, SignedPrismOperation,
 };
 
 pub mod error;
@@ -30,8 +29,8 @@ pub struct ProtocolParameter {
     pub max_service_endpoint_size: usize,
 }
 
-impl Default for ProtocolParameter {
-    fn default() -> Self {
+impl ProtocolParameter {
+    fn v1() -> Self {
         Self {
             max_services: 50,
             max_public_keys: 50,
@@ -236,11 +235,11 @@ struct DidStateProcessingContext<CtxType> {
 }
 
 fn init_published_context(
-    signed_operation: SignedAtalaOperation,
+    signed_operation: SignedPrismOperation,
     metadata: OperationMetadata,
 ) -> Result<DidStateProcessingContext<Published>, ProcessError> {
     let Some(operation) = &signed_operation.operation else {
-        Err(ProcessError::SignedAtalaOperationMissingOperation)?
+        Err(ProcessError::SignedPrismOperationMissingOperation)?
     };
 
     let did = CanonicalPrismDid::from_operation(operation)?;
@@ -257,11 +256,11 @@ fn init_published_context(
             })
         }
         Some(_) => Err(ProcessError::DidStateInitFromNonCreateOperation),
-        None => Err(ProcessError::SignedAtalaOperationMissingOperation),
+        None => Err(ProcessError::SignedPrismOperationMissingOperation),
     }
 }
 
-fn init_unpublished_context(operation: AtalaOperation) -> Result<DidStateProcessingContext<Unpublished>, ProcessError> {
+fn init_unpublished_context(operation: PrismOperation) -> Result<DidStateProcessingContext<Unpublished>, ProcessError> {
     let unpublished_metadata = OperationMetadata {
         block_metadata: BlockMetadata {
             slot_number: 0,
@@ -284,7 +283,7 @@ fn init_unpublished_context(operation: AtalaOperation) -> Result<DidStateProcess
             })
         }
         Some(_) => Err(ProcessError::DidStateInitFromNonCreateOperation),
-        None => Err(ProcessError::SignedAtalaOperationMissingOperation),
+        None => Err(ProcessError::SignedPrismOperationMissingOperation),
     }
 }
 
@@ -297,7 +296,7 @@ impl<T> DidStateProcessingContext<T> {
 impl DidStateProcessingContext<Published> {
     fn process(
         mut self,
-        signed_operation: SignedAtalaOperation,
+        signed_operation: SignedPrismOperation,
         metadata: OperationMetadata,
     ) -> (Self, Option<ProcessError>) {
         let signature_verification = self.processor.check_signature(&self.state, &signed_operation);
@@ -306,7 +305,7 @@ impl DidStateProcessingContext<Published> {
         }
 
         let Some(operation) = signed_operation.operation else {
-            return (self, Some(ProcessError::SignedAtalaOperationMissingOperation));
+            return (self, Some(ProcessError::SignedPrismOperationMissingOperation));
         };
 
         let process_result = match operation.operation {
@@ -323,7 +322,10 @@ impl DidStateProcessingContext<Published> {
                 .processor
                 .protocol_version_update(op, metadata)
                 .map(|s| (None, Some(s))),
-            None => Err(ProcessError::SignedAtalaOperationMissingOperation),
+            Some(Operation::CreateStorageEntry(_)) => unimplemented!(),
+            Some(Operation::UpdateStorageEntry(_)) => unimplemented!(),
+            Some(Operation::DeactivateStorageEntry(_)) => unimplemented!(),
+            None => Err(ProcessError::SignedPrismOperationMissingOperation),
         };
 
         match process_result {
@@ -343,32 +345,32 @@ impl DidStateProcessingContext<Published> {
 
 #[enum_dispatch]
 trait OperationProcessor {
-    fn check_signature(&self, state: &DidStateRc, signed_operation: &SignedAtalaOperation) -> Result<(), ProcessError>;
+    fn check_signature(&self, state: &DidStateRc, signed_operation: &SignedPrismOperation) -> Result<(), ProcessError>;
 
     fn create_did(
         &self,
         state: &DidStateRc,
-        operation: CreateDidOperation,
+        operation: ProtoCreateDid,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError>;
 
     fn update_did(
         &self,
         state: &DidStateRc,
-        operation: UpdateDidOperation,
+        operation: ProtoUpdateDid,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError>;
 
     fn deactivate_did(
         &self,
         state: &DidStateRc,
-        operation: DeactivateDidOperation,
+        operation: ProtoDeactivateDid,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError>;
 
     fn protocol_version_update(
         &self,
-        operation: ProtocolVersionUpdateOperation,
+        operation: ProtoProtocolVersionUpdate,
         metadata: OperationMetadata,
     ) -> Result<OperationProcessorVariants, ProcessError>;
 }

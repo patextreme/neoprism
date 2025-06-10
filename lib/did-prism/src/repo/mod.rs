@@ -1,6 +1,6 @@
 use crate::did::CanonicalPrismDid;
 use crate::dlt::{DltCursor, OperationMetadata};
-use crate::proto::SignedAtalaOperation;
+use crate::proto::SignedPrismOperation;
 use crate::utils::paging::Paginated;
 
 #[async_trait::async_trait]
@@ -12,16 +12,16 @@ pub trait OperationRepo {
     async fn get_operations_by_did(
         &self,
         did: &CanonicalPrismDid,
-    ) -> Result<Vec<(OperationMetadata, SignedAtalaOperation)>, Self::Error>;
+    ) -> Result<Vec<(OperationMetadata, SignedPrismOperation)>, Self::Error>;
 
     async fn insert_operations(
         &self,
-        operations: Vec<(OperationMetadata, SignedAtalaOperation)>,
+        operations: Vec<(OperationMetadata, SignedPrismOperation)>,
     ) -> Result<(), Self::Error>;
 
     async fn insert_operation(
         &self,
-        signed_operation: SignedAtalaOperation,
+        signed_operation: SignedPrismOperation,
         metadata: OperationMetadata,
     ) -> Result<(), Self::Error> {
         self.insert_operations(vec![(metadata, signed_operation)]).await

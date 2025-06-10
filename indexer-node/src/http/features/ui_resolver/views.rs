@@ -5,7 +5,7 @@ use identus_did_core::{Did, DidDocument};
 use identus_did_prism::did::operation::{self, PublicKey};
 use identus_did_prism::did::{DidState, PrismDid, PrismDidOps};
 use identus_did_prism::dlt::{NetworkIdentifier, OperationMetadata};
-use identus_did_prism::proto::SignedAtalaOperation;
+use identus_did_prism::proto::SignedPrismOperation;
 use identus_did_prism::protocol::error::ProcessError;
 use maud::{Markup, html};
 
@@ -22,7 +22,7 @@ pub fn resolve(
     network: Option<NetworkIdentifier>,
     did_str: &str,
     did_state: Result<(PrismDid, DidState), ResolutionError>,
-    did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>,
+    did_debug: Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>,
 ) -> Markup {
     let resolution_body = match did_state.as_ref() {
         Err(e) => resolution_error_body(e),
@@ -204,7 +204,7 @@ fn service_card(did_doc: &DidDocument) -> Markup {
     }
 }
 
-fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>) -> Markup {
+fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>) -> Markup {
     let op_elems = did_debug
         .iter()
         .map(|(metadata, signed_op, error)| {

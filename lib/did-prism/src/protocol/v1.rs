@@ -10,25 +10,32 @@ use crate::did::operation::{
     CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId, UpdateOperation, UpdateOperationAction,
 };
 use crate::dlt::OperationMetadata;
-use crate::prelude::AtalaOperation;
-use crate::proto::atala_operation::Operation;
+use crate::prelude::PrismOperation;
+use crate::proto::prism_operation::Operation;
 use crate::proto::{
-    CreateDidOperation, DeactivateDidOperation, ProtocolVersionUpdateOperation, SignedAtalaOperation,
-    UpdateDidOperation,
+    ProtoCreateDid, ProtoDeactivateDid, ProtoProtocolVersionUpdate, ProtoUpdateDid, SignedPrismOperation,
 };
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct V1Processor {
     parameters: ProtocolParameter,
 }
 
+impl Default for V1Processor {
+    fn default() -> Self {
+        Self {
+            parameters: ProtocolParameter::v1(),
+        }
+    }
+}
+
 impl OperationProcessor for V1Processor {
-    fn check_signature(&self, state: &DidStateRc, signed_operation: &SignedAtalaOperation) -> Result<(), ProcessError> {
+    fn check_signature(&self, state: &DidStateRc, signed_operation: &SignedPrismOperation) -> Result<(), ProcessError> {
         let key_id = PublicKeyId::parse(&signed_operation.signed_with, self.parameters.max_id_size)
-            .map_err(|e| ProcessError::SignedAtalaOperationInvalidSignedWith { source: e })?;
+            .map_err(|e| ProcessError::SignedPrismOperationInvalidSignedWith { source: e })?;
 
         let Some(pk) = state.public_keys.get(&key_id) else {
-            Err(ProcessError::SignedAtalaOperationSignedWithKeyNotFound { id: key_id })?
+            Err(ProcessError::SignedPrismOperationSignedWithKeyNotFound { id: key_id })?
         };
 
         match &pk.get().data {
@@ -37,14 +44,14 @@ impl OperationProcessor for V1Processor {
                 let message = signed_operation
                     .operation
                     .as_ref()
-                    .ok_or(ProcessError::SignedAtalaOperationMissingOperation)?
+                    .ok_or(ProcessError::SignedPrismOperationMissingOperation)?
                     .encode_to_vec();
 
                 if !data.verify(&message, signature) {
-                    Err(ProcessError::SignedAtalaOperationInvalidSignature)?
+                    Err(ProcessError::SignedPrismOperationInvalidSignature)?
                 }
             }
-            PublicKeyData::Other { usage, .. } => Err(ProcessError::SignedAtalaOperationSignedWithNonMasterKey {
+            PublicKeyData::Other { usage, .. } => Err(ProcessError::SignedPrismOperationSignedWithNonMasterKey {
                 id: key_id,
                 usage: *usage,
             })?,
@@ -56,7 +63,7 @@ impl OperationProcessor for V1Processor {
     fn create_did(
         &self,
         state: &DidStateRc,
-        operation: CreateDidOperation,
+        operation: ProtoCreateDid,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = CreateOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
@@ -79,7 +86,7 @@ impl OperationProcessor for V1Processor {
     fn update_did(
         &self,
         state: &DidStateRc,
-        operation: UpdateDidOperation,
+        operation: ProtoUpdateDid,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = UpdateOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
@@ -89,7 +96,7 @@ impl OperationProcessor for V1Processor {
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
-        let atala_operation = AtalaOperation {
+        let atala_operation = PrismOperation {
             operation: Some(Operation::UpdateDid(operation)),
         };
         candidate_state.with_last_operation_hash(sha256(atala_operation.encode_to_vec()));
@@ -104,7 +111,7 @@ impl OperationProcessor for V1Processor {
     fn deactivate_did(
         &self,
         state: &DidStateRc,
-        operation: DeactivateDidOperation,
+        operation: ProtoDeactivateDid,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = DeactivateOperation::parse(&operation).map_err(DidError::from)?;
@@ -114,7 +121,7 @@ impl OperationProcessor for V1Processor {
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
-        let atala_operation = AtalaOperation {
+        let atala_operation = PrismOperation {
             operation: Some(Operation::DeactivateDid(operation)),
         };
         candidate_state.with_last_operation_hash(sha256(atala_operation.encode_to_vec()));
@@ -135,7 +142,7 @@ impl OperationProcessor for V1Processor {
 
     fn protocol_version_update(
         &self,
-        _: ProtocolVersionUpdateOperation,
+        _: ProtoProtocolVersionUpdate,
         _: OperationMetadata,
     ) -> Result<OperationProcessorVariants, ProcessError> {
         // TODO: add support for protocol version update
@@ -152,13 +159,13 @@ struct CreateDidValidator;
 struct UpdateDidValidator;
 struct DeactivateDidValidator;
 
-impl Validator<CreateDidOperation> for CreateDidValidator {
+impl Validator<ProtoCreateDid> for CreateDidValidator {
     fn validate_candidate_state(_: &ProtocolParameter, _: &DidStateRc) -> Result<(), ProcessError> {
         Ok(())
     }
 }
 
-impl Validator<UpdateDidOperation> for UpdateDidValidator {
+impl Validator<ProtoUpdateDid> for UpdateDidValidator {
     fn validate_candidate_state(param: &ProtocolParameter, state: &DidStateRc) -> Result<(), ProcessError> {
         // check at least one master key exists
         let contains_master_key = state
@@ -189,7 +196,7 @@ impl Validator<UpdateDidOperation> for UpdateDidValidator {
     }
 }
 
-impl Validator<DeactivateDidOperation> for DeactivateDidValidator {
+impl Validator<ProtoDeactivateDid> for DeactivateDidValidator {
     fn validate_candidate_state(_: &ProtocolParameter, _: &DidStateRc) -> Result<(), ProcessError> {
         Ok(())
     }

@@ -10,16 +10,16 @@ pub enum ProcessError {
     DidStateInitFromNonCreateOperation,
     #[display("did state update cannot be performed by CreateOperation")]
     DidStateUpdateFromCreateOperation,
-    #[display("operation is missing from SignedAtalaOperation")]
-    SignedAtalaOperationMissingOperation,
-    #[display("invalid signed_with key id in SignedAtalaOperation")]
-    SignedAtalaOperationInvalidSignedWith { source: PublicKeyIdError },
+    #[display("operation is missing from SignedPrismOperation")]
+    SignedPrismOperationMissingOperation,
+    #[display("invalid signed_with key id in SignedPrismOperation")]
+    SignedPrismOperationInvalidSignedWith { source: PublicKeyIdError },
     #[display("signed_with key id {id} not found")]
-    SignedAtalaOperationSignedWithKeyNotFound { id: PublicKeyId },
+    SignedPrismOperationSignedWithKeyNotFound { id: PublicKeyId },
     #[display("signed_with key id {id} has usage of {usage:?} which is not a master key")]
-    SignedAtalaOperationSignedWithNonMasterKey { id: PublicKeyId, usage: KeyUsage },
-    #[display("signature verification failed for SignedAtalaOperation")]
-    SignedAtalaOperationInvalidSignature,
+    SignedPrismOperationSignedWithNonMasterKey { id: PublicKeyId, usage: KeyUsage },
+    #[display("signature verification failed for SignedPrismOperation")]
+    SignedPrismOperationInvalidSignature,
     #[from]
     #[display("applied operation has conflict with the current did state")]
     DidStateConflict { source: DidStateConflictError },

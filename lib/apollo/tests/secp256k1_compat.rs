@@ -1,3 +1,5 @@
+#![cfg(all(feature = "secp256k1", feature = "hex"))]
+
 use std::str::FromStr;
 
 use identus_apollo::crypto::secp256k1::Secp256k1PublicKey;

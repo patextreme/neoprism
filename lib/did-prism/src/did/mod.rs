@@ -11,8 +11,8 @@ use prost::Message;
 use regex::Regex;
 
 use self::operation::{PublicKey, Service};
-use crate::proto::AtalaOperation;
-use crate::proto::atala_operation::Operation;
+use crate::proto::PrismOperation;
+use crate::proto::prism_operation::Operation;
 
 pub mod error;
 pub mod operation;
@@ -91,7 +91,7 @@ impl PrismDidOps for LongFormPrismDid {
 }
 
 impl CanonicalPrismDid {
-    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, Error> {
+    pub fn from_operation(operation: &PrismOperation) -> Result<Self, Error> {
         Ok(LongFormPrismDid::from_operation(operation)?.into_canonical())
     }
 
@@ -111,7 +111,7 @@ impl CanonicalPrismDid {
 }
 
 impl LongFormPrismDid {
-    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, Error> {
+    pub fn from_operation(operation: &PrismOperation) -> Result<Self, Error> {
         match operation.operation {
             Some(Operation::CreateDid(_)) => {
                 let bytes = operation.encode_to_vec();
@@ -124,8 +124,8 @@ impl LongFormPrismDid {
         }
     }
 
-    pub fn operation(&self) -> Result<AtalaOperation, Error> {
-        let operation = AtalaOperation::decode(self.encoded_state.to_bytes().as_slice()).map_err(|e| {
+    pub fn operation(&self) -> Result<PrismOperation, Error> {
+        let operation = PrismOperation::decode(self.encoded_state.to_bytes().as_slice()).map_err(|e| {
             DidSyntaxError::DidEncodedStateInvalidProto {
                 source: e,
                 did: self.to_string(),
@@ -181,7 +181,7 @@ impl FromStr for PrismDid {
                             source: e,
                             encoded_state: match_group_2.to_string(),
                         })?;
-                let operation = AtalaOperation::decode(encoded_state.to_bytes().as_slice()).map_err(|e| {
+                let operation = PrismOperation::decode(encoded_state.to_bytes().as_slice()).map_err(|e| {
                     DidSyntaxError::DidEncodedStateInvalidProto {
                         source: e,
                         did: s.to_string(),

@@ -3,20 +3,20 @@ use std::collections::VecDeque;
 use super::{DidStateProcessingContext, ProcessError, Published, init_published_context};
 use crate::did::DidState;
 use crate::dlt::OperationMetadata;
-use crate::prelude::AtalaOperation;
-use crate::proto::SignedAtalaOperation;
+use crate::prelude::PrismOperation;
+use crate::proto::SignedPrismOperation;
 use crate::protocol::init_unpublished_context;
 
-type OperationList = VecDeque<(OperationMetadata, SignedAtalaOperation)>;
-pub type ResolutionDebug = Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>;
+type OperationList = VecDeque<(OperationMetadata, SignedPrismOperation)>;
+pub type ResolutionDebug = Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>;
 
-pub fn resolve_unpublished(operation: AtalaOperation) -> Result<DidState, ProcessError> {
+pub fn resolve_unpublished(operation: PrismOperation) -> Result<DidState, ProcessError> {
     tracing::debug!("resolving unpublished DID data");
     init_unpublished_context(operation).map(|ctx| ctx.finalize())
 }
 
 pub fn resolve_published(
-    mut operations: Vec<(OperationMetadata, SignedAtalaOperation)>,
+    mut operations: Vec<(OperationMetadata, SignedPrismOperation)>,
 ) -> (Option<DidState>, ResolutionDebug) {
     tracing::debug!("resolving published DID data from {} operations", operations.len());
     operations.sort_by(|a, b| OperationMetadata::compare_time_asc(&a.0, &b.0));

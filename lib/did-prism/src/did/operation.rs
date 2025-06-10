@@ -17,28 +17,31 @@ use super::error::{
 };
 use crate::error::InvalidInputSizeError;
 use crate::location;
-use crate::prelude::{AtalaOperation, SignedAtalaOperation};
-use crate::proto::atala_operation::Operation;
+use crate::prelude::{PrismOperation, SignedPrismOperation};
+use crate::proto::prism_operation::Operation;
 use crate::proto::public_key::KeyData;
 use crate::proto::update_did_action::Action;
-use crate::proto::{self, CreateDidOperation, DeactivateDidOperation, UpdateDidAction, UpdateDidOperation};
+use crate::proto::{self, ProtoCreateDid, ProtoDeactivateDid, ProtoUpdateDid, UpdateDidAction};
 use crate::protocol::ProtocolParameter;
 use crate::utils::{is_slice_unique, is_uri, is_uri_fragment};
 
 static SERVICE_TYPE_NAME_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$").expect("ServiceTypeName regex is invalid"));
 
-pub fn get_did_from_operation(atala_operation: &AtalaOperation) -> Result<CanonicalPrismDid, Error> {
-    match &atala_operation.operation {
-        Some(Operation::CreateDid(_)) => Ok(CanonicalPrismDid::from_operation(atala_operation)?),
+pub fn get_did_from_operation(prism_operation: &PrismOperation) -> Result<CanonicalPrismDid, Error> {
+    match &prism_operation.operation {
+        Some(Operation::CreateDid(_)) => Ok(CanonicalPrismDid::from_operation(prism_operation)?),
         Some(Operation::UpdateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::DeactivateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::ProtocolVersionUpdate(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?),
+        Some(Operation::CreateStorageEntry(_)) => unimplemented!(),
+        Some(Operation::UpdateStorageEntry(_)) => unimplemented!(),
+        Some(Operation::DeactivateStorageEntry(_)) => unimplemented!(),
         None => Err(Error::OperationMissingFromAtalaOperation),
     }
 }
 
-pub fn get_did_from_signed_operation(signed_operation: &SignedAtalaOperation) -> Result<CanonicalPrismDid, Error> {
+pub fn get_did_from_signed_operation(signed_operation: &SignedPrismOperation) -> Result<CanonicalPrismDid, Error> {
     match &signed_operation.operation {
         Some(operation) => get_did_from_operation(operation),
         None => Err(Error::OperationMissingFromAtalaOperation),
@@ -53,7 +56,7 @@ pub struct CreateOperation {
 }
 
 impl CreateOperation {
-    pub fn parse(param: &ProtocolParameter, operation: &CreateDidOperation) -> Result<Self, CreateOperationError> {
+    pub fn parse(param: &ProtocolParameter, operation: &ProtoCreateDid) -> Result<Self, CreateOperationError> {
         let Some(did_data) = &operation.did_data else {
             Err(CreateOperationError::MissingDidData)?
         };
@@ -135,7 +138,7 @@ pub struct UpdateOperation {
 }
 
 impl UpdateOperation {
-    pub fn parse(param: &ProtocolParameter, operation: &UpdateDidOperation) -> Result<Self, UpdateOperationError> {
+    pub fn parse(param: &ProtocolParameter, operation: &ProtoUpdateDid) -> Result<Self, UpdateOperationError> {
         if operation.actions.is_empty() {
             Err(UpdateOperationError::EmptyAction)?
         }
@@ -278,7 +281,7 @@ pub struct DeactivateOperation {
 }
 
 impl DeactivateOperation {
-    pub fn parse(operation: &DeactivateDidOperation) -> Result<Self, DeactivateOperationError> {
+    pub fn parse(operation: &ProtoDeactivateDid) -> Result<Self, DeactivateOperationError> {
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
             .map_err(|e| DeactivateOperationError::InvalidPreviousOperationHash { source: e })?;
@@ -484,7 +487,7 @@ impl KeyUsage {
             proto::KeyUsage::RevocationKey => Some(Self::RevocationKey),
             proto::KeyUsage::CapabilityInvocationKey => Some(Self::CapabilityInvocationKey),
             proto::KeyUsage::CapabilityDelegationKey => Some(Self::CapabilityDelegationKey),
-            proto::KeyUsage::UnknownKey => None,
+            proto::KeyUsage::VdrKey | proto::KeyUsage::UnknownKey => None,
         }
     }
 }

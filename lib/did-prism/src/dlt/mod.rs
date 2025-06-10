@@ -1,21 +1,21 @@
 use chrono::{DateTime, Utc};
 use strum::VariantArray;
 
-use crate::proto::AtalaObject;
+use crate::proto::PrismObject;
 
 pub mod error;
 
 #[cfg(feature = "oura")]
 pub mod oura;
 
-#[cfg(any(feature = "oura"))]
+#[cfg(feature = "oura")]
 pub trait DltSource {
     fn receiver(self) -> Result<tokio::sync::mpsc::Receiver<PublishedAtalaObject>, String>;
 }
 
-#[cfg(any(feature = "oura"))]
+#[cfg(feature = "oura")]
 pub trait DltSink {
-    fn send(&mut self, atala_object: AtalaObject);
+    fn send(&mut self, atala_object: PrismObject);
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,7 +64,7 @@ impl OperationMetadata {
 #[derive(Debug, Clone)]
 pub struct PublishedAtalaObject {
     pub block_metadata: BlockMetadata,
-    pub atala_object: AtalaObject,
+    pub atala_object: PrismObject,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]

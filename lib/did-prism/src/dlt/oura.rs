@@ -25,7 +25,7 @@ mod model {
 
     use crate::dlt::error::MetadataReadError;
     use crate::dlt::{BlockMetadata, PublishedAtalaObject};
-    use crate::proto::AtalaObject;
+    use crate::proto::PrismObject;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct MetadataEvent {
@@ -133,7 +133,7 @@ mod model {
         }
 
         let atala_object =
-            AtalaObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::AtalaBlockProtoDecode {
+            PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::AtalaBlockProtoDecode {
                 source: e,
                 block_hash: block_hash.clone(),
                 tx_idx,
@@ -382,7 +382,7 @@ impl OuraStreamWorker {
                 })?,
             Err(e) => {
                 // TODO: add debug level error report
-                tracing::warn!("Unable to parse oura event into AtalaObject. ({})", e);
+                tracing::warn!("Unable to parse oura event into PrismObject. ({})", e);
             }
         }
 

@@ -35,7 +35,7 @@ rec {
   resolver-bin = rustPlatform.buildRustPackage {
     name = "neoprism";
     src = pkgs.lib.cleanSource ./..;
-    cargoLock.lockFile = ./../Cargo.lock;
+    cargoLock = (import ./cargo.nix).cargoLock;
     nativeBuildInputs = [ pkgs.protobuf ];
     doCheck = false;
     PROTOC = "${pkgs.protobuf}/bin/protoc";
