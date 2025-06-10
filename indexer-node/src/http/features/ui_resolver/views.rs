@@ -129,10 +129,11 @@ fn public_key_card(public_keys: &[PublicKey]) -> Markup {
         .map(|pk| {
             let jwk = match &pk.data {
                 operation::PublicKeyData::Master { data } => data.encode_jwk(),
+                operation::PublicKeyData::Vdr { data } => data.encode_jwk(),
                 operation::PublicKeyData::Other { data, .. } => data.encode_jwk(),
             };
             let key_id = pk.id.to_string();
-            let key_usage = format!("{:?}", pk.usage());
+            let key_usage = format!("{:?}", pk.data.usage());
             let curve = jwk.crv;
             let encoded_x = jwk.x.map(|i| i.to_string()).unwrap_or_default();
             let encoded_y = jwk.y.map(|i| i.to_string()).unwrap_or_default();

@@ -99,7 +99,7 @@ impl CreateDidOperation {
             })?
         }
 
-        if !public_keys.iter().any(|i| i.usage() == KeyUsage::MasterKey) {
+        if !public_keys.iter().any(|i| i.data.usage() == KeyUsage::MasterKey) {
             Err(CreateDidOperationError::MissingMasterKey)?
         }
 
@@ -371,38 +371,31 @@ impl PublicKey {
         let Some(key_data) = &public_key.key_data else {
             Err(PublicKeyError::MissingKeyData { id: id.clone() })?
         };
-        let pk = NonMasterPublicKey::parse(key_data)
+        let pk = NonOperationPublicKey::parse(key_data)
             .map_err(|e| PublicKeyError::InvalidKeyData {
                 source: e,
                 id: id.clone(),
             })?
             .ok_or_else(|| PublicKeyError::UnsupportedCurve { id: id.clone() })?;
         let data = match (usage, pk) {
-            (KeyUsage::MasterKey, NonMasterPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
+            (KeyUsage::MasterKey, NonOperationPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
             (KeyUsage::MasterKey, _) => Err(PublicKeyError::MasterKeyNotSecp256k1 { id: id.clone() })?,
             (usage, pk) => PublicKeyData::Other { data: pk, usage },
         };
 
         Ok(Self { id, data })
     }
-
-    pub fn usage(&self) -> KeyUsage {
-        match &self.data {
-            PublicKeyData::Master { .. } => KeyUsage::MasterKey,
-            PublicKeyData::Other { usage, .. } => *usage,
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[enum_dispatch(EncodeVec)]
-pub enum NonMasterPublicKey {
+pub enum NonOperationPublicKey {
     Secp256k1(Secp256k1PublicKey),
     Ed25519(Ed25519PublicKey),
     X25519(X25519PublicKey),
 }
 
-impl NonMasterPublicKey {
+impl NonOperationPublicKey {
     pub fn parse(key_data: &KeyData) -> Result<Option<Self>, CryptoError> {
         let curve_name: &str = match key_data {
             KeyData::EcKeyData(k) => &k.curve,
@@ -448,20 +441,38 @@ impl NonMasterPublicKey {
     }
 }
 
-impl EncodeJwk for NonMasterPublicKey {
+impl EncodeJwk for NonOperationPublicKey {
     fn encode_jwk(&self) -> identus_apollo::jwk::Jwk {
         match self {
-            NonMasterPublicKey::Secp256k1(pk) => pk.encode_jwk(),
-            NonMasterPublicKey::Ed25519(pk) => pk.encode_jwk(),
-            NonMasterPublicKey::X25519(pk) => pk.encode_jwk(),
+            NonOperationPublicKey::Secp256k1(pk) => pk.encode_jwk(),
+            NonOperationPublicKey::Ed25519(pk) => pk.encode_jwk(),
+            NonOperationPublicKey::X25519(pk) => pk.encode_jwk(),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicKeyData {
-    Master { data: Secp256k1PublicKey },
-    Other { data: NonMasterPublicKey, usage: KeyUsage },
+    Master {
+        data: Secp256k1PublicKey,
+    },
+    Vdr {
+        data: Secp256k1PublicKey,
+    },
+    Other {
+        data: NonOperationPublicKey,
+        usage: KeyUsage,
+    },
+}
+
+impl PublicKeyData {
+    pub fn usage(&self) -> KeyUsage {
+        match &self {
+            Self::Master { .. } => KeyUsage::MasterKey,
+            Self::Vdr { .. } => KeyUsage::VdrKey,
+            Self::Other { usage, .. } => *usage,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -473,6 +484,7 @@ pub enum KeyUsage {
     RevocationKey,
     CapabilityInvocationKey,
     CapabilityDelegationKey,
+    VdrKey,
 }
 
 impl KeyUsage {
@@ -485,7 +497,8 @@ impl KeyUsage {
             proto::KeyUsage::RevocationKey => Some(Self::RevocationKey),
             proto::KeyUsage::CapabilityInvocationKey => Some(Self::CapabilityInvocationKey),
             proto::KeyUsage::CapabilityDelegationKey => Some(Self::CapabilityDelegationKey),
-            proto::KeyUsage::VdrKey | proto::KeyUsage::UnknownKey => None,
+            proto::KeyUsage::VdrKey => Some(Self::VdrKey),
+            proto::KeyUsage::UnknownKey => None,
         }
     }
 }

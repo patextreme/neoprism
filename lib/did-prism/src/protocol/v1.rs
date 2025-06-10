@@ -39,22 +39,37 @@ impl OperationProcessor for V1Processor {
             Err(ProcessError::SignedPrismOperationSignedWithKeyNotFound { id: key_id })?
         };
 
-        match &pk.get().data {
-            PublicKeyData::Master { data } => {
-                let signature = signed_operation.signature.as_slice();
-                let message = signed_operation
-                    .operation
-                    .as_ref()
-                    .ok_or(ProcessError::SignedPrismOperationMissingOperation)?
-                    .encode_to_vec();
+        let operation = signed_operation
+            .operation
+            .as_ref()
+            .ok_or(ProcessError::SignedPrismOperationMissingOperation)?;
+        let inner_operation = operation
+            .operation
+            .as_ref()
+            .ok_or(ProcessError::SignedPrismOperationMissingOperation)?;
+        let is_storage_entry = matches!(
+            inner_operation,
+            Operation::CreateStorageEntry(_) | Operation::UpdateStorageEntry(_) | Operation::DeactivateStorageEntry(_)
+        );
 
+        match &pk.get().data {
+            PublicKeyData::Master { data } if !is_storage_entry => {
+                let signature = signed_operation.signature.as_slice();
+                let message = operation.encode_to_vec();
                 if !data.verify(&message, signature) {
                     Err(ProcessError::SignedPrismOperationInvalidSignature)?
                 }
             }
-            PublicKeyData::Other { usage, .. } => Err(ProcessError::SignedPrismOperationSignedWithNonMasterKey {
+            PublicKeyData::Vdr { data } if is_storage_entry => {
+                let signature = signed_operation.signature.as_slice();
+                let message = operation.encode_to_vec();
+                if !data.verify(&message, signature) {
+                    Err(ProcessError::SignedPrismOperationInvalidSignature)?
+                }
+            }
+            pk => Err(ProcessError::SignedPrismOperationSignedWithNonMasterKey {
                 id: key_id,
-                usage: *usage,
+                usage: pk.usage(),
             })?,
         }
 
@@ -172,7 +187,7 @@ impl Validator<ProtoUpdateDid> for UpdateDidValidator {
         let contains_master_key = state
             .public_keys
             .iter()
-            .any(|(_, pk)| pk.get().usage() == KeyUsage::MasterKey);
+            .any(|(_, pk)| pk.get().data.usage() == KeyUsage::MasterKey);
         if !contains_master_key {
             Err(DidStateConflictError::AfterUpdateMissingMasterKey)?
         }

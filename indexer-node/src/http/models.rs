@@ -13,7 +13,7 @@ pub fn new_did_document(did: &Did, did_state: &DidState) -> DidDocument {
         did_state
             .public_keys
             .iter()
-            .filter(|k| k.usage() == usage)
+            .filter(|k| k.data.usage() == usage)
             .map(|k| VerificationMethodOrRef::Ref(format!("{}#{}", did, k.id)))
             .collect()
     };
@@ -28,7 +28,7 @@ pub fn new_did_document(did: &Did, did_state: &DidState) -> DidDocument {
                 KeyUsage::CapabilityInvocationKey,
                 KeyUsage::CapabilityDelegationKey,
             ];
-            W3C_KEY_TYPES.iter().any(|usage| usage == &k.usage())
+            W3C_KEY_TYPES.iter().any(|usage| usage == &k.data.usage())
         })
         .flat_map(|k| transform_key_jwk(did, k))
         .collect();
@@ -48,6 +48,7 @@ pub fn new_did_document(did: &Did, did_state: &DidState) -> DidDocument {
 fn transform_key_jwk(did: &Did, key: &operation::PublicKey) -> Option<VerificationMethod> {
     match &key.data {
         operation::PublicKeyData::Master { .. } => None,
+        operation::PublicKeyData::Vdr { .. } => None,
         operation::PublicKeyData::Other { data, .. } => {
             let jwk = data.encode_jwk();
             Some(VerificationMethod {
