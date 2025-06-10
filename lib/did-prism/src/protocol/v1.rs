@@ -7,7 +7,8 @@ use super::{
 };
 use crate::did::Error as DidError;
 use crate::did::operation::{
-    CreateOperation, DeactivateOperation, KeyUsage, PublicKeyData, PublicKeyId, UpdateOperation, UpdateOperationAction,
+    CreateDidOperation, DeactivateDidOperation, KeyUsage, PublicKeyData, PublicKeyId, UpdateDidOperation,
+    UpdateOperationAction,
 };
 use crate::dlt::OperationMetadata;
 use crate::prelude::PrismOperation;
@@ -66,7 +67,7 @@ impl OperationProcessor for V1Processor {
         operation: ProtoCreateDid,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
-        let parsed_operation = CreateOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
+        let parsed_operation = CreateDidOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
@@ -89,7 +90,7 @@ impl OperationProcessor for V1Processor {
         operation: ProtoUpdateDid,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
-        let parsed_operation = UpdateOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
+        let parsed_operation = UpdateDidOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
         if parsed_operation.prev_operation_hash != *state.last_operation_hash {
             Err(DidStateConflictError::UnmatchedPreviousOperationHash)?
         }
@@ -114,7 +115,7 @@ impl OperationProcessor for V1Processor {
         operation: ProtoDeactivateDid,
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
-        let parsed_operation = DeactivateOperation::parse(&operation).map_err(DidError::from)?;
+        let parsed_operation = DeactivateDidOperation::parse(&operation).map_err(DidError::from)?;
         if parsed_operation.prev_operation_hash != *state.last_operation_hash {
             Err(DidStateConflictError::UnmatchedPreviousOperationHash)?
         }

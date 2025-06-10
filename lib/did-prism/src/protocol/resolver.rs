@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use super::{DidStateProcessingContext, ProcessError, Published, init_published_context};
+use super::{OperationProcessingContext, ProcessError, Published, init_published_context};
 use crate::did::DidState;
 use crate::dlt::OperationMetadata;
 use crate::prelude::PrismOperation;
@@ -38,7 +38,7 @@ pub fn resolve_published(
     (Some(state_ctx.finalize()), debug)
 }
 
-fn init_state_ops(operations: &mut OperationList) -> (Option<DidStateProcessingContext<Published>>, ResolutionDebug) {
+fn init_state_ops(operations: &mut OperationList) -> (Option<OperationProcessingContext<Published>>, ResolutionDebug) {
     let mut debug = Vec::with_capacity(operations.len());
     while let Some((metadata, operation)) = operations.pop_front() {
         let result = init_published_context(operation.clone(), metadata.clone());

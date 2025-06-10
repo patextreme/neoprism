@@ -228,7 +228,7 @@ impl DidStateRc {
 struct Published;
 struct Unpublished;
 
-struct DidStateProcessingContext<CtxType> {
+struct OperationProcessingContext<CtxType> {
     r#type: PhantomData<CtxType>,
     state: DidStateRc,
     processor: OperationProcessorVariants,
@@ -237,7 +237,7 @@ struct DidStateProcessingContext<CtxType> {
 fn init_published_context(
     signed_operation: SignedPrismOperation,
     metadata: OperationMetadata,
-) -> Result<DidStateProcessingContext<Published>, ProcessError> {
+) -> Result<OperationProcessingContext<Published>, ProcessError> {
     let Some(operation) = &signed_operation.operation else {
         Err(ProcessError::SignedPrismOperationMissingOperation)?
     };
@@ -249,7 +249,7 @@ fn init_published_context(
             let processor = OperationProcessorVariants::V1(V1Processor::default());
             let candidate_state = processor.create_did(&initial_state, op.clone(), metadata)?;
             processor.check_signature(&candidate_state, &signed_operation)?;
-            Ok(DidStateProcessingContext {
+            Ok(OperationProcessingContext {
                 r#type: PhantomData,
                 state: candidate_state,
                 processor,
@@ -260,7 +260,9 @@ fn init_published_context(
     }
 }
 
-fn init_unpublished_context(operation: PrismOperation) -> Result<DidStateProcessingContext<Unpublished>, ProcessError> {
+fn init_unpublished_context(
+    operation: PrismOperation,
+) -> Result<OperationProcessingContext<Unpublished>, ProcessError> {
     let unpublished_metadata = OperationMetadata {
         block_metadata: BlockMetadata {
             slot_number: 0,
@@ -276,7 +278,7 @@ fn init_unpublished_context(operation: PrismOperation) -> Result<DidStateProcess
             let initial_state = DidStateRc::new(did);
             let processor = OperationProcessorVariants::V1(V1Processor::default());
             let candidate_state = processor.create_did(&initial_state, op.clone(), unpublished_metadata)?;
-            Ok(DidStateProcessingContext {
+            Ok(OperationProcessingContext {
                 r#type: PhantomData,
                 state: candidate_state,
                 processor,
@@ -287,13 +289,13 @@ fn init_unpublished_context(operation: PrismOperation) -> Result<DidStateProcess
     }
 }
 
-impl<T> DidStateProcessingContext<T> {
+impl<T> OperationProcessingContext<T> {
     fn finalize(self) -> DidState {
         self.state.finalize()
     }
 }
 
-impl DidStateProcessingContext<Published> {
+impl OperationProcessingContext<Published> {
     fn process(
         mut self,
         signed_operation: SignedPrismOperation,

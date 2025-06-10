@@ -10,10 +10,10 @@ use identus_apollo::hash::Sha256Digest;
 use identus_apollo::jwk::EncodeJwk;
 use regex::Regex;
 
-use super::CanonicalPrismDid;
-use super::error::{
-    CreateOperationError, DeactivateOperationError, Error, PublicKeyError, PublicKeyIdError, ServiceEndpointError,
-    ServiceError, ServiceIdError, ServiceTypeError, UpdateOperationError,
+use crate::did::CanonicalPrismDid;
+use crate::did::error::{
+    CreateDidOperationError, DeactivateDidOperationError, Error, PublicKeyError, PublicKeyIdError,
+    ServiceEndpointError, ServiceError, ServiceIdError, ServiceTypeError, UpdateDidOperationError,
 };
 use crate::error::InvalidInputSizeError;
 use crate::location;
@@ -49,16 +49,16 @@ pub fn get_did_from_signed_operation(signed_operation: &SignedPrismOperation) ->
 }
 
 #[derive(Debug, Clone)]
-pub struct CreateOperation {
+pub struct CreateDidOperation {
     pub public_keys: Vec<PublicKey>,
     pub services: Vec<Service>,
     pub context: Vec<String>,
 }
 
-impl CreateOperation {
-    pub fn parse(param: &ProtocolParameter, operation: &ProtoCreateDid) -> Result<Self, CreateOperationError> {
+impl CreateDidOperation {
+    pub fn parse(param: &ProtocolParameter, operation: &ProtoCreateDid) -> Result<Self, CreateDidOperationError> {
         let Some(did_data) = &operation.did_data else {
-            Err(CreateOperationError::MissingDidData)?
+            Err(CreateDidOperationError::MissingDidData)?
         };
 
         let public_keys = did_data
@@ -87,9 +87,9 @@ impl CreateOperation {
     fn validate_public_key_list(
         param: &ProtocolParameter,
         public_keys: &[PublicKey],
-    ) -> Result<(), CreateOperationError> {
+    ) -> Result<(), CreateDidOperationError> {
         if public_keys.len() > param.max_public_keys {
-            Err(CreateOperationError::TooManyPublicKeys {
+            Err(CreateDidOperationError::TooManyPublicKeys {
                 source: InvalidInputSizeError::TooBig {
                     limit: param.max_public_keys,
                     actual: public_keys.len(),
@@ -100,15 +100,15 @@ impl CreateOperation {
         }
 
         if !public_keys.iter().any(|i| i.usage() == KeyUsage::MasterKey) {
-            Err(CreateOperationError::MissingMasterKey)?
+            Err(CreateDidOperationError::MissingMasterKey)?
         }
 
         Ok(())
     }
 
-    fn validate_service_list(param: &ProtocolParameter, services: &[Service]) -> Result<(), CreateOperationError> {
+    fn validate_service_list(param: &ProtocolParameter, services: &[Service]) -> Result<(), CreateDidOperationError> {
         if services.len() > param.max_services {
-            return Err(CreateOperationError::TooManyServices {
+            return Err(CreateDidOperationError::TooManyServices {
                 source: InvalidInputSizeError::TooBig {
                     limit: param.max_public_keys,
                     actual: services.len(),
@@ -121,31 +121,31 @@ impl CreateOperation {
         Ok(())
     }
 
-    fn validate_context_list(contexts: &[String]) -> Result<(), CreateOperationError> {
+    fn validate_context_list(contexts: &[String]) -> Result<(), CreateDidOperationError> {
         if is_slice_unique(contexts) {
             Ok(())
         } else {
-            Err(CreateOperationError::DuplicateContext)?
+            Err(CreateDidOperationError::DuplicateContext)?
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct UpdateOperation {
+pub struct UpdateDidOperation {
     pub id: CanonicalPrismDid,
     pub prev_operation_hash: Sha256Digest,
     pub actions: Vec<UpdateOperationAction>,
 }
 
-impl UpdateOperation {
-    pub fn parse(param: &ProtocolParameter, operation: &ProtoUpdateDid) -> Result<Self, UpdateOperationError> {
+impl UpdateDidOperation {
+    pub fn parse(param: &ProtocolParameter, operation: &ProtoUpdateDid) -> Result<Self, UpdateDidOperationError> {
         if operation.actions.is_empty() {
-            Err(UpdateOperationError::EmptyAction)?
+            Err(UpdateDidOperationError::EmptyAction)?
         }
 
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
-            .map_err(|e| UpdateOperationError::InvalidPreviousOperationHash { source: e })?;
+            .map_err(|e| UpdateDidOperationError::InvalidPreviousOperationHash { source: e })?;
 
         let actions = operation
             .actions
@@ -179,7 +179,7 @@ pub enum UpdateOperationAction {
 }
 
 impl UpdateOperationAction {
-    pub fn parse(action: &UpdateDidAction, param: &ProtocolParameter) -> Result<Option<Self>, UpdateOperationError> {
+    pub fn parse(action: &UpdateDidAction, param: &ProtocolParameter) -> Result<Option<Self>, UpdateDidOperationError> {
         let Some(action) = &action.action else {
             return Ok(None);
         };
@@ -190,14 +190,14 @@ impl UpdateOperationAction {
                     let parsed_key = PublicKey::parse(pk, param)?;
                     Self::AddKey(parsed_key)
                 }
-                None => Err(UpdateOperationError::MissingUpdateActionData {
+                None => Err(UpdateDidOperationError::MissingUpdateActionData {
                     action_type: std::any::type_name_of_val(add_key),
                     field_name: "key",
                 })?,
             },
             Action::RemoveKey(remove_key) => {
                 let key_id = PublicKeyId::parse(&remove_key.key_id, param.max_id_size).map_err(|e| {
-                    UpdateOperationError::InvalidPublicKey {
+                    UpdateDidOperationError::InvalidPublicKey {
                         source: PublicKeyError::InvalidKeyId {
                             source: e,
                             id: remove_key.key_id.clone(),
@@ -211,14 +211,14 @@ impl UpdateOperationAction {
                     let parsed_service = Service::parse(service, param)?;
                     Self::AddService(parsed_service)
                 }
-                None => Err(UpdateOperationError::MissingUpdateActionData {
+                None => Err(UpdateDidOperationError::MissingUpdateActionData {
                     action_type: std::any::type_name_of_val(add_service),
                     field_name: "service",
                 })?,
             },
             Action::RemoveService(remove_service) => {
                 let service_id = ServiceId::parse(&remove_service.service_id, param.max_id_size).map_err(|e| {
-                    UpdateOperationError::InvalidService {
+                    UpdateDidOperationError::InvalidService {
                         source: ServiceError::InvalidServiceId {
                             source: e,
                             id: remove_service.service_id.clone(),
@@ -229,38 +229,36 @@ impl UpdateOperationAction {
             }
             Action::UpdateService(update_service) => {
                 let service_id = ServiceId::parse(&update_service.service_id, param.max_id_size).map_err(|e| {
-                    UpdateOperationError::InvalidService {
+                    UpdateDidOperationError::InvalidService {
                         source: ServiceError::InvalidServiceId {
                             source: e,
                             id: update_service.service_id.clone(),
                         },
                     }
                 })?;
-                let service_type = match Some(update_service.r#type.clone()).filter(|i| !i.is_empty()) {
-                    Some(s) => {
-                        Some(
-                            ServiceType::parse(&s, param).map_err(|e| UpdateOperationError::InvalidService {
+                let service_type =
+                    match Some(update_service.r#type.clone()).filter(|i| !i.is_empty()) {
+                        Some(s) => Some(ServiceType::parse(&s, param).map_err(|e| {
+                            UpdateDidOperationError::InvalidService {
                                 source: ServiceError::InvalidServiceType {
                                     source: e,
                                     type_name: update_service.r#type.clone(),
-                                },
-                            })?,
-                        )
-                    }
-                    None => None,
-                };
-                let service_endpoints =
-                    match Some(update_service.service_endpoints.clone()).filter(|i| !i.is_empty()) {
-                        Some(s) => Some(ServiceEndpoint::parse(&s, param).map_err(|e| {
-                            UpdateOperationError::InvalidService {
-                                source: ServiceError::InvalidServiceEndpoint {
-                                    source: e,
-                                    endpoint: update_service.service_endpoints.clone(),
                                 },
                             }
                         })?),
                         None => None,
                     };
+                let service_endpoints = match Some(update_service.service_endpoints.clone()).filter(|i| !i.is_empty()) {
+                    Some(s) => Some(ServiceEndpoint::parse(&s, param).map_err(|e| {
+                        UpdateDidOperationError::InvalidService {
+                            source: ServiceError::InvalidServiceEndpoint {
+                                source: e,
+                                endpoint: update_service.service_endpoints.clone(),
+                            },
+                        }
+                    })?),
+                    None => None,
+                };
                 Self::UpdateService {
                     id: service_id,
                     r#type: service_type,
@@ -275,16 +273,16 @@ impl UpdateOperationAction {
 }
 
 #[derive(Debug, Clone)]
-pub struct DeactivateOperation {
+pub struct DeactivateDidOperation {
     pub id: CanonicalPrismDid,
     pub prev_operation_hash: Sha256Digest,
 }
 
-impl DeactivateOperation {
-    pub fn parse(operation: &ProtoDeactivateDid) -> Result<Self, DeactivateOperationError> {
+impl DeactivateDidOperation {
+    pub fn parse(operation: &ProtoDeactivateDid) -> Result<Self, DeactivateDidOperationError> {
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
-            .map_err(|e| DeactivateOperationError::InvalidPreviousOperationHash { source: e })?;
+            .map_err(|e| DeactivateDidOperationError::InvalidPreviousOperationHash { source: e })?;
 
         Ok(Self {
             id,
