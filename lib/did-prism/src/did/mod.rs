@@ -217,7 +217,7 @@ impl FromStr for PrismDid {
 pub struct DidState {
     pub did: CanonicalPrismDid,
     pub context: Vec<String>,
-    pub prev_operation_hash: Rc<Sha256Digest>,
+    pub last_operation_hash: Rc<Sha256Digest>,
     pub public_keys: Vec<PublicKey>,
     pub services: Vec<Service>,
     pub storage: Vec<StorageState>,
@@ -226,6 +226,6 @@ pub struct DidState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StorageState {
     pub init_operation_hash: Rc<Sha256Digest>,
-    pub prev_operation_hash: Rc<Sha256Digest>,
+    pub last_operation_hash: Rc<Sha256Digest>,
     pub data: Rc<StorageData>,
 }

@@ -315,7 +315,7 @@ impl DidStateRc {
                 let s = v.into_item();
                 StorageState {
                     init_operation_hash: k.into(),
-                    prev_operation_hash: s.prev_operation_hash,
+                    last_operation_hash: s.prev_operation_hash,
                     data: s.data,
                 }
             })
@@ -323,7 +323,7 @@ impl DidStateRc {
         DidState {
             did,
             context,
-            prev_operation_hash: last_operation_hash,
+            last_operation_hash,
             public_keys,
             services,
             storage,
