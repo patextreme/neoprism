@@ -117,7 +117,7 @@ impl OperationRepo for PostgresDb {
         let mut tx = self.pool.begin().await?;
         for (metadata, signed_operation) in operations {
             let did = get_did_from_signed_operation(&signed_operation)
-                .map_err(|e| Error::DidIndexFromSignedAtalaOperation { source: e })?;
+                .map_err(|e| Error::DidIndexFromSignedPrismOperation { source: e })?;
 
             let create_op = entity::CreateRawOperation {
                 did: did.suffix.to_vec().into(),

@@ -2,13 +2,11 @@ use identus_apollo::crypto::Verifiable;
 use identus_apollo::hash::sha256;
 use prost::Message;
 
-use super::{
-    DidStateConflictError, DidStateRc, OperationProcessor, OperationProcessorOps, ProcessError, ProtocolParameter,
-};
+use super::{DidStateConflictError, DidStateRc, OperationProcessor, OperationProcessorOps, ProcessError};
 use crate::did::Error as DidError;
 use crate::did::operation::{
     CreateDidOperation, CreateStorageOperation, DeactivateDidOperation, DeactivateStorageOperation, KeyUsage,
-    PublicKeyData, PublicKeyId, UpdateDidOperation, UpdateOperationAction, UpdateStorageOperation,
+    OperationParameters, PublicKeyData, PublicKeyId, UpdateDidOperation, UpdateOperationAction, UpdateStorageOperation,
 };
 use crate::dlt::OperationMetadata;
 use crate::prelude::PrismOperation;
@@ -20,13 +18,13 @@ use crate::proto::{
 
 #[derive(Debug, Clone)]
 pub struct V1Processor {
-    parameters: ProtocolParameter,
+    parameters: OperationParameters,
 }
 
 impl Default for V1Processor {
     fn default() -> Self {
         Self {
-            parameters: ProtocolParameter::v1(),
+            parameters: OperationParameters::v1(),
         }
     }
 }
@@ -138,10 +136,10 @@ impl OperationProcessorOps for V1Processor {
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
-        let atala_operation = PrismOperation {
+        let prism_operation = PrismOperation {
             operation: Some(Operation::DeactivateDid(operation)),
         };
-        candidate_state.with_last_operation_hash(sha256(atala_operation.encode_to_vec()));
+        let operation_hash = sha256(prism_operation.encode_to_vec());
         for (id, pk) in &state.public_keys {
             if !pk.is_revoked() {
                 candidate_state.revoke_public_key(id, &metadata)?;
@@ -152,7 +150,13 @@ impl OperationProcessorOps for V1Processor {
                 candidate_state.revoke_service(id, &metadata)?;
             }
         }
-        // TODO: revoke all storage entry
+        for (_, s) in &state.storage {
+            if !s.is_revoked() {
+                let prev_operation_hash = s.get().prev_operation_hash.clone();
+                candidate_state.revoke_storage(&prev_operation_hash, &operation_hash, &metadata)?;
+            }
+        }
+        candidate_state.with_last_operation_hash(operation_hash);
 
         DeactivateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
         Ok(candidate_state)
@@ -236,22 +240,22 @@ impl OperationProcessorOps for V1Processor {
     }
 }
 
-trait Validator<Op> {
-    fn validate_candidate_state(param: &ProtocolParameter, state: &DidStateRc) -> Result<(), ProcessError>;
+trait Validator {
+    fn validate_candidate_state(param: &OperationParameters, state: &DidStateRc) -> Result<(), ProcessError>;
 }
 
 struct CreateDidValidator;
 struct UpdateDidValidator;
 struct DeactivateDidValidator;
 
-impl Validator<ProtoCreateDid> for CreateDidValidator {
-    fn validate_candidate_state(_: &ProtocolParameter, _: &DidStateRc) -> Result<(), ProcessError> {
+impl Validator for CreateDidValidator {
+    fn validate_candidate_state(_: &OperationParameters, _: &DidStateRc) -> Result<(), ProcessError> {
         Ok(())
     }
 }
 
-impl Validator<ProtoUpdateDid> for UpdateDidValidator {
-    fn validate_candidate_state(param: &ProtocolParameter, state: &DidStateRc) -> Result<(), ProcessError> {
+impl Validator for UpdateDidValidator {
+    fn validate_candidate_state(param: &OperationParameters, state: &DidStateRc) -> Result<(), ProcessError> {
         // check at least one master key exists
         let contains_master_key = state
             .public_keys
@@ -281,8 +285,8 @@ impl Validator<ProtoUpdateDid> for UpdateDidValidator {
     }
 }
 
-impl Validator<ProtoDeactivateDid> for DeactivateDidValidator {
-    fn validate_candidate_state(_: &ProtocolParameter, _: &DidStateRc) -> Result<(), ProcessError> {
+impl Validator for DeactivateDidValidator {
+    fn validate_candidate_state(_: &OperationParameters, _: &DidStateRc) -> Result<(), ProcessError> {
         Ok(())
     }
 }

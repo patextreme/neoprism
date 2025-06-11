@@ -18,9 +18,9 @@ where
     pub async fn run(self) -> anyhow::Result<()> {
         let mut rx = self.source.receiver().expect("Unable to create a DLT source");
 
-        while let Some(published_atala_object) = rx.recv().await {
-            let block = published_atala_object.prism_object.block_content;
-            let block_metadata = published_atala_object.block_metadata;
+        while let Some(published_prism_object) = rx.recv().await {
+            let block = published_prism_object.prism_object.block_content;
+            let block_metadata = published_prism_object.block_metadata;
             let signed_operations = block.map(|i| i.operations).unwrap_or_default();
 
             let mut insert_batch = Vec::with_capacity(signed_operations.len());

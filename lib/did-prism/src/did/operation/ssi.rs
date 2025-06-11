@@ -15,6 +15,7 @@ use crate::did::error::{
     CreateDidOperationError, DeactivateDidOperationError, Error, PublicKeyError, PublicKeyIdError,
     ServiceEndpointError, ServiceError, ServiceIdError, ServiceTypeError, UpdateDidOperationError,
 };
+use crate::did::operation::OperationParameters;
 use crate::error::InvalidInputSizeError;
 use crate::location;
 use crate::prelude::{PrismOperation, SignedPrismOperation};
@@ -22,7 +23,6 @@ use crate::proto::prism_operation::Operation;
 use crate::proto::public_key::KeyData;
 use crate::proto::update_did_action::Action;
 use crate::proto::{self, ProtoCreateDid, ProtoDeactivateDid, ProtoUpdateDid, UpdateDidAction};
-use crate::protocol::ProtocolParameter;
 use crate::utils::{is_slice_unique, is_uri, is_uri_fragment};
 
 static SERVICE_TYPE_NAME_RE: LazyLock<Regex> =
@@ -57,7 +57,7 @@ pub struct CreateDidOperation {
 }
 
 impl CreateDidOperation {
-    pub fn parse(param: &ProtocolParameter, operation: &ProtoCreateDid) -> Result<Self, CreateDidOperationError> {
+    pub fn parse(param: &OperationParameters, operation: &ProtoCreateDid) -> Result<Self, CreateDidOperationError> {
         let Some(did_data) = &operation.did_data else {
             Err(CreateDidOperationError::MissingDidData)?
         };
@@ -86,7 +86,7 @@ impl CreateDidOperation {
     }
 
     fn validate_public_key_list(
-        param: &ProtocolParameter,
+        param: &OperationParameters,
         public_keys: &[PublicKey],
     ) -> Result<(), CreateDidOperationError> {
         if public_keys.len() > param.max_public_keys {
@@ -107,7 +107,7 @@ impl CreateDidOperation {
         Ok(())
     }
 
-    fn validate_service_list(param: &ProtocolParameter, services: &[Service]) -> Result<(), CreateDidOperationError> {
+    fn validate_service_list(param: &OperationParameters, services: &[Service]) -> Result<(), CreateDidOperationError> {
         if services.len() > param.max_services {
             return Err(CreateDidOperationError::TooManyServices {
                 source: InvalidInputSizeError::TooBig {
@@ -139,7 +139,7 @@ pub struct UpdateDidOperation {
 }
 
 impl UpdateDidOperation {
-    pub fn parse(param: &ProtocolParameter, operation: &ProtoUpdateDid) -> Result<Self, UpdateDidOperationError> {
+    pub fn parse(param: &OperationParameters, operation: &ProtoUpdateDid) -> Result<Self, UpdateDidOperationError> {
         if operation.actions.is_empty() {
             Err(UpdateDidOperationError::EmptyAction)?
         }
@@ -180,7 +180,10 @@ pub enum UpdateOperationAction {
 }
 
 impl UpdateOperationAction {
-    pub fn parse(action: &UpdateDidAction, param: &ProtocolParameter) -> Result<Option<Self>, UpdateDidOperationError> {
+    pub fn parse(
+        action: &UpdateDidAction,
+        param: &OperationParameters,
+    ) -> Result<Option<Self>, UpdateDidOperationError> {
         let Some(action) = &action.action else {
             return Ok(None);
         };
@@ -363,7 +366,7 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn parse(public_key: &proto::PublicKey, param: &ProtocolParameter) -> Result<Self, PublicKeyError> {
+    pub fn parse(public_key: &proto::PublicKey, param: &OperationParameters) -> Result<Self, PublicKeyError> {
         let id = PublicKeyId::parse(&public_key.id, param.max_id_size).map_err(|e| PublicKeyError::InvalidKeyId {
             source: e,
             id: public_key.id.to_string(),
@@ -514,7 +517,7 @@ pub struct Service {
 }
 
 impl Service {
-    pub fn parse(service: &proto::Service, param: &ProtocolParameter) -> Result<Self, ServiceError> {
+    pub fn parse(service: &proto::Service, param: &OperationParameters) -> Result<Self, ServiceError> {
         let id = ServiceId::parse(&service.id, param.max_id_size).map_err(|e| ServiceError::InvalidServiceId {
             source: e,
             id: service.id.to_string(),
@@ -545,7 +548,7 @@ pub enum ServiceType {
 }
 
 impl ServiceType {
-    pub fn parse(service_type: &str, param: &ProtocolParameter) -> Result<Self, ServiceTypeError> {
+    pub fn parse(service_type: &str, param: &OperationParameters) -> Result<Self, ServiceTypeError> {
         if service_type.len() > param.max_type_size {
             Err(ServiceTypeError::ExceedMaxSize {
                 limit: param.max_type_size,
@@ -596,7 +599,7 @@ pub enum ServiceEndpoint {
 }
 
 impl ServiceEndpoint {
-    pub fn parse(service_endpoint: &str, param: &ProtocolParameter) -> Result<Self, ServiceEndpointError> {
+    pub fn parse(service_endpoint: &str, param: &OperationParameters) -> Result<Self, ServiceEndpointError> {
         if service_endpoint.len() > param.max_service_endpoint_size {
             Err(ServiceEndpointError::ExceedMaxSize {
                 limit: param.max_service_endpoint_size,

@@ -17,7 +17,9 @@ pub struct CreateDidOptions {
     pub services: Option<Vec<proto::Service>>,
 }
 
-pub fn new_create_did_operation(options: Option<CreateDidOptions>) -> (proto::SignedPrismOperation, Sha256Digest) {
+pub fn new_create_did_operation(
+    options: Option<CreateDidOptions>,
+) -> (proto::SignedPrismOperation, Sha256Digest, Secp256k1PrivateKey) {
     let options = options.unwrap_or_default();
     let master_sk = Secp256k1PrivateKey::from_slice(&MASTER_KEY).unwrap();
     let mut public_keys = vec![new_public_key(MASTER_KEY_NAME, proto::KeyUsage::MasterKey, &master_sk)];
@@ -38,7 +40,7 @@ pub fn new_create_did_operation(options: Option<CreateDidOptions>) -> (proto::Si
         signature: master_sk.sign(&operation.encode_to_vec()),
         operation: Some(operation),
     };
-    (signed_operation, operation_hash)
+    (signed_operation, operation_hash, master_sk)
 }
 
 pub fn new_signed_operation(

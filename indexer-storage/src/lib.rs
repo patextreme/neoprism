@@ -20,8 +20,8 @@ pub enum Error {
         target_type: &'static str,
     },
     #[from]
-    #[display("cannot compute did index from SignedAtalaOperation")]
-    DidIndexFromSignedAtalaOperation { source: DidError },
+    #[display("cannot compute did index from SignedPrismOperation")]
+    DidIndexFromSignedPrismOperation { source: DidError },
     #[from]
     #[display("cannot decode did from stored data")]
     DidDecode { source: DidSyntaxError },

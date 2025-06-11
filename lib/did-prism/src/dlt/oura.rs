@@ -97,7 +97,7 @@ mod model {
             })?,
         };
 
-        // parse atala_block
+        // parse prism_block
         let byte_group = match metadata.metadadum {
             pallas_primitives::alonzo::Metadatum::Map(kv) => kv
                 .to_vec()
@@ -319,7 +319,7 @@ impl OuraStreamWorker {
         loop {
             let handle_result = match receiver.recv_timeout(TIMEOUT) {
                 Ok(event) => {
-                    let handle_result = self.handle_atala_event(event.clone());
+                    let handle_result = self.handle_prism_event(event.clone());
                     self.persist_cursor(&event);
                     handle_result
                 }
@@ -356,7 +356,7 @@ impl OuraStreamWorker {
         let _ = self.cursor_tx.send(Some(cursor));
     }
 
-    fn handle_atala_event(&self, event: Event) -> Result<(), DltError> {
+    fn handle_prism_event(&self, event: Event) -> Result<(), DltError> {
         let EventData::Metadata(meta) = event.data else {
             return Ok(());
         };
@@ -366,16 +366,16 @@ impl OuraStreamWorker {
 
         let context = event.context;
         tracing::info!(
-            "Detect a new atala_block on slot ({}, {})",
+            "Detect a new prism_block on slot ({}, {})",
             context.slot.unwrap_or_default(),
             context.block_hash.as_deref().unwrap_or_default(),
         );
 
         let parsed_prism_object = self::model::parse_oura_event(context, meta);
         match parsed_prism_object {
-            Ok(atala_object) => self
+            Ok(prism_object) => self
                 .event_tx
-                .blocking_send(atala_object)
+                .blocking_send(prism_object)
                 .map_err(|e| DltError::EventHandling {
                     source: e.to_string().into(),
                     location: location!(),

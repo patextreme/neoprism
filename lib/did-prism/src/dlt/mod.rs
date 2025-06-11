@@ -15,7 +15,7 @@ pub trait DltSource {
 
 #[cfg(feature = "oura")]
 pub trait DltSink {
-    fn send(&mut self, atala_object: PrismObject);
+    fn send(&mut self, prism_object: PrismObject);
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,19 +33,19 @@ pub struct BlockMetadata {
     pub block_number: u64,
     /// Cardano block timestamp
     pub cbt: DateTime<Utc>,
-    /// AtalaBlock seqeuence number
+    /// PrismBlock seqeuence number
     ///
-    /// This is used to order AtalaBlock within the same Cardano block
+    /// This is used to order PrismBlock within the same Cardano block
     pub absn: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OperationMetadata {
-    /// AtalaBlock metadata
+    /// PrismBlock metadata
     pub block_metadata: BlockMetadata,
     /// Operation sequence number
     ///
-    /// This is used to order AtalaOperation within the same AtalaBlock
+    /// This is used to order PrismOperation within the same PrismBlock
     pub osn: u32,
 }
 
