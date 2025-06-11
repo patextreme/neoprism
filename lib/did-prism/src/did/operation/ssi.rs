@@ -34,17 +34,18 @@ pub fn get_did_from_operation(prism_operation: &PrismOperation) -> Result<Canoni
         Some(Operation::UpdateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::DeactivateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
         Some(Operation::ProtocolVersionUpdate(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?),
+        // FIXME
         Some(Operation::CreateStorageEntry(_)) => unimplemented!(),
         Some(Operation::UpdateStorageEntry(_)) => unimplemented!(),
         Some(Operation::DeactivateStorageEntry(_)) => unimplemented!(),
-        None => Err(Error::OperationMissingFromAtalaOperation),
+        None => Err(Error::OperationMissingFromPrismOperation),
     }
 }
 
 pub fn get_did_from_signed_operation(signed_operation: &SignedPrismOperation) -> Result<CanonicalPrismDid, Error> {
     match &signed_operation.operation {
         Some(operation) => get_did_from_operation(operation),
-        None => Err(Error::OperationMissingFromAtalaOperation),
+        None => Err(Error::OperationMissingFromPrismOperation),
     }
 }
 
@@ -380,6 +381,8 @@ impl PublicKey {
         let data = match (usage, pk) {
             (KeyUsage::MasterKey, NonOperationPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
             (KeyUsage::MasterKey, _) => Err(PublicKeyError::MasterKeyNotSecp256k1 { id: id.clone() })?,
+            (KeyUsage::VdrKey, NonOperationPublicKey::Secp256k1(pk)) => PublicKeyData::Vdr { data: pk },
+            (KeyUsage::VdrKey, _) => Err(PublicKeyError::VdrKeyNotSecp256k1 { id: id.clone() })?,
             (usage, pk) => PublicKeyData::Other { data: pk, usage },
         };
 

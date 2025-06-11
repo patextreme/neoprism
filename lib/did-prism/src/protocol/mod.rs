@@ -9,7 +9,7 @@ use identus_apollo::hash::Sha256Digest;
 
 use self::v1::V1Processor;
 use crate::did::operation::{PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType, StorageData};
-use crate::did::{CanonicalPrismDid, DidState};
+use crate::did::{CanonicalPrismDid, DidState, StorageState};
 use crate::dlt::{BlockMetadata, OperationMetadata};
 use crate::prelude::PrismOperation;
 use crate::proto::prism_operation::Operation;
@@ -311,12 +311,19 @@ impl DidStateRc {
             .storage
             .into_iter()
             .filter(|(_, i)| !i.is_revoked())
-            .map(|(k, v)| (k, v.into_item().data))
+            .map(|(k, v)| {
+                let s = v.into_item();
+                StorageState {
+                    init_operation_hash: k,
+                    prev_operation_hash: (*s.prev_operation_hash).clone(),
+                    data: s.data,
+                }
+            })
             .collect();
         DidState {
             did,
             context,
-            last_operation_hash,
+            prev_operation_hash: last_operation_hash,
             public_keys,
             services,
             storage,

@@ -121,7 +121,7 @@ impl LongFormPrismDid {
                 let encoded_state = Base64UrlStrNoPad::from(bytes);
                 Ok(Self { suffix, encoded_state })
             }
-            None => Err(Error::OperationMissingFromAtalaOperation),
+            None => Err(Error::OperationMissingFromPrismOperation),
             Some(_) => Err(Error::LongFormDidNotFromCreateOperation),
         }
     }
@@ -217,9 +217,15 @@ impl FromStr for PrismDid {
 pub struct DidState {
     pub did: CanonicalPrismDid,
     pub context: Vec<String>,
-    pub last_operation_hash: Sha256Digest,
+    pub prev_operation_hash: Sha256Digest,
     pub public_keys: Vec<PublicKey>,
     pub services: Vec<Service>,
-    /// Mapping of initial_hash and storage data
-    pub storage: Vec<(Sha256Digest, Rc<StorageData>)>,
+    pub storage: Vec<StorageState>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StorageState {
+    pub init_operation_hash: Sha256Digest,
+    pub prev_operation_hash: Sha256Digest,
+    pub data: Rc<StorageData>,
 }

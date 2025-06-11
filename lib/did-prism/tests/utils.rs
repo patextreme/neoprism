@@ -1,5 +1,6 @@
 use chrono::DateTime;
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
+use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::dlt::{BlockMetadata, OperationMetadata};
 use identus_did_prism::proto;
 use prost::Message;
@@ -31,6 +32,23 @@ pub fn create_did_operation(options: Option<CreateDidOptions>) -> proto::SignedP
     proto::SignedPrismOperation {
         signed_with: "master-0".to_string(),
         signature: master_sk.sign(&operation.encode_to_vec()),
+        operation: Some(operation),
+    }
+}
+
+pub fn create_storage_operation(
+    prev_operation_hash: &Sha256Digest,
+    signed_with: &str,
+    vdr_sk: &Secp256k1PrivateKey,
+    operation: proto::ProtoCreateStorageEntry,
+) -> proto::SignedPrismOperation {
+    let operation_inner = proto::prism_operation::Operation::CreateStorageEntry(operation);
+    let operation = proto::PrismOperation {
+        operation: Some(operation_inner),
+    };
+    proto::SignedPrismOperation {
+        signed_with: signed_with.to_string(),
+        signature: vdr_sk.sign(&operation.encode_to_vec()),
         operation: Some(operation),
     }
 }

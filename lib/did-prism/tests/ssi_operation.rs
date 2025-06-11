@@ -7,8 +7,8 @@ mod utils;
 
 #[test]
 fn create_did_only_master_key() {
-    let create_operation = utils::create_did_operation(None);
-    let operations = utils::populate_metadata(vec![create_operation]);
+    let create_did_operation = utils::create_did_operation(None);
+    let operations = utils::populate_metadata(vec![create_did_operation]);
 
     let state = resolver::resolve_published(operations).0.unwrap();
 
@@ -37,18 +37,18 @@ fn create_did_with_non_master_key() {
         ]),
         ..Default::default()
     };
-    let create_operation = utils::create_did_operation(Some(options));
-    let operations = utils::populate_metadata(vec![create_operation]);
+    let create_did_operation = utils::create_did_operation(Some(options));
+    let operations = utils::populate_metadata(vec![create_did_operation]);
 
     let state = resolver::resolve_published(operations).0.unwrap();
 
+    let vdr_key = state.public_keys.iter().find(|pk| pk.id.as_str() == "vdr-0").unwrap();
+    let auth_key = state.public_keys.iter().find(|pk| pk.id.as_str() == "auth-0").unwrap();
     let master_key = state
         .public_keys
         .iter()
         .find(|pk| pk.id.as_str() == "master-0")
         .unwrap();
-    let vdr_key = state.public_keys.iter().find(|pk| pk.id.as_str() == "vdr-0").unwrap();
-    let auth_key = state.public_keys.iter().find(|pk| pk.id.as_str() == "auth-0").unwrap();
 
     assert_eq!(state.public_keys.len(), 3);
     assert_eq!(master_key.data.usage(), KeyUsage::MasterKey);

@@ -26,7 +26,7 @@ x25519-dalek = { version = "2", optional = true }
 default = []
 base64 = ["dep:base64"]
 ed25519 = ["jwk", "dep:ed25519-dalek"]
-hash = ["dep:ring"]
+hash = ["hex", "dep:ring"]
 hex = ["dep:hex"]
 jwk = ["base64"]
 openapi = ["serde", "dep:utoipa"]

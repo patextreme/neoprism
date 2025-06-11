@@ -10,7 +10,8 @@ pub enum Error {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::From)]
+#[derive(Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Debug)]
+#[debug("sha256-{}", crate::hex::HexStr::from(_0))]
 pub struct Sha256Digest([u8; 32]);
 
 impl Sha256Digest {
