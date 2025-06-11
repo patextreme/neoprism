@@ -14,7 +14,7 @@ use crate::dlt::{BlockMetadata, OperationMetadata};
 use crate::prelude::PrismOperation;
 use crate::proto::prism_operation::Operation;
 use crate::proto::{
-    ProtoCreateDid, ProtoDeactivateDid, ProtoProtocolVersionUpdate, ProtoUpdateDid, SignedPrismOperation,
+    ProtoCreateDid, ProtoCreateStorageEntry, ProtoDeactivateDid, ProtoProtocolVersionUpdate, ProtoUpdateDid, SignedPrismOperation
 };
 
 pub mod error;
@@ -473,6 +473,12 @@ trait OperationProcessorOps {
         operation: ProtoProtocolVersionUpdate,
         metadata: OperationMetadata,
     ) -> Result<OperationProcessor, ProcessError>;
+
+    fn create_storage(&self,
+        state: &DidStateRc,
+        operation: ProtoCreateStorageEntry,
+        metadata: OperationMetadata
+    ) -> Result<DidStateRc, ProcessError>;
 }
 
 #[derive(Debug, Clone)]

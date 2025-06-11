@@ -3,18 +3,19 @@ use identus_apollo::hash::sha256;
 use prost::Message;
 
 use super::{
-    DidStateConflictError, DidStateRc, OperationProcessorOps, OperationProcessor, ProcessError, ProtocolParameter,
+    DidStateConflictError, DidStateRc, OperationProcessor, OperationProcessorOps, ProcessError, ProtocolParameter,
 };
 use crate::did::Error as DidError;
 use crate::did::operation::{
-    CreateDidOperation, DeactivateDidOperation, KeyUsage, PublicKeyData, PublicKeyId, UpdateDidOperation,
-    UpdateOperationAction,
+    CreateDidOperation, CreateStorageOperation, DeactivateDidOperation, KeyUsage, PublicKeyData, PublicKeyId,
+    UpdateDidOperation, UpdateOperationAction,
 };
 use crate::dlt::OperationMetadata;
 use crate::prelude::PrismOperation;
 use crate::proto::prism_operation::Operation;
 use crate::proto::{
-    ProtoCreateDid, ProtoDeactivateDid, ProtoProtocolVersionUpdate, ProtoUpdateDid, SignedPrismOperation,
+    ProtoCreateDid, ProtoCreateStorageEntry, ProtoDeactivateDid, ProtoProtocolVersionUpdate, ProtoUpdateDid,
+    SignedPrismOperation,
 };
 
 #[derive(Debug, Clone)]
@@ -112,10 +113,10 @@ impl OperationProcessorOps for V1Processor {
 
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
-        let atala_operation = PrismOperation {
+        let prism_operation = PrismOperation {
             operation: Some(Operation::UpdateDid(operation)),
         };
-        candidate_state.with_last_operation_hash(sha256(atala_operation.encode_to_vec()));
+        candidate_state.with_last_operation_hash(sha256(prism_operation.encode_to_vec()));
         for action in parsed_operation.actions {
             apply_update_action(&mut candidate_state, action, &metadata)?;
         }
@@ -151,6 +152,7 @@ impl OperationProcessorOps for V1Processor {
                 candidate_state.revoke_service(id, &metadata)?;
             }
         }
+        // TODO: revoke all storage entry
 
         DeactivateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
         Ok(candidate_state)
@@ -164,6 +166,27 @@ impl OperationProcessorOps for V1Processor {
         // TODO: add support for protocol version update
         tracing::warn!("Protocol version update is not yet supported");
         Ok(self.clone().into())
+    }
+
+    fn create_storage(
+        &self,
+        state: &DidStateRc,
+        operation: ProtoCreateStorageEntry,
+        metadata: OperationMetadata,
+    ) -> Result<DidStateRc, ProcessError> {
+        let parsed_operation = CreateStorageOperation::parse(&operation).map_err(DidError::from)?;
+
+        // clone and mutate candidate state
+        let mut candidate_state = state.clone();
+        let prism_operation = PrismOperation {
+            operation: Some(Operation::CreateStorageEntry(operation)),
+        };
+        let operation_hash = sha256(prism_operation.encode_to_vec());
+        candidate_state.add_storage(&operation_hash, parsed_operation.data, &metadata)?;
+        candidate_state.with_last_operation_hash(operation_hash);
+
+        UpdateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
+        Ok(candidate_state)
     }
 }
 

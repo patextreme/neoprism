@@ -24,29 +24,29 @@ pub enum StorageData {
     StatusList(StatusListData),
 }
 
-impl From<&ProtoCreateStorageData> for StorageData {
-    fn from(value: &ProtoCreateStorageData) -> Self {
+impl From<ProtoCreateStorageData> for StorageData {
+    fn from(value: ProtoCreateStorageData) -> Self {
         match value {
-            ProtoCreateStorageData::Bytes(bytes) => StorageData::Bytes(bytes.clone()),
-            ProtoCreateStorageData::Ipfs(cid) => StorageData::Ipfs(cid.clone()),
+            ProtoCreateStorageData::Bytes(bytes) => StorageData::Bytes(bytes),
+            ProtoCreateStorageData::Ipfs(cid) => StorageData::Ipfs(cid),
             ProtoCreateStorageData::StatusListEntry(sle) => StorageData::StatusList(StatusListData {
                 state: sle.state,
-                name: sle.name.clone(),
-                detail: sle.details.clone(),
+                name: sle.name,
+                detail: sle.details,
             }),
         }
     }
 }
 
-impl From<&ProtoUpdateStorageData> for StorageData {
-    fn from(value: &ProtoUpdateStorageData) -> Self {
+impl From<ProtoUpdateStorageData> for StorageData {
+    fn from(value: ProtoUpdateStorageData) -> Self {
         match value {
-            ProtoUpdateStorageData::Bytes(bytes) => StorageData::Bytes(bytes.clone()),
-            ProtoUpdateStorageData::Ipfs(cid) => StorageData::Ipfs(cid.clone()),
+            ProtoUpdateStorageData::Bytes(bytes) => StorageData::Bytes(bytes),
+            ProtoUpdateStorageData::Ipfs(cid) => StorageData::Ipfs(cid),
             ProtoUpdateStorageData::StatusListEntry(sle) => StorageData::StatusList(StatusListData {
                 state: sle.state,
-                name: sle.name.clone(),
-                detail: sle.details.clone(),
+                name: sle.name,
+                detail: sle.details,
             }),
         }
     }
@@ -65,7 +65,7 @@ impl CreateStorageOperation {
         let id = CanonicalPrismDid::from_suffix(suffix)?;
         let data = operation
             .data
-            .as_ref()
+            .clone()
             .ok_or(CreateStorageOperationError::EmptyStorageData)?
             .into();
 
@@ -89,7 +89,7 @@ impl UpdateStorageOperation {
             .map_err(|e| UpdateStorageOperationError::InvalidPreviousOperationHash { source: e })?;
         let data = operation
             .data
-            .as_ref()
+            .clone()
             .ok_or(UpdateStorageOperationError::EmptyStorageData)?
             .into();
 
