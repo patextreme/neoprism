@@ -14,7 +14,8 @@ use crate::dlt::{BlockMetadata, OperationMetadata};
 use crate::prelude::PrismOperation;
 use crate::proto::prism_operation::Operation;
 use crate::proto::{
-    ProtoCreateDid, ProtoCreateStorageEntry, ProtoDeactivateDid, ProtoProtocolVersionUpdate, ProtoUpdateDid, SignedPrismOperation
+    ProtoCreateDid, ProtoCreateStorageEntry, ProtoDeactivateDid, ProtoDeactivateStorageEntry,
+    ProtoProtocolVersionUpdate, ProtoUpdateDid, ProtoUpdateStorageEntry, SignedPrismOperation,
 };
 
 pub mod error;
@@ -422,9 +423,18 @@ impl OperationProcessingContext<Published> {
                 .processor
                 .protocol_version_update(op, metadata)
                 .map(|s| (None, Some(s))),
-            Some(Operation::CreateStorageEntry(_)) => unimplemented!(),
-            Some(Operation::UpdateStorageEntry(_)) => unimplemented!(),
-            Some(Operation::DeactivateStorageEntry(_)) => unimplemented!(),
+            Some(Operation::CreateStorageEntry(op)) => self
+                .processor
+                .create_storage(&self.state, op, metadata)
+                .map(|s| (Some(s), None)),
+            Some(Operation::UpdateStorageEntry(op)) => self
+                .processor
+                .update_storage(&self.state, op, metadata)
+                .map(|s| (Some(s), None)),
+            Some(Operation::DeactivateStorageEntry(op)) => self
+                .processor
+                .deactivate_storage(&self.state, op, metadata)
+                .map(|s| (Some(s), None)),
             None => Err(ProcessError::SignedPrismOperationMissingOperation),
         };
 
@@ -474,10 +484,25 @@ trait OperationProcessorOps {
         metadata: OperationMetadata,
     ) -> Result<OperationProcessor, ProcessError>;
 
-    fn create_storage(&self,
+    fn create_storage(
+        &self,
         state: &DidStateRc,
         operation: ProtoCreateStorageEntry,
-        metadata: OperationMetadata
+        metadata: OperationMetadata,
+    ) -> Result<DidStateRc, ProcessError>;
+
+    fn update_storage(
+        &self,
+        state: &DidStateRc,
+        operation: ProtoUpdateStorageEntry,
+        metadata: OperationMetadata,
+    ) -> Result<DidStateRc, ProcessError>;
+
+    fn deactivate_storage(
+        &self,
+        state: &DidStateRc,
+        operation: ProtoDeactivateStorageEntry,
+        metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError>;
 }
 

@@ -7,15 +7,15 @@ use super::{
 };
 use crate::did::Error as DidError;
 use crate::did::operation::{
-    CreateDidOperation, CreateStorageOperation, DeactivateDidOperation, KeyUsage, PublicKeyData, PublicKeyId,
-    UpdateDidOperation, UpdateOperationAction,
+    CreateDidOperation, CreateStorageOperation, DeactivateDidOperation, DeactivateStorageOperation, KeyUsage,
+    PublicKeyData, PublicKeyId, UpdateDidOperation, UpdateOperationAction, UpdateStorageOperation,
 };
 use crate::dlt::OperationMetadata;
 use crate::prelude::PrismOperation;
 use crate::proto::prism_operation::Operation;
 use crate::proto::{
-    ProtoCreateDid, ProtoCreateStorageEntry, ProtoDeactivateDid, ProtoProtocolVersionUpdate, ProtoUpdateDid,
-    SignedPrismOperation,
+    ProtoCreateDid, ProtoCreateStorageEntry, ProtoDeactivateDid, ProtoDeactivateStorageEntry,
+    ProtoProtocolVersionUpdate, ProtoUpdateDid, ProtoUpdateStorageEntry, SignedPrismOperation,
 };
 
 #[derive(Debug, Clone)]
@@ -183,6 +183,52 @@ impl OperationProcessorOps for V1Processor {
         };
         let operation_hash = sha256(prism_operation.encode_to_vec());
         candidate_state.add_storage(&operation_hash, parsed_operation.data, &metadata)?;
+        candidate_state.with_last_operation_hash(operation_hash);
+
+        UpdateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
+        Ok(candidate_state)
+    }
+
+    fn update_storage(
+        &self,
+        state: &DidStateRc,
+        operation: ProtoUpdateStorageEntry,
+        _metadata: OperationMetadata,
+    ) -> Result<DidStateRc, ProcessError> {
+        let parsed_operation = UpdateStorageOperation::parse(&operation).map_err(DidError::from)?;
+
+        // clone and mutate candidate state
+        let mut candidate_state = state.clone();
+        let prism_operation = PrismOperation {
+            operation: Some(Operation::UpdateStorageEntry(operation)),
+        };
+        let operation_hash = sha256(prism_operation.encode_to_vec());
+        candidate_state.update_storage(
+            &parsed_operation.prev_operation_hash,
+            &operation_hash,
+            parsed_operation.data,
+        )?;
+        candidate_state.with_last_operation_hash(operation_hash);
+
+        UpdateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
+        Ok(candidate_state)
+    }
+
+    fn deactivate_storage(
+        &self,
+        state: &DidStateRc,
+        operation: ProtoDeactivateStorageEntry,
+        metadata: OperationMetadata,
+    ) -> Result<DidStateRc, ProcessError> {
+        let parsed_operation = DeactivateStorageOperation::parse(&operation).map_err(DidError::from)?;
+
+        // clone and mutate candidate state
+        let mut candidate_state = state.clone();
+        let prism_operation = PrismOperation {
+            operation: Some(Operation::DeactivateStorageEntry(operation)),
+        };
+        let operation_hash = sha256(prism_operation.encode_to_vec());
+        candidate_state.revoke_storage(&parsed_operation.prev_operation_hash, &operation_hash, &metadata)?;
         candidate_state.with_last_operation_hash(operation_hash);
 
         UpdateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
