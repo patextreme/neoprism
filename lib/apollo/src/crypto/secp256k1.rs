@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use k256::Secp256k1;
-use k256::ecdsa::signature::Verifier;
+use k256::ecdsa::signature::{SignerMut, Verifier};
 use k256::elliptic_curve::sec1::{EncodedPoint, ToEncodedPoint};
 
 use super::{EncodeArray, EncodeVec, Error, Verifiable};
@@ -10,6 +10,9 @@ use crate::jwk::{EncodeJwk, Jwk};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Secp256k1PublicKey(k256::PublicKey);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Secp256k1PrivateKey(k256::SecretKey);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CurvePoint {
@@ -102,6 +105,23 @@ impl Secp256k1PublicKey {
             x: x.to_owned(),
             y: y.to_owned(),
         }
+    }
+}
+
+impl Secp256k1PrivateKey {
+    pub fn from_slice(slice: &[u8]) -> Result<Self, Error> {
+        let sk = k256::SecretKey::from_slice(slice)?;
+        Ok(Self(sk))
+    }
+
+    pub fn to_public_key(&self) -> Secp256k1PublicKey {
+        Secp256k1PublicKey(self.0.public_key())
+    }
+
+    pub fn sign(&self, message: &[u8]) -> Vec<u8> {
+        let mut signing_key = k256::ecdsa::SigningKey::from(&self.0);
+        let signature: k256::ecdsa::Signature = signing_key.sign(message);
+        signature.to_der().to_bytes().to_vec()
     }
 }
 

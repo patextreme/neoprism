@@ -44,12 +44,12 @@ impl OperationProcessorOps for V1Processor {
             .operation
             .as_ref()
             .ok_or(ProcessError::SignedPrismOperationMissingOperation)?;
-        let inner_operation = operation
+        let operation_inner = operation
             .operation
             .as_ref()
             .ok_or(ProcessError::SignedPrismOperationMissingOperation)?;
         let is_storage_entry = matches!(
-            inner_operation,
+            operation_inner,
             Operation::CreateStorageEntry(_) | Operation::UpdateStorageEntry(_) | Operation::DeactivateStorageEntry(_)
         );
 
