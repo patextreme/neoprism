@@ -329,7 +329,7 @@ struct Unpublished;
 struct OperationProcessingContext<CtxType> {
     r#type: PhantomData<CtxType>,
     state: DidStateRc,
-    processor: OperationProcessorVariants,
+    processor: OperationProcessor,
 }
 
 fn init_published_context(
@@ -344,7 +344,7 @@ fn init_published_context(
     match &operation.operation {
         Some(Operation::CreateDid(op)) => {
             let initial_state = DidStateRc::new(did);
-            let processor = OperationProcessorVariants::V1(V1Processor::default());
+            let processor = OperationProcessor::V1(V1Processor::default());
             let candidate_state = processor.create_did(&initial_state, op.clone(), metadata)?;
             processor.check_signature(&candidate_state, &signed_operation)?;
             Ok(OperationProcessingContext {
@@ -374,7 +374,7 @@ fn init_unpublished_context(
     match &operation.operation {
         Some(Operation::CreateDid(op)) => {
             let initial_state = DidStateRc::new(did);
-            let processor = OperationProcessorVariants::V1(V1Processor::default());
+            let processor = OperationProcessor::V1(V1Processor::default());
             let candidate_state = processor.create_did(&initial_state, op.clone(), unpublished_metadata)?;
             Ok(OperationProcessingContext {
                 r#type: PhantomData,
@@ -444,7 +444,7 @@ impl OperationProcessingContext<Published> {
 }
 
 #[enum_dispatch]
-trait OperationProcessor {
+trait OperationProcessorOps {
     fn check_signature(&self, state: &DidStateRc, signed_operation: &SignedPrismOperation) -> Result<(), ProcessError>;
 
     fn create_did(
@@ -472,11 +472,11 @@ trait OperationProcessor {
         &self,
         operation: ProtoProtocolVersionUpdate,
         metadata: OperationMetadata,
-    ) -> Result<OperationProcessorVariants, ProcessError>;
+    ) -> Result<OperationProcessor, ProcessError>;
 }
 
-#[enum_dispatch(OperationProcessor)]
 #[derive(Debug, Clone)]
-enum OperationProcessorVariants {
+#[enum_dispatch(OperationProcessorOps)]
+enum OperationProcessor {
     V1(V1Processor),
 }

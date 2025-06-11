@@ -3,7 +3,7 @@ use identus_apollo::hash::sha256;
 use prost::Message;
 
 use super::{
-    DidStateConflictError, DidStateRc, OperationProcessor, OperationProcessorVariants, ProcessError, ProtocolParameter,
+    DidStateConflictError, DidStateRc, OperationProcessorOps, OperationProcessor, ProcessError, ProtocolParameter,
 };
 use crate::did::Error as DidError;
 use crate::did::operation::{
@@ -30,7 +30,7 @@ impl Default for V1Processor {
     }
 }
 
-impl OperationProcessor for V1Processor {
+impl OperationProcessorOps for V1Processor {
     fn check_signature(&self, state: &DidStateRc, signed_operation: &SignedPrismOperation) -> Result<(), ProcessError> {
         let key_id = PublicKeyId::parse(&signed_operation.signed_with, self.parameters.max_id_size)
             .map_err(|e| ProcessError::SignedPrismOperationInvalidSignedWith { source: e })?;
@@ -160,7 +160,7 @@ impl OperationProcessor for V1Processor {
         &self,
         _: ProtoProtocolVersionUpdate,
         _: OperationMetadata,
-    ) -> Result<OperationProcessorVariants, ProcessError> {
+    ) -> Result<OperationProcessor, ProcessError> {
         // TODO: add support for protocol version update
         tracing::warn!("Protocol version update is not yet supported");
         Ok(self.clone().into())
