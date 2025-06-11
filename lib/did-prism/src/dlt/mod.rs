@@ -10,7 +10,7 @@ pub mod oura;
 
 #[cfg(feature = "oura")]
 pub trait DltSource {
-    fn receiver(self) -> Result<tokio::sync::mpsc::Receiver<PublishedAtalaObject>, String>;
+    fn receiver(self) -> Result<tokio::sync::mpsc::Receiver<PublishedPrismObject>, String>;
 }
 
 #[cfg(feature = "oura")]
@@ -62,9 +62,9 @@ impl OperationMetadata {
 }
 
 #[derive(Debug, Clone)]
-pub struct PublishedAtalaObject {
+pub struct PublishedPrismObject {
     pub block_metadata: BlockMetadata,
-    pub atala_object: PrismObject,
+    pub prism_object: PrismObject,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]

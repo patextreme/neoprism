@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::LazyLock;
 
@@ -11,6 +12,7 @@ use prost::Message;
 use regex::Regex;
 
 use self::operation::{PublicKey, Service};
+use crate::did::operation::StorageData;
 use crate::proto::PrismOperation;
 use crate::proto::prism_operation::Operation;
 
@@ -218,4 +220,6 @@ pub struct DidState {
     pub last_operation_hash: Sha256Digest,
     pub public_keys: Vec<PublicKey>,
     pub services: Vec<Service>,
+    /// Mapping of initial_hash and storage data
+    pub storage: Vec<(Sha256Digest, Rc<StorageData>)>,
 }

@@ -7,17 +7,20 @@ use crate::proto::proto_create_storage_entry::Data as ProtoCreateStorageData;
 use crate::proto::proto_update_storage_entry::Data as ProtoUpdateStorageData;
 use crate::proto::{ProtoCreateStorageEntry, ProtoDeactivateStorageEntry, ProtoUpdateStorageEntry};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatusListData {
     pub state: i64,
     pub name: String,
     pub detail: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, PartialEq, Eq, derive_more::Debug)]
 pub enum StorageData {
+    #[debug("bytes({})", identus_apollo::hex::HexStr::from(_0))]
     Bytes(Vec<u8>),
+    #[debug("ipfs({_0})")]
     Ipfs(String),
+    #[debug("status_list({_0:?})")]
     StatusList(StatusListData),
 }
 

@@ -30,7 +30,7 @@ pub(crate) enum MetadataReadError {
         tx_idx: Option<usize>,
     },
     #[display("cannot decode atala_block protobuf on block {block_hash:?} tx {tx_idx:?}")]
-    AtalaBlockProtoDecode {
+    PrismBlockProtoDecode {
         source: prost::DecodeError,
         block_hash: Option<String>,
         tx_idx: Option<usize>,

@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use std::ops::Deref;
 use std::rc::Rc;
 
 use chrono::DateTime;
@@ -7,7 +8,7 @@ use error::{DidStateConflictError, ProcessError};
 use identus_apollo::hash::Sha256Digest;
 
 use self::v1::V1Processor;
-use crate::did::operation::{PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType};
+use crate::did::operation::{PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType, StorageData};
 use crate::did::{CanonicalPrismDid, DidState};
 use crate::dlt::{BlockMetadata, OperationMetadata};
 use crate::prelude::PrismOperation;
@@ -86,9 +87,17 @@ type InternalMap<K, V> = im_rc::HashMap<K, Revocable<V>>;
 struct DidStateRc {
     did: Rc<CanonicalPrismDid>,
     context: Rc<Vec<String>>,
-    last_operation_hash: Rc<Sha256Digest>,
+    prev_operation_hash: Rc<Sha256Digest>,
     public_keys: InternalMap<PublicKeyId, PublicKey>,
     services: InternalMap<ServiceId, Service>,
+    /// Mapping of initial_operation_hash and the storage state
+    storage: InternalMap<Sha256Digest, StorageStateRc>,
+}
+
+#[derive(Debug, Clone)]
+struct StorageStateRc {
+    prev_operation_hash: Rc<Sha256Digest>,
+    data: Rc<StorageData>,
 }
 
 impl DidStateRc {
@@ -96,10 +105,11 @@ impl DidStateRc {
         let last_operation_hash = did.suffix.clone();
         Self {
             did: Rc::new(did),
-            last_operation_hash: Rc::new(last_operation_hash),
+            prev_operation_hash: Rc::new(last_operation_hash),
             context: Default::default(),
             public_keys: Default::default(),
             services: Default::default(),
+            storage: Default::default(),
         }
     }
 
@@ -108,7 +118,7 @@ impl DidStateRc {
     }
 
     fn with_last_operation_hash(&mut self, last_operation_hash: Sha256Digest) {
-        self.last_operation_hash = Rc::new(last_operation_hash)
+        self.prev_operation_hash = Rc::new(last_operation_hash)
     }
 
     fn add_public_key(
@@ -199,10 +209,91 @@ impl DidStateRc {
         Ok(())
     }
 
+    fn add_storage(
+        &mut self,
+        operation_hash: &Sha256Digest,
+        data: StorageData,
+        added_at: &OperationMetadata,
+    ) -> Result<(), DidStateConflictError> {
+        if self.storage.contains_key(operation_hash) {
+            return Err(DidStateConflictError::AddStorageEntryWithExistingHash {
+                initial_hash: operation_hash.clone(),
+            });
+        }
+
+        let updated_map = self.storage.update(
+            operation_hash.clone(),
+            Revocable::new(
+                StorageStateRc {
+                    prev_operation_hash: operation_hash.clone().into(),
+                    data: data.into(),
+                },
+                added_at,
+            ),
+        );
+        self.storage = updated_map;
+        Ok(())
+    }
+
+    fn revoke_storage(
+        &mut self,
+        prev_operation_hash: &Sha256Digest,
+        operation_hash: &Sha256Digest,
+        revoke_at: &OperationMetadata,
+    ) -> Result<(), DidStateConflictError> {
+        let Some(storage) = self
+            .storage
+            .iter_mut()
+            .find_map(|(_, s)| Some(s).filter(|v| v.get().prev_operation_hash.deref() == prev_operation_hash))
+        else {
+            Err(DidStateConflictError::RevokeStorageEntryNotExists {
+                previous_operation_hash: prev_operation_hash.clone(),
+            })?
+        };
+
+        if storage.is_revoked() {
+            Err(DidStateConflictError::RevokeStorageEntryAlreadyRevoked {
+                previous_operation_hash: prev_operation_hash.clone(),
+            })?
+        }
+
+        storage.revoke(revoke_at);
+        storage.get_mut().prev_operation_hash = operation_hash.clone().into();
+        Ok(())
+    }
+
+    fn update_storage(
+        &mut self,
+        prev_operation_hash: &Sha256Digest,
+        operation_hash: &Sha256Digest,
+        data: StorageData,
+    ) -> Result<(), DidStateConflictError> {
+        let Some(storage) = self
+            .storage
+            .iter_mut()
+            .find_map(|(_, s)| Some(s).filter(|v| v.get().prev_operation_hash.deref() == prev_operation_hash))
+        else {
+            Err(DidStateConflictError::UpdateStorageEntryNotExists {
+                prev_operation_hash: prev_operation_hash.clone(),
+            })?
+        };
+
+        if storage.is_revoked() {
+            Err(DidStateConflictError::UpdateStorageEntryAlreadyRevoked {
+                prev_operation_hash: prev_operation_hash.clone(),
+            })?
+        }
+
+        let storage_inner = storage.get_mut();
+        storage_inner.prev_operation_hash = operation_hash.clone().into();
+        storage_inner.data = data.into();
+        Ok(())
+    }
+
     fn finalize(self) -> DidState {
         let did: CanonicalPrismDid = (*self.did).clone();
         let context: Vec<String> = self.context.iter().map(|s| s.as_str().to_string()).collect();
-        let last_operation_hash: Sha256Digest = (*self.last_operation_hash).clone();
+        let last_operation_hash: Sha256Digest = (*self.prev_operation_hash).clone();
         let public_keys: Vec<PublicKey> = self
             .public_keys
             .into_iter()
@@ -215,12 +306,19 @@ impl DidStateRc {
             .filter(|(_, i)| !i.is_revoked())
             .map(|(_, i)| i.into_item())
             .collect();
+        let storage = self
+            .storage
+            .into_iter()
+            .filter(|(_, i)| !i.is_revoked())
+            .map(|(k, v)| (k, v.into_item().data))
+            .collect();
         DidState {
             did,
             context,
             last_operation_hash,
             public_keys,
             services,
+            storage,
         }
     }
 }

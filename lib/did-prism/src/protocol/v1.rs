@@ -67,7 +67,7 @@ impl OperationProcessor for V1Processor {
                     Err(ProcessError::SignedPrismOperationInvalidSignature)?
                 }
             }
-            pk => Err(ProcessError::SignedPrismOperationSignedWithNonMasterKey {
+            pk => Err(ProcessError::SignedPrismOperationSignedWithInvalidKey {
                 id: key_id,
                 usage: pk.usage(),
             })?,
@@ -106,7 +106,7 @@ impl OperationProcessor for V1Processor {
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = UpdateDidOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
-        if parsed_operation.prev_operation_hash != *state.last_operation_hash {
+        if parsed_operation.prev_operation_hash != *state.prev_operation_hash {
             Err(DidStateConflictError::UnmatchedPreviousOperationHash)?
         }
 
@@ -131,7 +131,7 @@ impl OperationProcessor for V1Processor {
         metadata: OperationMetadata,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = DeactivateDidOperation::parse(&operation).map_err(DidError::from)?;
-        if parsed_operation.prev_operation_hash != *state.last_operation_hash {
+        if parsed_operation.prev_operation_hash != *state.prev_operation_hash {
             Err(DidStateConflictError::UnmatchedPreviousOperationHash)?
         }
 

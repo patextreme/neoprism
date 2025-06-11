@@ -12,7 +12,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
 use super::error::DltError;
-use super::{DltCursor, DltSource, PublishedAtalaObject};
+use super::{DltCursor, DltSource, PublishedPrismObject};
 use crate::dlt::NetworkIdentifier;
 use crate::location;
 use crate::repo::DltCursorRepo;
@@ -24,7 +24,7 @@ mod model {
     use serde::{Deserialize, Serialize};
 
     use crate::dlt::error::MetadataReadError;
-    use crate::dlt::{BlockMetadata, PublishedAtalaObject};
+    use crate::dlt::{BlockMetadata, PublishedPrismObject};
     use crate::proto::PrismObject;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -73,7 +73,7 @@ mod model {
     pub fn parse_oura_event(
         context: EventContext,
         metadata: MetadataRecord,
-    ) -> Result<PublishedAtalaObject, MetadataReadError> {
+    ) -> Result<PublishedPrismObject, MetadataReadError> {
         // parse metadata
         let block_hash = &context.block_hash;
         let tx_idx = context.tx_idx;
@@ -132,16 +132,16 @@ mod model {
             bytes.append(&mut b);
         }
 
-        let atala_object =
-            PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::AtalaBlockProtoDecode {
+        let prism_object =
+            PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::PrismBlockProtoDecode {
                 source: e,
                 block_hash: block_hash.clone(),
                 tx_idx,
             })?;
 
-        Ok(PublishedAtalaObject {
+        Ok(PublishedPrismObject {
             block_metadata,
-            atala_object,
+            prism_object,
         })
     }
 }
@@ -241,8 +241,8 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
 }
 
 impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
-    fn receiver(self) -> Result<Receiver<PublishedAtalaObject>, String> {
-        let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedAtalaObject>(1024);
+    fn receiver(self) -> Result<Receiver<PublishedPrismObject>, String> {
+        let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedPrismObject>(1024);
 
         let cursor_persist_worker = CursorPersistWorker {
             cursor_rx: self.cursor_tx.subscribe(),
@@ -265,7 +265,7 @@ impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
 struct OuraStreamWorker {
     with_utils: WithUtils<Config>,
     cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
-    event_tx: Sender<PublishedAtalaObject>,
+    event_tx: Sender<PublishedPrismObject>,
 }
 
 impl OuraStreamWorker {
@@ -371,8 +371,8 @@ impl OuraStreamWorker {
             context.block_hash.as_deref().unwrap_or_default(),
         );
 
-        let parsed_atala_object = self::model::parse_oura_event(context, meta);
-        match parsed_atala_object {
+        let parsed_prism_object = self::model::parse_oura_event(context, meta);
+        match parsed_prism_object {
             Ok(atala_object) => self
                 .event_tx
                 .blocking_send(atala_object)
