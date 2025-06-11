@@ -2,7 +2,7 @@ use std::ops::Deref;
 use std::str::FromStr;
 
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
-use identus_apollo::hash::{Sha256Digest, sha256};
+use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use identus_did_prism::did::CanonicalPrismDid;
 use identus_did_prism::did::operation::StorageData;
@@ -95,7 +95,7 @@ fn test_input_fabio() {
         "0a0476647231124730450221008b7d8eab69f8fe25c496d04545a0c87c1869de12fcd77e2be6746286c499858902200f5351773a4720f5ece5ff60f7912f67ac82d3f999a0772ff8477ec1fce1d4621a293a270a2051d47b13393a7cc5c1afc47099dcbecccf0c8a70828c072ac82f55225b42d4f4520300ff11",
     );
     let update_storage_op = parse_signed_operation(
-        "0a047664723112463044022051f2c9fe1fb93a39965d57784ab7fd6bf79d3d5e06cf2f33182ae9f59488600702206eda7d16d7e2d6c23081102cd5d040a1049302a34f2398ea287f7e8a1abf89581a2a42280a2051d47b13393a7cc5c1afc47099dcbecccf0c8a70828c072ac82f55225b42d4f452043300ffcc",
+        "0a04766472311246304402206973afd6b82a1f94a952d279310c5ba3e1afc8462104506c0e5299df49268b9d02202c5c250a82288e5f392261014167bac8b61ca9d4173b0f7953386e8cb389ca041a2a42280a203ade633ab371f00687b9e23431d10b9dc1943484d364c48608d5c1a985357a3b52043300ffcc",
     );
 
     let did = CanonicalPrismDid::from_operation(create_did_op.operation.as_ref().unwrap()).unwrap();
@@ -116,15 +116,10 @@ fn test_input_fabio() {
 
     assert!(state_0.storage.is_empty());
     assert_eq!(state_1.storage[0].data.deref(), &StorageData::Bytes(vec![0, 255, 17]));
-    assert_eq!(state_2.storage[0].data.deref(), &StorageData::Bytes(vec![0, 255, 17]));
-
-    let create_storage_op_hash = sha256(create_storage_op.operation.unwrap().encode_to_vec()).to_vec();
-    let update_storage_op_prev_hash = match update_storage_op.operation.unwrap().operation.unwrap() {
-        proto::prism_operation::Operation::UpdateStorageEntry(op) => op.previous_operation_hash,
-        _ => panic!(),
-    };
-    // previous_operation_hash != hash from create_storage_op
-    assert_ne!(create_storage_op_hash, update_storage_op_prev_hash);
+    assert_eq!(
+        state_2.storage[0].data.deref(),
+        &StorageData::Bytes(vec![51, 0, 255, 204])
+    );
 }
 
 fn create_did_with_vdr_key() -> (
