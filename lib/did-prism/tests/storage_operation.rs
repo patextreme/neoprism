@@ -18,14 +18,14 @@ const VDR_KEY_NAME: &str = "vdr-0";
 #[test]
 fn create_storage_entry() {
     let (create_did_op, _, did, vdr_sk) = create_did_with_vdr_key();
-    let (create_storage_op, _) = test_utils::create_storage_operation(
+    let (create_storage_op, _) = test_utils::new_signed_operation(
         VDR_KEY_NAME,
         &vdr_sk,
-        proto::ProtoCreateStorageEntry {
+        proto::prism_operation::Operation::CreateStorageEntry(proto::ProtoCreateStorageEntry {
             did_prism_hash: did.suffix.to_vec(),
             nonce: vec![0],
             data: Some(proto::proto_create_storage_entry::Data::Bytes(vec![1, 2, 3])),
-        },
+        }),
     );
 
     let operations = test_utils::populate_metadata(vec![create_did_op, create_storage_op]);
@@ -38,23 +38,23 @@ fn create_storage_entry() {
 #[test]
 fn create_multiple_storage_entries() {
     let (create_did_op, _, did, vdr_sk) = create_did_with_vdr_key();
-    let (create_storage_op_1, create_storage_op_hash_1) = test_utils::create_storage_operation(
+    let (create_storage_op_1, create_storage_op_hash_1) = test_utils::new_signed_operation(
         VDR_KEY_NAME,
         &vdr_sk,
-        proto::ProtoCreateStorageEntry {
+        proto::prism_operation::Operation::CreateStorageEntry(proto::ProtoCreateStorageEntry {
             did_prism_hash: did.suffix.to_vec(),
             nonce: vec![0],
             data: Some(proto::proto_create_storage_entry::Data::Bytes(vec![1, 2, 3])),
-        },
+        }),
     );
-    let (create_storage_op_2, create_storage_op_hash_2) = test_utils::create_storage_operation(
+    let (create_storage_op_2, create_storage_op_hash_2) = test_utils::new_signed_operation(
         VDR_KEY_NAME,
         &vdr_sk,
-        proto::ProtoCreateStorageEntry {
+        proto::prism_operation::Operation::CreateStorageEntry(proto::ProtoCreateStorageEntry {
             did_prism_hash: did.suffix.to_vec(),
             nonce: vec![1],
             data: Some(proto::proto_create_storage_entry::Data::Bytes(vec![4, 5, 6])),
-        },
+        }),
     );
 
     let operations = test_utils::populate_metadata(vec![create_did_op, create_storage_op_1, create_storage_op_2]);
@@ -82,7 +82,37 @@ fn create_multiple_storage_entries() {
 }
 
 #[test]
-fn test_input_fabio() {
+fn create_and_update_storage_entry() {
+    let (create_did_op, _, did, vdr_sk) = create_did_with_vdr_key();
+    let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism_operation::Operation::CreateStorageEntry(proto::ProtoCreateStorageEntry {
+            did_prism_hash: did.suffix.to_vec(),
+            nonce: vec![0],
+            data: Some(proto::proto_create_storage_entry::Data::Bytes(vec![1, 2, 3])),
+        }),
+    );
+    let (update_storage_op, update_storage_op_hash) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism_operation::Operation::UpdateStorageEntry(proto::ProtoUpdateStorageEntry {
+            previous_operation_hash: create_storage_op_hash.to_vec(),
+            data: Some(proto::proto_update_storage_entry::Data::Bytes(vec![4, 5, 6])),
+        }),
+    );
+
+    let operations = test_utils::populate_metadata(vec![create_did_op, create_storage_op, update_storage_op]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    assert_eq!(state.storage.len(), 1);
+    assert_eq!(state.storage[0].init_operation_hash.deref(), &create_storage_op_hash);
+    assert_eq!(state.storage[0].last_operation_hash.deref(), &update_storage_op_hash);
+    assert_eq!(state.storage[0].data.deref(), &StorageData::Bytes(vec![4, 5, 6]));
+}
+
+#[test]
+fn test_input_from_scala_did() {
     let parse_signed_operation = |hex_str: &str| {
         let bytes = HexStr::from_str(hex_str).unwrap();
         proto::SignedPrismOperation::decode(bytes.to_bytes().as_slice()).unwrap()
@@ -130,14 +160,14 @@ fn create_did_with_vdr_key() -> (
 ) {
     let vdr_sk = Secp256k1PrivateKey::from_slice(&VDR_KEY).unwrap();
     let options = test_utils::CreateDidOptions {
-        public_keys: Some(vec![test_utils::to_public_key(
+        public_keys: Some(vec![test_utils::new_public_key(
             VDR_KEY_NAME,
             proto::KeyUsage::VdrKey,
             &vdr_sk,
         )]),
         ..Default::default()
     };
-    let (signed_operation, operation_hash) = test_utils::create_did_operation(Some(options));
+    let (signed_operation, operation_hash) = test_utils::new_create_did_operation(Some(options));
     let did = CanonicalPrismDid::from_operation(signed_operation.operation.as_ref().unwrap()).unwrap();
     (signed_operation, operation_hash, did, vdr_sk)
 }
