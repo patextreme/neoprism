@@ -1,11 +1,10 @@
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
-use identus_apollo::hash::sha256;
 use identus_did_prism::did::CanonicalPrismDid;
+use identus_did_prism::did::operation::StorageData;
 use identus_did_prism::proto;
 use identus_did_prism::protocol::resolver;
-use prost::Message;
 
-mod utils;
+mod test_utils;
 
 const VDR_KEY: [u8; 32] = [2; 32];
 const VDR_KEY_NAME: &str = "vdr-0";
@@ -13,11 +12,8 @@ const VDR_KEY_NAME: &str = "vdr-0";
 #[test]
 fn create_storage_entry() {
     let (create_did_operation, did, vdr_sk) = create_did_with_vdr_key();
-
-    let prev_operation_hash = sha256(create_did_operation.operation.as_ref().unwrap().encode_to_vec());
-    let create_storage_operation = utils::create_storage_operation(
-        &prev_operation_hash,
-        &VDR_KEY_NAME,
+    let create_storage_operation = test_utils::create_storage_operation(
+        VDR_KEY_NAME,
         &vdr_sk,
         proto::ProtoCreateStorageEntry {
             did_prism_hash: did.suffix.to_vec(),
@@ -26,28 +22,29 @@ fn create_storage_entry() {
         },
     );
 
-    let operations = utils::populate_metadata(vec![create_did_operation, create_storage_operation]);
-
+    let operations = test_utils::populate_metadata(vec![create_did_operation, create_storage_operation]);
     let state = resolver::resolve_published(operations).0.unwrap();
 
-    eprintln!("\npublic_keys: {:?}", state.public_keys);
-    eprintln!("\nstorage: {:?}", state.storage);
-    eprintln!("\ndid: {:?}", did);
-    eprintln!("\nlast_operation_hash: {:?}", state.prev_operation_hash);
-    panic!();
+    assert_eq!(state.public_keys.len(), 2);
+    assert_eq!(state.storage.len(), 1);
+    assert_eq!(*state.storage[0].data, StorageData::Bytes(vec![1, 2, 3]));
+    assert_eq!(
+        state.storage[0].init_operation_hash,
+        state.storage[0].prev_operation_hash
+    );
 }
 
 fn create_did_with_vdr_key() -> (proto::SignedPrismOperation, CanonicalPrismDid, Secp256k1PrivateKey) {
     let vdr_sk = Secp256k1PrivateKey::from_slice(&VDR_KEY).unwrap();
-    let options = utils::CreateDidOptions {
-        public_keys: Some(vec![utils::to_public_key(
-            &VDR_KEY_NAME,
+    let options = test_utils::CreateDidOptions {
+        public_keys: Some(vec![test_utils::to_public_key(
+            VDR_KEY_NAME,
             proto::KeyUsage::VdrKey,
             &vdr_sk,
         )]),
         ..Default::default()
     };
-    let create_operation = utils::create_did_operation(Some(options));
+    let create_operation = test_utils::create_did_operation(Some(options));
     let did = CanonicalPrismDid::from_operation(create_operation.operation.as_ref().unwrap()).unwrap();
     (create_operation, did, vdr_sk)
 }

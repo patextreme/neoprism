@@ -1,6 +1,7 @@
+#![allow(dead_code)]
+
 use chrono::DateTime;
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
-use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::dlt::{BlockMetadata, OperationMetadata};
 use identus_did_prism::proto;
 use prost::Message;
@@ -37,7 +38,6 @@ pub fn create_did_operation(options: Option<CreateDidOptions>) -> proto::SignedP
 }
 
 pub fn create_storage_operation(
-    prev_operation_hash: &Sha256Digest,
     signed_with: &str,
     vdr_sk: &Secp256k1PrivateKey,
     operation: proto::ProtoCreateStorageEntry,

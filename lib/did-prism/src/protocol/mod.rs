@@ -294,7 +294,7 @@ impl DidStateRc {
     fn finalize(self) -> DidState {
         let did: CanonicalPrismDid = (*self.did).clone();
         let context: Vec<String> = self.context.iter().map(|s| s.as_str().to_string()).collect();
-        let last_operation_hash: Sha256Digest = (*self.prev_operation_hash).clone();
+        let last_operation_hash = self.prev_operation_hash.clone();
         let public_keys: Vec<PublicKey> = self
             .public_keys
             .into_iter()
@@ -314,8 +314,8 @@ impl DidStateRc {
             .map(|(k, v)| {
                 let s = v.into_item();
                 StorageState {
-                    init_operation_hash: k,
-                    prev_operation_hash: (*s.prev_operation_hash).clone(),
+                    init_operation_hash: k.into(),
+                    prev_operation_hash: s.prev_operation_hash,
                     data: s.data,
                 }
             })
