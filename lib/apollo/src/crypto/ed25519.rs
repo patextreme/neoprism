@@ -1,9 +1,23 @@
-use super::{EncodeArray, EncodeVec, Error, ToPublicKey, Verifiable};
+use super::{EncodeArray, EncodeVec, Error, Verifiable};
 use crate::base64::Base64UrlStrNoPad;
 use crate::jwk::{EncodeJwk, Jwk};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ed25519PublicKey(ed25519_dalek::VerifyingKey);
+
+impl Ed25519PublicKey {
+    pub fn from_slice(slice: &[u8]) -> Result<Ed25519PublicKey, Error> {
+        let Some((key, _)) = slice.split_first_chunk::<32>() else {
+            Err(Error::InvalidKeySize {
+                expected: 32,
+                actual: slice.len(),
+                key_type: std::any::type_name::<Ed25519PublicKey>(),
+            })?
+        };
+        let key = ed25519_dalek::VerifyingKey::from_bytes(key)?;
+        Ok(Ed25519PublicKey(key))
+    }
+}
 
 impl EncodeVec for Ed25519PublicKey {
     fn encode_vec(&self) -> Vec<u8> {
@@ -23,21 +37,6 @@ impl Verifiable for Ed25519PublicKey {
             return false;
         };
         self.0.verify_strict(message, &signature).is_ok()
-    }
-}
-
-impl<T: AsRef<[u8]>> ToPublicKey<Ed25519PublicKey> for T {
-    fn to_public_key(&self) -> Result<Ed25519PublicKey, Error> {
-        let slice = self.as_ref();
-        let Some((key, _)) = slice.split_first_chunk::<32>() else {
-            Err(Error::InvalidKeySize {
-                expected: 32,
-                actual: slice.len(),
-                key_type: std::any::type_name::<Ed25519PublicKey>(),
-            })?
-        };
-        let key = ed25519_dalek::VerifyingKey::from_bytes(key)?;
-        Ok(Ed25519PublicKey(key))
     }
 }
 

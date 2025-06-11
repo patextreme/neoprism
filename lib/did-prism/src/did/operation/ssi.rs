@@ -2,10 +2,10 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 
 use enum_dispatch::enum_dispatch;
+use identus_apollo::crypto::Error as CryptoError;
 use identus_apollo::crypto::ed25519::Ed25519PublicKey;
 use identus_apollo::crypto::secp256k1::Secp256k1PublicKey;
 use identus_apollo::crypto::x25519::X25519PublicKey;
-use identus_apollo::crypto::{Error as CryptoError, ToPublicKey};
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::jwk::EncodeJwk;
 use regex::Regex;
@@ -417,25 +417,25 @@ impl NonOperationPublicKey {
                 data.push(0x04);
                 data.extend_from_slice(k.x.as_ref());
                 data.extend_from_slice(k.y.as_ref());
-                data.to_public_key()?
+                Secp256k1PublicKey::from_slice(&data)?
             }
-            KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
+            KeyData::CompressedEcKeyData(k) => Secp256k1PublicKey::from_slice(&k.data)?,
         };
         Ok(pk)
     }
 
     fn convert_ed25519(key_data: &KeyData) -> Result<Ed25519PublicKey, CryptoError> {
         let pk = match key_data {
-            KeyData::EcKeyData(k) => k.x.to_public_key()?,
-            KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
+            KeyData::EcKeyData(k) => Ed25519PublicKey::from_slice(&k.x)?,
+            KeyData::CompressedEcKeyData(k) => Ed25519PublicKey::from_slice(&k.data)?,
         };
         Ok(pk)
     }
 
     fn convert_x25519(key_data: &KeyData) -> Result<X25519PublicKey, CryptoError> {
         let pk = match key_data {
-            KeyData::EcKeyData(k) => k.x.to_public_key()?,
-            KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
+            KeyData::EcKeyData(k) => X25519PublicKey::from_slice(&k.x)?,
+            KeyData::CompressedEcKeyData(k) => X25519PublicKey::from_slice(&k.data)?,
         };
         Ok(pk)
     }

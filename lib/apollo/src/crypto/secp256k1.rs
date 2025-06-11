@@ -4,7 +4,7 @@ use k256::Secp256k1;
 use k256::ecdsa::signature::Verifier;
 use k256::elliptic_curve::sec1::{EncodedPoint, ToEncodedPoint};
 
-use super::{EncodeArray, EncodeVec, Error, ToPublicKey, Verifiable};
+use super::{EncodeArray, EncodeVec, Error, Verifiable};
 use crate::base64::Base64UrlStrNoPad;
 use crate::jwk::{EncodeJwk, Jwk};
 
@@ -70,14 +70,12 @@ impl Verifiable for Secp256k1PublicKey {
     }
 }
 
-impl<T: AsRef<[u8]>> ToPublicKey<Secp256k1PublicKey> for T {
-    fn to_public_key(&self) -> Result<Secp256k1PublicKey, Error> {
-        Ok(Secp256k1PublicKey(k256::PublicKey::from_sec1_bytes(self.as_ref())?))
-    }
-}
-
 impl Secp256k1PublicKey {
-    fn encode_uncompressed(&self) -> [u8; 65] {
+    pub fn from_slice(slice: &[u8]) -> Result<Secp256k1PublicKey, Error> {
+        Ok(Secp256k1PublicKey(k256::PublicKey::from_sec1_bytes(slice)?))
+    }
+
+    pub fn encode_uncompressed(&self) -> [u8; 65] {
         let bytes: EncodedPoint<Secp256k1> = self.0.to_encoded_point(false);
         let bytes = bytes.to_bytes();
         let Some((chunk, _)) = bytes.split_first_chunk::<65>() else {
@@ -86,7 +84,7 @@ impl Secp256k1PublicKey {
         chunk.to_owned()
     }
 
-    fn encode_compressed(&self) -> [u8; 33] {
+    pub fn encode_compressed(&self) -> [u8; 33] {
         let bytes: EncodedPoint<Secp256k1> = self.0.to_encoded_point(true);
         let bytes = bytes.to_bytes();
         let Some((chunk, _)) = bytes.split_first_chunk::<33>() else {
@@ -95,7 +93,7 @@ impl Secp256k1PublicKey {
         chunk.to_owned()
     }
 
-    fn curve_point(&self) -> CurvePoint {
+    pub fn curve_point(&self) -> CurvePoint {
         let uncompressed = self.encode_uncompressed();
         let (_, xy) = uncompressed.rsplit_array_ref::<64>();
         let (x, _) = xy.split_array_ref::<32>();

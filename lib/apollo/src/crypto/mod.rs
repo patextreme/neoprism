@@ -34,7 +34,3 @@ pub trait EncodeArray<const N: usize> {
 pub trait Verifiable {
     fn verify(&self, message: &[u8], signature: &[u8]) -> bool;
 }
-
-pub trait ToPublicKey<Pk> {
-    fn to_public_key(&self) -> Result<Pk, Error>;
-}
