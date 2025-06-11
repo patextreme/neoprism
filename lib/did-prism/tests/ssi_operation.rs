@@ -7,9 +7,9 @@ mod test_utils;
 
 #[test]
 fn create_did_only_master_key() {
-    let create_did_operation = test_utils::create_did_operation(None);
+    let (create_did_op, _) = test_utils::create_did_operation(None);
 
-    let operations = test_utils::populate_metadata(vec![create_did_operation]);
+    let operations = test_utils::populate_metadata(vec![create_did_op]);
     let state = resolver::resolve_published(operations).0.unwrap();
 
     let master_key = state
@@ -36,9 +36,9 @@ fn create_did_with_non_master_key() {
         ]),
         ..Default::default()
     };
-    let create_did_operation = test_utils::create_did_operation(Some(options));
+    let (create_did_op, _) = test_utils::create_did_operation(Some(options));
 
-    let operations = test_utils::populate_metadata(vec![create_did_operation]);
+    let operations = test_utils::populate_metadata(vec![create_did_op]);
     let state = resolver::resolve_published(operations).0.unwrap();
 
     let vdr_key = state.public_keys.iter().find(|pk| pk.id.as_str() == "vdr-0").unwrap();

@@ -2,6 +2,7 @@
 
 use chrono::DateTime;
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
+use identus_apollo::hash::{Sha256Digest, sha256};
 use identus_did_prism::dlt::{BlockMetadata, OperationMetadata};
 use identus_did_prism::proto;
 use prost::Message;
@@ -15,7 +16,7 @@ pub struct CreateDidOptions {
     pub services: Option<Vec<proto::Service>>,
 }
 
-pub fn create_did_operation(options: Option<CreateDidOptions>) -> proto::SignedPrismOperation {
+pub fn create_did_operation(options: Option<CreateDidOptions>) -> (proto::SignedPrismOperation, Sha256Digest) {
     let options = options.unwrap_or_default();
     let master_sk = Secp256k1PrivateKey::from_slice(&MASTER_KEY).unwrap();
     let mut public_keys = vec![to_public_key("master-0", proto::KeyUsage::MasterKey, &master_sk)];
@@ -30,27 +31,31 @@ pub fn create_did_operation(options: Option<CreateDidOptions>) -> proto::SignedP
     let operation = proto::PrismOperation {
         operation: Some(operation_inner),
     };
-    proto::SignedPrismOperation {
+    let operation_hash = sha256(operation.encode_to_vec());
+    let signed_operation = proto::SignedPrismOperation {
         signed_with: "master-0".to_string(),
         signature: master_sk.sign(&operation.encode_to_vec()),
         operation: Some(operation),
-    }
+    };
+    (signed_operation, operation_hash)
 }
 
 pub fn create_storage_operation(
     signed_with: &str,
     vdr_sk: &Secp256k1PrivateKey,
     operation: proto::ProtoCreateStorageEntry,
-) -> proto::SignedPrismOperation {
+) -> (proto::SignedPrismOperation, Sha256Digest) {
     let operation_inner = proto::prism_operation::Operation::CreateStorageEntry(operation);
     let operation = proto::PrismOperation {
         operation: Some(operation_inner),
     };
-    proto::SignedPrismOperation {
+    let operation_hash = sha256(operation.encode_to_vec());
+    let signed_operation = proto::SignedPrismOperation {
         signed_with: signed_with.to_string(),
         signature: vdr_sk.sign(&operation.encode_to_vec()),
         operation: Some(operation),
-    }
+    };
+    (signed_operation, operation_hash)
 }
 
 pub fn to_public_key(id: &str, usage: proto::KeyUsage, sk: &Secp256k1PrivateKey) -> proto::PublicKey {
