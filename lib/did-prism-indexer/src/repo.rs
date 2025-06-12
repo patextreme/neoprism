@@ -18,6 +18,9 @@ pub enum IndexedOperation {
         prev_operation_hash: Option<Vec<u8>>,
         did: Option<CanonicalPrismDid>,
     },
+    Ignored {
+        raw_operation_id: RawOperationId,
+    },
 }
 
 impl IndexedOperation {
@@ -25,6 +28,7 @@ impl IndexedOperation {
         match self {
             IndexedOperation::Ssi { raw_operation_id, .. } => raw_operation_id,
             IndexedOperation::Vdr { raw_operation_id, .. } => raw_operation_id,
+            IndexedOperation::Ignored { raw_operation_id } => raw_operation_id,
         }
     }
 }
@@ -44,7 +48,7 @@ pub trait OperationRepo {
         operations: Vec<(OperationMetadata, SignedPrismOperation)>,
     ) -> Result<(), Self::Error>;
 
-    async fn insert_index_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error>;
+    async fn insert_indexed_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error>;
 }
 
 #[async_trait::async_trait]

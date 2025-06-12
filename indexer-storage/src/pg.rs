@@ -76,8 +76,12 @@ impl OperationRepo for PostgresDb {
             .list::<entity::RawOperation>(
                 &mut tx,
                 Filter::all([entity::RawOperationFilter::is_indexed().eq(false)]),
-                Sort::empty(),
-                None,
+                Sort::new([
+                    entity::RawOperationSort::block_number().asc(),
+                    entity::RawOperationSort::absn().asc(),
+                    entity::RawOperationSort::osn().asc(),
+                ]),
+                Some(PaginationInput { page: 0, limit: 100 }),
             )
             .await?
             .data
@@ -121,7 +125,7 @@ impl OperationRepo for PostgresDb {
         Ok(())
     }
 
-    async fn insert_index_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error> {
+    async fn insert_indexed_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error> {
         let mut tx = self.pool.begin().await?;
         for op in operations {
             // mark as indexed
@@ -167,6 +171,7 @@ impl OperationRepo for PostgresDb {
                         )
                         .await?;
                 }
+                IndexedOperation::Ignored { .. } => (),
             };
         }
         tx.commit().await?;

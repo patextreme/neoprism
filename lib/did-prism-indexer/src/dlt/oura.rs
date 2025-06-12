@@ -367,7 +367,7 @@ impl OuraStreamWorker {
 
         let context = event.context;
         tracing::info!(
-            "Detect a new prism_block on slot ({}, {})",
+            "Detected a new prism_block on slot ({}, {})",
             context.slot.unwrap_or_default(),
             context.block_hash.as_deref().unwrap_or_default(),
         );

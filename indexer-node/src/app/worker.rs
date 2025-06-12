@@ -1,4 +1,4 @@
-use identus_did_prism_indexer::{DltSource, run_sync_loop};
+use identus_did_prism_indexer::{DltSource, run_indexer_loop, run_sync_loop};
 use indexer_storage::PostgresDb;
 
 pub struct DltSyncWorker<Src> {
@@ -15,6 +15,26 @@ where
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
-        run_sync_loop(self.store, self.source).await
+        run_sync_loop(&self.store, self.source).await // block forever
+    }
+}
+
+pub struct DltIndexWorker {
+    store: PostgresDb,
+}
+
+impl DltIndexWorker {
+    pub fn new(store: PostgresDb) -> Self {
+        Self { store }
+    }
+
+    pub async fn run(self) -> anyhow::Result<()> {
+        loop {
+            let result = run_indexer_loop(&self.store).await;
+            if let Err(e) = result {
+                tracing::error!("{:?}", e);
+            }
+            tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+        }
     }
 }

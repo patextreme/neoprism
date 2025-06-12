@@ -21,7 +21,7 @@ pallas-primitives = { workspace = true, optional = true }
 prost = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 strum = { workspace = true, features = ["derive"] }
-tokio = { workspace = true, features = ["sync"] }
+tokio = { workspace = true, features = ["sync", "time", "rt"] }
 tracing = { workspace = true }
 uuid = { workspace = true }
 
@@ -36,4 +36,4 @@ identus-did-prism = { workspace = true }
 
 [features]
 default = []
-oura = ["dep:oura", "dep:pallas-primitives", "tokio/rt", "tokio/time"]
+oura = ["dep:oura", "dep:pallas-primitives"]

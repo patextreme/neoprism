@@ -12,14 +12,12 @@ use regex::Regex;
 
 use crate::did::CanonicalPrismDid;
 use crate::did::error::{
-    CreateDidOperationError, DeactivateDidOperationError, Error, PublicKeyError, PublicKeyIdError,
-    ServiceEndpointError, ServiceError, ServiceIdError, ServiceTypeError, UpdateDidOperationError,
+    CreateDidOperationError, DeactivateDidOperationError, PublicKeyError, PublicKeyIdError, ServiceEndpointError,
+    ServiceError, ServiceIdError, ServiceTypeError, UpdateDidOperationError,
 };
 use crate::did::operation::OperationParameters;
 use crate::error::InvalidInputSizeError;
 use crate::location;
-use crate::prelude::{PrismOperation, SignedPrismOperation};
-use crate::proto::prism_operation::Operation;
 use crate::proto::public_key::KeyData;
 use crate::proto::update_did_action::Action;
 use crate::proto::{self, ProtoCreateDid, ProtoDeactivateDid, ProtoUpdateDid, UpdateDidAction};
@@ -27,27 +25,6 @@ use crate::utils::{is_slice_unique, is_uri, is_uri_fragment};
 
 static SERVICE_TYPE_NAME_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$").expect("ServiceTypeName regex is invalid"));
-
-pub fn get_did_from_operation(prism_operation: &PrismOperation) -> Result<CanonicalPrismDid, Error> {
-    match &prism_operation.operation {
-        Some(Operation::CreateDid(_)) => Ok(CanonicalPrismDid::from_operation(prism_operation)?),
-        Some(Operation::UpdateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
-        Some(Operation::DeactivateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
-        Some(Operation::ProtocolVersionUpdate(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?),
-        // FIXME
-        Some(Operation::CreateStorageEntry(_)) => unimplemented!(),
-        Some(Operation::UpdateStorageEntry(_)) => unimplemented!(),
-        Some(Operation::DeactivateStorageEntry(_)) => unimplemented!(),
-        None => Err(Error::OperationMissingFromPrismOperation),
-    }
-}
-
-pub fn get_did_from_signed_operation(signed_operation: &SignedPrismOperation) -> Result<CanonicalPrismDid, Error> {
-    match &signed_operation.operation {
-        Some(operation) => get_did_from_operation(operation),
-        None => Err(Error::OperationMissingFromPrismOperation),
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct CreateDidOperation {
