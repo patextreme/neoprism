@@ -4,8 +4,8 @@ type StdError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum DltError {
-    #[display("unable to bootstrap DLT source")]
-    Bootstrap { source: StdError },
+    #[display("unable to initialize DLT source")]
+    InitSource { source: StdError },
     #[display("timeout receiving event from DLT source {location}")]
     EventRecvTimeout { location: Location },
     #[display("event source has disconnected {location}")]

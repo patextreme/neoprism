@@ -1632,7 +1632,6 @@ dependencies = [
 name = "identus-did-prism"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "chrono",
  "derive_more",
  "enum_dispatch",
@@ -1641,11 +1640,8 @@ dependencies = [
  "im-rc",
  "prost",
  "prost-build",
- "prost-types",
  "regex",
- "serde",
  "serde_json",
- "strum 0.27.1",
  "tracing",
  "uriparse",
 ]

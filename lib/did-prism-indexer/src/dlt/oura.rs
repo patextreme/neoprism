@@ -275,7 +275,7 @@ impl OuraStreamWorker {
             loop {
                 let with_utils = self.build_with_util();
                 tracing::info!("Bootstraping oura pipeline thread");
-                let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::Bootstrap {
+                let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::InitSource {
                     source: e.to_string().into(),
                 })?;
 
