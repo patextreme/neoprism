@@ -29,6 +29,6 @@ CREATE TABLE IF NOT EXISTS indexed_vdr_operation (
     raw_operation_id UUID NOT NULL UNIQUE,
     operation_hash BYTEA NOT NULL,
     prev_operation_hash BYTEA,
-    did BYTEA,
+    did BYTEA NOT NULL,
     FOREIGN KEY (raw_operation_id) REFERENCES raw_operation (id) ON DELETE CASCADE
 );

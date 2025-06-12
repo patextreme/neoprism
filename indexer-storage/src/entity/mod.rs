@@ -67,7 +67,7 @@ pub struct IndexedVdrOperation {
     pub raw_operation_id: Uuid,
     pub operation_hash: Vec<u8>,
     pub prev_operation_hash: Option<Vec<u8>>,
-    pub did: Option<DidSuffix>,
+    pub did: DidSuffix,
 }
 
 #[derive(Entity)]

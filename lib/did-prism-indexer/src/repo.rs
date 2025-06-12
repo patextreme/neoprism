@@ -1,3 +1,4 @@
+use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::did::CanonicalPrismDid;
 use identus_did_prism::dlt::{DltCursor, OperationMetadata};
 use identus_did_prism::proto::SignedPrismOperation;
@@ -16,7 +17,7 @@ pub enum IndexedOperation {
         raw_operation_id: RawOperationId,
         operation_hash: Vec<u8>,
         prev_operation_hash: Option<Vec<u8>>,
-        did: Option<CanonicalPrismDid>,
+        did: CanonicalPrismDid,
     },
     Ignored {
         raw_operation_id: RawOperationId,
@@ -49,6 +50,11 @@ pub trait OperationRepo {
     ) -> Result<(), Self::Error>;
 
     async fn insert_indexed_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error>;
+
+    async fn get_vdr_raw_operation_by_operation_hash(
+        &self,
+        operation_hash: &Sha256Digest,
+    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
 }
 
 #[async_trait::async_trait]

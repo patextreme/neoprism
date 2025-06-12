@@ -1717,6 +1717,7 @@ dependencies = [
  "indexer-storage",
  "lazybe",
  "maud",
+ "prost",
  "serde",
  "serde_json",
  "sqlx",

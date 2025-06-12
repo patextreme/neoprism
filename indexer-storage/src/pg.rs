@@ -1,3 +1,4 @@
+use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::dlt::{BlockMetadata, DltCursor, OperationMetadata};
 use identus_did_prism::prelude::*;
 use identus_did_prism::proto::SignedPrismOperation;
@@ -10,6 +11,7 @@ use lazybe::page::PaginationInput;
 use lazybe::sort::Sort;
 use sqlx::PgPool;
 
+use crate::entity::RawOperation;
 use crate::{Error, entity};
 
 #[derive(Debug, Clone)]
@@ -81,12 +83,12 @@ impl OperationRepo for PostgresDb {
                     entity::RawOperationSort::absn().asc(),
                     entity::RawOperationSort::osn().asc(),
                 ]),
-                Some(PaginationInput { page: 0, limit: 100 }),
+                Some(PaginationInput { page: 0, limit: 200 }),
             )
             .await?
             .data
             .into_iter()
-            .map(|row| row.try_into())
+            .map(parse_raw_operation)
             .collect::<Result<Vec<_>, _>>()?;
         tx.commit().await?;
         Ok(result)
@@ -166,7 +168,7 @@ impl OperationRepo for PostgresDb {
                                 raw_operation_id: raw_operation_id.into(),
                                 operation_hash,
                                 prev_operation_hash,
-                                did: did.map(|i| i.into()),
+                                did: did.into(),
                             },
                         )
                         .await?;
@@ -176,6 +178,38 @@ impl OperationRepo for PostgresDb {
         }
         tx.commit().await?;
         Ok(())
+    }
+
+    async fn get_vdr_raw_operation_by_operation_hash(
+        &self,
+        operation_hash: &Sha256Digest,
+    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+        let vdr_operation = self
+            .db_ctx
+            .list::<entity::IndexedVdrOperation>(
+                &mut tx,
+                Filter::all([entity::IndexedVdrOperationFilter::operation_hash().eq(operation_hash.to_vec())]),
+                Sort::empty(),
+                Some(PaginationInput { page: 0, limit: 1 }),
+            )
+            .await?
+            .data
+            .into_iter()
+            .next();
+
+        let result = match vdr_operation {
+            None => None,
+            Some(op) => self
+                .db_ctx
+                .get::<entity::RawOperation>(&mut tx, op.raw_operation_id)
+                .await?
+                .map(parse_raw_operation)
+                .transpose()?
+        };
+
+        tx.commit().await?;
+        Ok(result)
     }
 }
 
@@ -225,27 +259,25 @@ impl DltCursorRepo for PostgresDb {
     }
 }
 
-impl TryFrom<entity::RawOperation> for (RawOperationId, OperationMetadata, SignedPrismOperation) {
-    type Error = Error;
-
-    fn try_from(value: entity::RawOperation) -> Result<Self, Self::Error> {
-        let metadata = OperationMetadata {
-            block_metadata: BlockMetadata {
-                slot_number: value.slot.try_into().expect("slot value does not fit in u64"),
-                block_number: value
-                    .block_number
-                    .try_into()
-                    .expect("block_number value does not fit in u64"),
-                cbt: value.cbt,
-                absn: value.absn.try_into().expect("absn value does not fit in u32"),
-            },
-            osn: value.osn.try_into().expect("osn value does not fit in u32"),
-        };
-        SignedPrismOperation::decode(value.signed_operation_data.as_slice())
-            .map(|op| (value.id.into(), metadata, op))
-            .map_err(|e| Error::ProtobufDecode {
-                source: e,
-                target_type: std::any::type_name::<SignedPrismOperation>(),
-            })
-    }
+fn parse_raw_operation(
+    value: entity::RawOperation,
+) -> Result<(RawOperationId, OperationMetadata, SignedPrismOperation), Error> {
+    let metadata = OperationMetadata {
+        block_metadata: BlockMetadata {
+            slot_number: value.slot.try_into().expect("slot value does not fit in u64"),
+            block_number: value
+                .block_number
+                .try_into()
+                .expect("block_number value does not fit in u64"),
+            cbt: value.cbt,
+            absn: value.absn.try_into().expect("absn value does not fit in u32"),
+        },
+        osn: value.osn.try_into().expect("osn value does not fit in u32"),
+    };
+    SignedPrismOperation::decode(value.signed_operation_data.as_slice())
+        .map(|op| (value.id.into(), metadata, op))
+        .map_err(|e| Error::ProtobufDecode {
+            source: e,
+            target_type: std::any::type_name::<SignedPrismOperation>(),
+        })
 }
