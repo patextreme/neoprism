@@ -97,7 +97,7 @@ fn create_did_with_vdr_key(
         public_keys: Some(vec![test_utils::new_public_key(
             vdr_key_name,
             proto::KeyUsage::VdrKey,
-            &vdr_sk,
+            vdr_sk,
         )]),
         ..Default::default()
     };
