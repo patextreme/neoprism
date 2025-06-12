@@ -1,5 +1,5 @@
 use identus_did_prism::dlt::OperationMetadata;
-use identus_did_prism_indexer::dlt::DltSource;
+use identus_did_prism_indexer::DltSource;
 use identus_did_prism_indexer::repo::OperationRepo;
 use indexer_storage::PostgresDb;
 

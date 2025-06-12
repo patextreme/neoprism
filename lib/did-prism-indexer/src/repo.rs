@@ -23,7 +23,7 @@ pub enum IndexedOperation {
 impl IndexedOperation {
     pub fn raw_operation_id(&self) -> &RawOperationId {
         match self {
-            IndexedOperation::Ssi { raw_operation_id, ..} => raw_operation_id,
+            IndexedOperation::Ssi { raw_operation_id, .. } => raw_operation_id,
             IndexedOperation::Vdr { raw_operation_id, .. } => raw_operation_id,
         }
     }
@@ -44,10 +44,7 @@ pub trait OperationRepo {
         operations: Vec<(OperationMetadata, SignedPrismOperation)>,
     ) -> Result<(), Self::Error>;
 
-    async fn insert_index_operations(
-        &self,
-        operations: Vec<IndexedOperation>
-    ) -> Result<(), Self::Error>;
+    async fn insert_index_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error>;
 }
 
 #[async_trait::async_trait]

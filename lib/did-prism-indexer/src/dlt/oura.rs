@@ -14,7 +14,8 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
 use super::error::DltError;
-use crate::dlt::{DltSource, NetworkIdentifier};
+use crate::DltSource;
+use crate::dlt::NetworkIdentifier;
 use crate::repo::DltCursorRepo;
 
 mod model {
