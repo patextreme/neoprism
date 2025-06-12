@@ -66,6 +66,7 @@ pub struct IndexedVdrOperation {
     pub id: Uuid,
     pub raw_operation_id: Uuid,
     pub operation_hash: Vec<u8>,
+    pub init_operation_hash: Vec<u8>,
     pub prev_operation_hash: Option<Vec<u8>>,
     pub did: DidSuffix,
 }

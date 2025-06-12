@@ -9,7 +9,7 @@ use prost::Message;
 use crate::DltSource;
 use crate::repo::{IndexedOperation, OperationRepo};
 
-enum IntermediateIndexOperation {
+enum IntermediateIndexedOperation {
     Ssi {
         did: CanonicalPrismDid,
     },
@@ -39,21 +39,23 @@ where
         for (raw_operation_id, meta, signed_operation) in unindexed_operations {
             let intermediate_indexed_op = index_from_signed_operation(signed_operation);
             let indexed_op = match intermediate_indexed_op {
-                Ok(IntermediateIndexOperation::Ssi { did }) => IndexedOperation::Ssi { raw_operation_id, did },
-                Ok(IntermediateIndexOperation::VdrRoot { operation_hash, did }) => IndexedOperation::Vdr {
+                Ok(IntermediateIndexedOperation::Ssi { did }) => IndexedOperation::Ssi { raw_operation_id, did },
+                Ok(IntermediateIndexedOperation::VdrRoot { operation_hash, did }) => IndexedOperation::Vdr {
                     raw_operation_id,
+                    init_operation_hash: operation_hash.clone(),
                     operation_hash,
                     did,
                     prev_operation_hash: None,
                 },
-                Ok(IntermediateIndexOperation::VdrChild {
+                Ok(IntermediateIndexedOperation::VdrChild {
                     prev_operation_hash,
                     operation_hash,
                 }) => {
-                    let did = recursively_find_vdr_root_did(repo, &prev_operation_hash).await?;
-                    match did {
-                        Some(did) => IndexedOperation::Vdr {
+                    let vdr_root = recursively_find_vdr_root(repo, &prev_operation_hash).await?;
+                    match vdr_root {
+                        Some((did, init_operation_hash)) => IndexedOperation::Vdr {
                             raw_operation_id,
+                            init_operation_hash,
                             operation_hash,
                             prev_operation_hash: Some(prev_operation_hash),
                             did,
@@ -121,10 +123,11 @@ where
     Ok(())
 }
 
-async fn recursively_find_vdr_root_did<Repo>(
+/// Returns DID that create a root operation and its operation hash
+async fn recursively_find_vdr_root<Repo>(
     repo: &Repo,
     prev_operation_hash: &[u8],
-) -> anyhow::Result<Option<CanonicalPrismDid>>
+) -> anyhow::Result<Option<(CanonicalPrismDid, Vec<u8>)>>
 where
     Repo: OperationRepo,
     <Repo as OperationRepo>::Error: Send + Sync + 'static,
@@ -143,8 +146,10 @@ where
             None => return Ok(None), // no root found
             Some((_, _, signed_operation)) => {
                 match index_from_signed_operation(signed_operation) {
-                    Ok(IntermediateIndexOperation::VdrRoot { did, .. }) => return Ok(Some(did)), // found root
-                    Ok(IntermediateIndexOperation::VdrChild {
+                    Ok(IntermediateIndexedOperation::VdrRoot { did, operation_hash }) => {
+                        return Ok(Some((did, operation_hash)));
+                    } // found root
+                    Ok(IntermediateIndexedOperation::VdrChild {
                         prev_operation_hash, ..
                     }) => {
                         parent_hash = prev_operation_hash; // go to next parent
@@ -158,37 +163,37 @@ where
     Ok(None) // exceed max depth
 }
 
-fn index_from_signed_operation(signed_operation: SignedPrismOperation) -> anyhow::Result<IntermediateIndexOperation> {
+fn index_from_signed_operation(signed_operation: SignedPrismOperation) -> anyhow::Result<IntermediateIndexedOperation> {
     match signed_operation.operation {
         Some(operation) => index_from_operation(operation),
         None => Err(anyhow::anyhow!("operation does not exist in PrismOperation")),
     }
 }
 
-fn index_from_operation(prism_operation: PrismOperation) -> anyhow::Result<IntermediateIndexOperation> {
+fn index_from_operation(prism_operation: PrismOperation) -> anyhow::Result<IntermediateIndexedOperation> {
     let operation_hash = sha256(prism_operation.encode_to_vec());
     match prism_operation.operation {
-        Some(Operation::CreateDid(_)) => Ok(IntermediateIndexOperation::Ssi {
+        Some(Operation::CreateDid(_)) => Ok(IntermediateIndexedOperation::Ssi {
             did: CanonicalPrismDid::from_operation(&prism_operation)?,
         }),
-        Some(Operation::UpdateDid(op)) => Ok(IntermediateIndexOperation::Ssi {
+        Some(Operation::UpdateDid(op)) => Ok(IntermediateIndexedOperation::Ssi {
             did: CanonicalPrismDid::from_suffix_str(&op.id)?,
         }),
-        Some(Operation::DeactivateDid(op)) => Ok(IntermediateIndexOperation::Ssi {
+        Some(Operation::DeactivateDid(op)) => Ok(IntermediateIndexedOperation::Ssi {
             did: CanonicalPrismDid::from_suffix_str(&op.id)?,
         }),
-        Some(Operation::ProtocolVersionUpdate(op)) => Ok(IntermediateIndexOperation::Ssi {
+        Some(Operation::ProtocolVersionUpdate(op)) => Ok(IntermediateIndexedOperation::Ssi {
             did: CanonicalPrismDid::from_suffix_str(&op.proposer_did)?,
         }),
-        Some(Operation::CreateStorageEntry(op)) => Ok(IntermediateIndexOperation::VdrRoot {
+        Some(Operation::CreateStorageEntry(op)) => Ok(IntermediateIndexedOperation::VdrRoot {
             operation_hash: operation_hash.to_vec(),
             did: CanonicalPrismDid::from_suffix(HexStr::from(op.did_prism_hash.as_slice()))?,
         }),
-        Some(Operation::UpdateStorageEntry(op)) => Ok(IntermediateIndexOperation::VdrChild {
+        Some(Operation::UpdateStorageEntry(op)) => Ok(IntermediateIndexedOperation::VdrChild {
             operation_hash: operation_hash.to_vec(),
             prev_operation_hash: op.previous_operation_hash,
         }),
-        Some(Operation::DeactivateStorageEntry(op)) => Ok(IntermediateIndexOperation::VdrChild {
+        Some(Operation::DeactivateStorageEntry(op)) => Ok(IntermediateIndexedOperation::VdrChild {
             operation_hash: operation_hash.to_vec(),
             prev_operation_hash: op.previous_operation_hash,
         }),

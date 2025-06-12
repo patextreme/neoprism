@@ -16,6 +16,7 @@ pub enum IndexedOperation {
     Vdr {
         raw_operation_id: RawOperationId,
         operation_hash: Vec<u8>,
+        init_operation_hash: Vec<u8>,
         prev_operation_hash: Option<Vec<u8>>,
         did: CanonicalPrismDid,
     },

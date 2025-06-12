@@ -158,6 +158,7 @@ impl OperationRepo for PostgresDb {
                 IndexedOperation::Vdr {
                     raw_operation_id,
                     operation_hash,
+                    init_operation_hash,
                     prev_operation_hash,
                     did,
                 } => {
@@ -167,6 +168,7 @@ impl OperationRepo for PostgresDb {
                             entity::CreateIndexedVdrOperation {
                                 raw_operation_id: raw_operation_id.into(),
                                 operation_hash,
+                                init_operation_hash,
                                 prev_operation_hash,
                                 did: did.into(),
                             },
@@ -205,7 +207,7 @@ impl OperationRepo for PostgresDb {
                 .get::<entity::RawOperation>(&mut tx, op.raw_operation_id)
                 .await?
                 .map(parse_raw_operation)
-                .transpose()?
+                .transpose()?,
         };
 
         tx.commit().await?;
