@@ -45,6 +45,11 @@ pub trait OperationRepo {
         &self,
     ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
 
+    async fn get_raw_operations_by_did(
+        &self,
+        did: &CanonicalPrismDid,
+    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
+
     async fn insert_raw_operations(
         &self,
         operations: Vec<(OperationMetadata, SignedPrismOperation)>,

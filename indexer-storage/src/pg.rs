@@ -11,7 +11,6 @@ use lazybe::page::PaginationInput;
 use lazybe::sort::Sort;
 use sqlx::PgPool;
 
-use crate::entity::RawOperation;
 use crate::{Error, entity};
 
 #[derive(Debug, Clone)]
@@ -89,6 +88,31 @@ impl OperationRepo for PostgresDb {
             .data
             .into_iter()
             .map(parse_raw_operation)
+            .collect::<Result<Vec<_>, _>>()?;
+        tx.commit().await?;
+        Ok(result)
+    }
+
+    async fn get_raw_operations_by_did(
+        &self,
+        did: &CanonicalPrismDid,
+    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+        let suffix_bytes = did.suffix().to_vec();
+        let mut tx = self.pool.begin().await?;
+        let result = self
+            .db_ctx
+            .list::<entity::RawOperationByDid>(
+                &mut tx,
+                Filter::all([Filter::all([
+                    entity::RawOperationByDidFilter::did().eq(suffix_bytes.into())
+                ])]),
+                Sort::empty(),
+                None,
+            )
+            .await?
+            .data
+            .into_iter()
+            .map(|i| parse_raw_operation(i.into()))
             .collect::<Result<Vec<_>, _>>()?;
         tx.commit().await?;
         Ok(result)

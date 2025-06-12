@@ -85,3 +85,34 @@ pub struct DidStats {
     pub first_slot: i64,
     pub first_cbt: DateTime<Utc>,
 }
+
+#[derive(Entity)]
+#[lazybe(table = "raw_operation_by_did")]
+#[allow(unused)]
+pub struct RawOperationByDid {
+    #[lazybe(primary_key)]
+    pub id: Uuid,
+    pub signed_operation_data: Vec<u8>,
+    pub slot: i64,
+    pub block_number: i64,
+    pub cbt: DateTime<Utc>,
+    pub absn: i32,
+    pub osn: i32,
+    pub is_indexed: bool,
+    pub did: DidSuffix,
+}
+
+impl From<RawOperationByDid> for RawOperation {
+    fn from(value: RawOperationByDid) -> Self {
+        Self {
+            id: value.id,
+            signed_operation_data: value.signed_operation_data,
+            slot: value.slot,
+            block_number: value.block_number,
+            cbt: value.cbt,
+            absn: value.absn,
+            osn: value.osn,
+            is_indexed: value.is_indexed,
+        }
+    }
+}
