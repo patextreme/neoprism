@@ -18,6 +18,7 @@ sea-query = { workspace = true, features = [
 serde = { workspace = true }
 sqlx = { workspace = true, features = ["postgres", "uuid", "chrono"] }
 tracing = { workspace = true }
+uuid = { workspace = true, features = ["serde"] }
 
 identus-did-prism = { workspace = true }
 identus-did-prism-indexer = { workspace = true }

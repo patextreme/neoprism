@@ -22,6 +22,7 @@ serde = { workspace = true, features = ["derive"] }
 strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }
+uuid = { workspace = true }
 
 identus-apollo = { workspace = true, features = [
   "hash",

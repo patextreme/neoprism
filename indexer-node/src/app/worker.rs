@@ -45,7 +45,7 @@ where
                 ));
             }
 
-            let insert_result = self.store.insert_operations(insert_batch).await;
+            let insert_result = self.store.insert_raw_operations(insert_batch).await;
 
             if let Err(e) = insert_result {
                 tracing::error!("{:?}", e);

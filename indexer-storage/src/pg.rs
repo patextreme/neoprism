@@ -1,9 +1,8 @@
-use identus_did_prism::did::operation::get_did_from_signed_operation;
 use identus_did_prism::dlt::{BlockMetadata, DltCursor, OperationMetadata};
 use identus_did_prism::prelude::*;
 use identus_did_prism::proto::SignedPrismOperation;
 use identus_did_prism::utils::paging::Paginated;
-use identus_did_prism_indexer::repo::{DltCursorRepo, OperationRepo};
+use identus_did_prism_indexer::repo::{DltCursorRepo, IndexedOperation, OperationRepo, RawOperationId};
 use lazybe::db::DbOps;
 use lazybe::db::postgres::PostgresDbCtx;
 use lazybe::filter::Filter;
@@ -68,59 +67,34 @@ impl OperationRepo for PostgresDb {
         })
     }
 
-    async fn get_operations_by_did(
+    async fn get_unindexed_raw_operations(
         &self,
-        did: &CanonicalPrismDid,
-    ) -> Result<Vec<(OperationMetadata, SignedPrismOperation)>, Self::Error> {
-        let suffix_bytes = did.suffix().to_vec();
+    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
         let mut tx = self.pool.begin().await?;
         let result = self
             .db_ctx
             .list::<entity::RawOperation>(
                 &mut tx,
-                Filter::all([entity::RawOperationFilter::did().eq(suffix_bytes.into())]),
+                Filter::all([entity::RawOperationFilter::is_indexed().eq(false)]),
                 Sort::empty(),
                 None,
             )
             .await?
             .data
             .into_iter()
-            .map(|model| {
-                let metadata = OperationMetadata {
-                    block_metadata: BlockMetadata {
-                        slot_number: model.slot.try_into().expect("slot value does not fit in u64"),
-                        block_number: model
-                            .block_number
-                            .try_into()
-                            .expect("block_number value does not fit in u64"),
-                        cbt: model.cbt,
-                        absn: model.absn.try_into().expect("absn value does not fit in u32"),
-                    },
-                    osn: model.osn.try_into().expect("osn value does not fit in u32"),
-                };
-                SignedPrismOperation::decode(model.signed_operation_data.as_slice())
-                    .map(|op| (metadata, op))
-                    .map_err(|e| Error::ProtobufDecode {
-                        source: e,
-                        target_type: std::any::type_name::<SignedPrismOperation>(),
-                    })
-            })
+            .map(|row| row.try_into())
             .collect::<Result<Vec<_>, _>>()?;
         tx.commit().await?;
         Ok(result)
     }
 
-    async fn insert_operations(
+    async fn insert_raw_operations(
         &self,
         operations: Vec<(OperationMetadata, SignedPrismOperation)>,
     ) -> Result<(), Self::Error> {
         let mut tx = self.pool.begin().await?;
         for (metadata, signed_operation) in operations {
-            let did = get_did_from_signed_operation(&signed_operation)
-                .map_err(|e| Error::DidIndexFromSignedPrismOperation { source: e })?;
-
             let create_op = entity::CreateRawOperation {
-                did: did.suffix.to_vec().into(),
                 signed_operation_data: signed_operation.encode_to_vec(),
                 slot: metadata
                     .block_metadata
@@ -139,8 +113,61 @@ impl OperationRepo for PostgresDb {
                     .try_into()
                     .expect("absn does not fit in i32"),
                 osn: metadata.osn.try_into().expect("osn does not fit in i32"),
+                is_indexed: false,
             };
             self.db_ctx.create::<entity::RawOperation>(&mut tx, create_op).await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn insert_index_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error> {
+        let mut tx = self.pool.begin().await?;
+        for op in operations {
+            // mark as indexed
+            self.db_ctx
+                .update::<entity::RawOperation>(
+                    &mut tx,
+                    *op.raw_operation_id().as_ref(),
+                    entity::UpdateRawOperation {
+                        is_indexed: Some(true),
+                        ..Default::default()
+                    },
+                )
+                .await?;
+
+            // write to indexed table
+            match op {
+                IndexedOperation::Ssi { raw_operation_id, did } => {
+                    self.db_ctx
+                        .create::<entity::IndexedSsiOperation>(
+                            &mut tx,
+                            entity::CreateIndexedSsiOperation {
+                                raw_operation_id: raw_operation_id.into(),
+                                did: did.into(),
+                            },
+                        )
+                        .await?;
+                }
+                IndexedOperation::Vdr {
+                    raw_operation_id,
+                    operation_hash,
+                    prev_operation_hash,
+                    did,
+                } => {
+                    self.db_ctx
+                        .create::<entity::IndexedVdrOperation>(
+                            &mut tx,
+                            entity::CreateIndexedVdrOperation {
+                                raw_operation_id: raw_operation_id.into(),
+                                operation_hash,
+                                prev_operation_hash,
+                                did: did.map(|i| i.into()),
+                            },
+                        )
+                        .await?;
+                }
+            };
         }
         tx.commit().await?;
         Ok(())
@@ -190,5 +217,30 @@ impl DltCursorRepo for PostgresDb {
             .await?;
         tx.commit().await?;
         Ok(())
+    }
+}
+
+impl TryFrom<entity::RawOperation> for (RawOperationId, OperationMetadata, SignedPrismOperation) {
+    type Error = Error;
+
+    fn try_from(value: entity::RawOperation) -> Result<Self, Self::Error> {
+        let metadata = OperationMetadata {
+            block_metadata: BlockMetadata {
+                slot_number: value.slot.try_into().expect("slot value does not fit in u64"),
+                block_number: value
+                    .block_number
+                    .try_into()
+                    .expect("block_number value does not fit in u64"),
+                cbt: value.cbt,
+                absn: value.absn.try_into().expect("absn value does not fit in u32"),
+            },
+            osn: value.osn.try_into().expect("osn value does not fit in u32"),
+        };
+        SignedPrismOperation::decode(value.signed_operation_data.as_slice())
+            .map(|op| (value.id.into(), metadata, op))
+            .map_err(|e| Error::ProtobufDecode {
+                source: e,
+                target_type: std::any::type_name::<SignedPrismOperation>(),
+            })
     }
 }

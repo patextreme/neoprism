@@ -31,11 +31,13 @@ impl DidService {
         let did: PrismDid = did.parse().map_err(|e| InvalidDid::ParsingFail { source: e })?;
         let canonical_did = did.clone().into_canonical();
 
-        let operations = self
-            .db
-            .get_operations_by_did(&canonical_did)
-            .await
-            .map_err(|e| ResolutionError::InternalError { source: e.into() })?;
+        todo!("get operation after indexing is implemented");
+        let operations = vec![];
+        // let operations = self
+        //     .db
+        //     .get_operations_by_did(&canonical_did)
+        //     .await
+        //     .map_err(|e| ResolutionError::InternalError { source: e.into() })?;
 
         if operations.is_empty() {
             match &did {

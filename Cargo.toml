@@ -42,6 +42,7 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 uriparse = "0.6"
 utoipa = "5"
+uuid = "1"
 # db
 sqlx = "0.8"
 sea-query = "0.32"

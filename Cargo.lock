@@ -1662,6 +1662,7 @@ dependencies = [
  "strum 0.27.1",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1742,6 +1743,7 @@ dependencies = [
  "serde",
  "sqlx",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -4029,6 +4031,7 @@ checksum = "3cf4199d1e5d15ddd86a694e4d0dffa9c323ce759fea589f00fef9d81cc1931d"
 dependencies = [
  "getrandom 0.3.3",
  "js-sys",
+ "serde",
  "wasm-bindgen",
 ]
 
