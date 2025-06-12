@@ -14,13 +14,10 @@ pub struct StatusListData {
     pub detail: String,
 }
 
-#[derive(Clone, PartialEq, Eq, derive_more::Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StorageData {
-    #[debug("bytes-{}", identus_apollo::hex::HexStr::from(_0))]
     Bytes(Vec<u8>),
-    #[debug("ipfs-{_0}")]
     Ipfs(String),
-    #[debug("status_list({_0:?})")]
     StatusList(StatusListData),
 }
 

@@ -50,21 +50,12 @@ async fn main() -> anyhow::Result<()> {
         &vdr_sk,
         proto::prism_operation::Operation::UpdateStorageEntry(proto::ProtoUpdateStorageEntry {
             previous_operation_hash: op_hash_1_3.to_vec(),
-            data: Some(proto::proto_update_storage_entry::Data::Bytes(vec![4, 5, 6])),
-        }),
-    );
-
-    let (op_1_5, _) = test_utils::new_signed_operation(
-        "vdr-1",
-        &vdr_sk,
-        proto::prism_operation::Operation::UpdateStorageEntry(proto::ProtoUpdateStorageEntry {
-            previous_operation_hash: op_hash_1_3.to_vec(),
-            data: Some(proto::proto_update_storage_entry::Data::Bytes(vec![4, 5, 6])),
+            data: Some(proto::proto_update_storage_entry::Data::Bytes(vec![7, 8, 9])),
         }),
     );
 
     let (op_2_2, op_hash_2_2) = test_utils::new_signed_operation(
-        "vdr-1",
+        "vdr-2",
         &vdr_sk,
         proto::prism_operation::Operation::CreateStorageEntry(proto::ProtoCreateStorageEntry {
             did_prism_hash: did_2.suffix.to_vec(),
@@ -82,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
         }),
     );
 
-    let operations = test_utils::populate_metadata(vec![op_1, op_2, op_1_2, op_1_3, op_1_4, op_1_5, op_2_2, op_2_3]);
+    let operations = test_utils::populate_metadata(vec![op_1, op_2, op_1_2, op_1_3, op_1_4, op_2_2, op_2_3]);
 
     db.insert_raw_operations(operations).await.unwrap();
     run_indexer_loop(&db).await?;
