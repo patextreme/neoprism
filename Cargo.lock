@@ -1650,6 +1650,7 @@ dependencies = [
 name = "identus-did-prism-indexer"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "chrono",
  "derive_more",
