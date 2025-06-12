@@ -1,12 +1,10 @@
 [package]
-name = "identus-did-prism"
+name = "identus-did-prism-indexer"
 version.workspace = true
 edition.workspace = true
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license.workspace = true
 
 [dependencies]
-# general
 async-trait = { workspace = true }
 chrono = { workspace = true }
 derive_more = { workspace = true, features = [
@@ -17,18 +15,14 @@ derive_more = { workspace = true, features = [
   "display",
   "error",
 ] }
-enum_dispatch = { workspace = true }
-im-rc = { workspace = true }
-prost-types = { workspace = true }
+oura = { workspace = true, optional = true }
+pallas-primitives = { workspace = true, optional = true }
 prost = { workspace = true }
-regex = { workspace = true }
-serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 strum = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }
-uriparse = { workspace = true }
 
-identus-did-core = { workspace = true }
 identus-apollo = { workspace = true, features = [
   "hash",
   "hex",
@@ -36,6 +30,8 @@ identus-apollo = { workspace = true, features = [
   "ed25519",
   "x25519",
 ] }
+identus-did-prism = { workspace = true }
 
-[build-dependencies]
-prost-build = { workspace = true }
+[features]
+default = []
+oura = ["dep:oura", "dep:pallas-primitives", "tokio/rt", "tokio/time"]

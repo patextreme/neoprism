@@ -1,7 +1,7 @@
-use crate::did::CanonicalPrismDid;
-use crate::dlt::{DltCursor, OperationMetadata};
-use crate::proto::SignedPrismOperation;
-use crate::utils::paging::Paginated;
+use identus_did_prism::did::CanonicalPrismDid;
+use identus_did_prism::dlt::{DltCursor, OperationMetadata};
+use identus_did_prism::proto::SignedPrismOperation;
+use identus_did_prism::utils::paging::Paginated;
 
 #[async_trait::async_trait]
 pub trait OperationRepo {

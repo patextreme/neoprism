@@ -22,7 +22,7 @@ in
       cargo clippy --all-features --all-targets -- -D warnings
       cargo test --all-features
 
-      # check individual feature
+      # check individual feature if properly gated
       echo "checking feature gate for identus-apollo"
       cargo clippy -p identus-apollo --all-targets -- -D warnings
       cargo clippy -p identus-apollo --all-targets --features base64 -- -D warnings
@@ -39,9 +39,9 @@ in
       cargo clippy -p identus-did-core --all-targets -- -D warnings
       cargo clippy -p identus-did-core --all-targets --features openapi -- -D warnings
 
-      echo "checking feature gate for identus-did-prism"
-      cargo clippy -p identus-did-prism --all-targets -- -D warnings
-      cargo clippy -p identus-did-prism --all-targets --features oura -- -D warnings
+      echo "checking feature gate for identus-did-prism-indexer"
+      cargo clippy -p identus-did-prism-indexer --all-targets -- -D warnings
+      cargo clippy -p identus-did-prism-indexer --all-targets --features oura -- -D warnings
     '';
     installPhase = "touch $out";
 

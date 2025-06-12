@@ -1,5 +1,6 @@
-use identus_did_prism::dlt::{DltSource, OperationMetadata};
-use identus_did_prism::repo::OperationRepo;
+use identus_did_prism::dlt::OperationMetadata;
+use identus_did_prism_indexer::dlt::DltSource;
+use identus_did_prism_indexer::repo::OperationRepo;
 use indexer_storage::PostgresDb;
 
 pub struct DltSyncWorker<Src> {

@@ -1639,8 +1639,6 @@ dependencies = [
  "identus-apollo",
  "identus-did-core",
  "im-rc",
- "oura",
- "pallas-primitives",
  "prost",
  "prost-build",
  "prost-types",
@@ -1648,9 +1646,26 @@ dependencies = [
  "serde",
  "serde_json",
  "strum 0.27.1",
- "tokio",
  "tracing",
  "uriparse",
+]
+
+[[package]]
+name = "identus-did-prism-indexer"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "derive_more",
+ "identus-apollo",
+ "identus-did-prism",
+ "oura",
+ "pallas-primitives",
+ "prost",
+ "serde",
+ "strum 0.27.1",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1700,6 +1715,7 @@ dependencies = [
  "identus-apollo",
  "identus-did-core",
  "identus-did-prism",
+ "identus-did-prism-indexer",
  "indexer-storage",
  "lazybe",
  "maud",
@@ -1723,6 +1739,7 @@ dependencies = [
  "derive_more",
  "identus-apollo",
  "identus-did-prism",
+ "identus-did-prism-indexer",
  "lazybe",
  "prost",
  "sea-query",

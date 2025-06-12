@@ -1,5 +1,6 @@
-use crate::error::StdError;
-use crate::utils::Location;
+use identus_did_prism::utils::Location;
+
+type StdError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum DltError {

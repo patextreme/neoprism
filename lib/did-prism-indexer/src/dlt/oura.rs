@@ -3,6 +3,8 @@ use std::sync::Arc;
 use std::sync::mpsc::RecvTimeoutError;
 
 use identus_apollo::hex::HexStr;
+use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
+use identus_did_prism::location;
 use oura::model::{Event, EventData};
 use oura::pipelining::{SourceProvider, StageReceiver};
 use oura::sources::n2n::Config;
@@ -12,20 +14,18 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
 use super::error::DltError;
-use super::{DltCursor, DltSource, PublishedPrismObject};
-use crate::dlt::NetworkIdentifier;
-use crate::location;
+use crate::dlt::{DltSource, NetworkIdentifier};
 use crate::repo::DltCursorRepo;
 
 mod model {
     use chrono::{DateTime, Utc};
+    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject};
+    use identus_did_prism::proto::PrismObject;
     use oura::model::{EventContext, MetadataRecord};
     use prost::Message;
     use serde::{Deserialize, Serialize};
 
     use crate::dlt::error::MetadataReadError;
-    use crate::dlt::{BlockMetadata, PublishedPrismObject};
-    use crate::proto::PrismObject;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct MetadataEvent {

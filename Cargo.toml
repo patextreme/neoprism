@@ -4,6 +4,7 @@ members = [
   "lib/apollo",
   "lib/did-core",
   "lib/did-prism",
+  "lib/did-prism-indexer",
   "indexer-node",
   "indexer-storage",
 ]
@@ -18,6 +19,7 @@ license = "Apache-2.0"
 identus-apollo = { path = "lib/apollo" }
 identus-did-core = { path = "lib/did-core" }
 identus-did-prism = { path = "lib/did-prism" }
+identus-did-prism-indexer = { path = "lib/did-prism-indexer" }
 indexer-storage = { path = "indexer-storage" }
 # general
 anyhow = "1"

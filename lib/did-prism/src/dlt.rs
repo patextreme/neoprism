@@ -1,22 +1,6 @@
 use chrono::{DateTime, Utc};
-use strum::VariantArray;
 
 use crate::proto::PrismObject;
-
-pub mod error;
-
-#[cfg(feature = "oura")]
-pub mod oura;
-
-#[cfg(feature = "oura")]
-pub trait DltSource {
-    fn receiver(self) -> Result<tokio::sync::mpsc::Receiver<PublishedPrismObject>, String>;
-}
-
-#[cfg(feature = "oura")]
-pub trait DltSink {
-    fn send(&mut self, prism_object: PrismObject);
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DltCursor {
@@ -65,20 +49,4 @@ impl OperationMetadata {
 pub struct PublishedPrismObject {
     pub block_metadata: BlockMetadata,
     pub prism_object: PrismObject,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
-pub enum NetworkIdentifier {
-    #[strum(serialize = "mainnet")]
-    Mainnet,
-    #[strum(serialize = "preprod")]
-    Preprod,
-    #[strum(serialize = "preview")]
-    Preview,
-}
-
-impl NetworkIdentifier {
-    pub fn variants() -> &'static [Self] {
-        Self::VARIANTS
-    }
 }

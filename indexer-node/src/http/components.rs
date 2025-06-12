@@ -1,4 +1,4 @@
-use identus_did_prism::dlt::NetworkIdentifier;
+use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use maud::{DOCTYPE, Markup, html};
 
 use crate::http::urls;
