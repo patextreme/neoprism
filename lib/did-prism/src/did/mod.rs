@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 use enum_dispatch::enum_dispatch;
 use error::DidSyntaxError;
 use identus_apollo::base64::Base64UrlStrNoPad;
-use identus_apollo::hash::{Sha256Digest, sha256};
+use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use identus_did_core::Did;
 use prost::Message;
@@ -118,7 +118,7 @@ impl LongFormPrismDid {
         match operation.operation {
             Some(Operation::CreateDid(_)) => {
                 let bytes = operation.encode_to_vec();
-                let suffix = sha256(bytes.clone());
+                let suffix = operation.operation_hash();
                 let encoded_state = Base64UrlStrNoPad::from(bytes);
                 Ok(Self { suffix, encoded_state })
             }

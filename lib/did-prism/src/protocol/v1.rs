@@ -1,5 +1,4 @@
 use identus_apollo::crypto::Verifiable;
-use identus_apollo::hash::sha256;
 use prost::Message;
 
 use super::{DidStateConflictError, DidStateRc, OperationProcessor, OperationProcessorOps, ProcessError};
@@ -114,7 +113,7 @@ impl OperationProcessorOps for V1Processor {
         let prism_operation = PrismOperation {
             operation: Some(Operation::UpdateDid(operation)),
         };
-        candidate_state.with_last_operation_hash(sha256(prism_operation.encode_to_vec()));
+        candidate_state.with_last_operation_hash(prism_operation.operation_hash());
         for action in parsed_operation.actions {
             apply_update_action(&mut candidate_state, action, &metadata)?;
         }
@@ -139,7 +138,7 @@ impl OperationProcessorOps for V1Processor {
         let prism_operation = PrismOperation {
             operation: Some(Operation::DeactivateDid(operation)),
         };
-        let operation_hash = sha256(prism_operation.encode_to_vec());
+        let operation_hash = prism_operation.operation_hash();
         for (id, pk) in &state.public_keys {
             if !pk.is_revoked() {
                 candidate_state.revoke_public_key(id, &metadata)?;
@@ -185,7 +184,7 @@ impl OperationProcessorOps for V1Processor {
         let prism_operation = PrismOperation {
             operation: Some(Operation::CreateStorageEntry(operation)),
         };
-        let operation_hash = sha256(prism_operation.encode_to_vec());
+        let operation_hash = prism_operation.operation_hash();
         candidate_state.add_storage(&operation_hash, parsed_operation.data, &metadata)?;
         candidate_state.with_last_operation_hash(operation_hash);
 
@@ -206,7 +205,7 @@ impl OperationProcessorOps for V1Processor {
         let prism_operation = PrismOperation {
             operation: Some(Operation::UpdateStorageEntry(operation)),
         };
-        let operation_hash = sha256(prism_operation.encode_to_vec());
+        let operation_hash = prism_operation.operation_hash();
         candidate_state.update_storage(
             &parsed_operation.prev_operation_hash,
             &operation_hash,
@@ -231,7 +230,7 @@ impl OperationProcessorOps for V1Processor {
         let prism_operation = PrismOperation {
             operation: Some(Operation::DeactivateStorageEntry(operation)),
         };
-        let operation_hash = sha256(prism_operation.encode_to_vec());
+        let operation_hash = prism_operation.operation_hash();
         candidate_state.revoke_storage(&parsed_operation.prev_operation_hash, &operation_hash, &metadata)?;
         candidate_state.with_last_operation_hash(operation_hash);
 

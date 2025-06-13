@@ -2,7 +2,7 @@
 
 use chrono::DateTime;
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
-use identus_apollo::hash::{Sha256Digest, sha256};
+use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::dlt::{BlockMetadata, OperationMetadata};
 use identus_did_prism::proto;
 use prost::Message;
@@ -34,7 +34,7 @@ pub fn new_create_did_operation(
     let operation = proto::PrismOperation {
         operation: Some(operation_inner),
     };
-    let operation_hash = sha256(operation.encode_to_vec());
+    let operation_hash = operation.operation_hash();
     let signed_operation = proto::SignedPrismOperation {
         signed_with: MASTER_KEY_NAME.to_string(),
         signature: master_sk.sign(&operation.encode_to_vec()),
@@ -51,7 +51,7 @@ pub fn new_signed_operation(
     let operation = proto::PrismOperation {
         operation: Some(operation),
     };
-    let operation_hash = sha256(operation.encode_to_vec());
+    let operation_hash = operation.operation_hash();
     let signed_operation = proto::SignedPrismOperation {
         signed_with: signed_with.to_string(),
         signature: signing_key.sign(&operation.encode_to_vec()),

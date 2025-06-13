@@ -54,6 +54,16 @@ async fn main() -> anyhow::Result<()> {
         }),
     );
 
+    let (op_1_5, _) = test_utils::new_signed_operation(
+        "vdr-1",
+        &vdr_sk,
+        proto::prism_operation::Operation::CreateStorageEntry(proto::ProtoCreateStorageEntry {
+            did_prism_hash: did_1.suffix.to_vec(),
+            nonce: vec![1, 2],
+            data: Some(proto::proto_create_storage_entry::Data::Bytes(vec![42])),
+        }),
+    );
+
     let (op_2_2, op_hash_2_2) = test_utils::new_signed_operation(
         "vdr-2",
         &vdr_sk,
@@ -73,7 +83,7 @@ async fn main() -> anyhow::Result<()> {
         }),
     );
 
-    let operations = test_utils::populate_metadata(vec![op_1, op_2, op_1_2, op_1_3, op_1_4, op_2_2, op_2_3]);
+    let operations = test_utils::populate_metadata(vec![op_1, op_2, op_1_2, op_1_3, op_1_4, op_1_5, op_2_2, op_2_3]);
 
     db.insert_raw_operations(operations).await.unwrap();
     run_indexer_loop(&db).await?;

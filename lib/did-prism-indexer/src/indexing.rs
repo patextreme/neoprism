@@ -1,10 +1,9 @@
-use identus_apollo::hash::{Sha256Digest, sha256};
+use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use identus_did_prism::did::CanonicalPrismDid;
 use identus_did_prism::dlt::OperationMetadata;
 use identus_did_prism::proto::prism_operation::Operation;
 use identus_did_prism::proto::{PrismOperation, SignedPrismOperation};
-use prost::Message;
 
 use crate::DltSource;
 use crate::repo::{IndexedOperation, OperationRepo};
@@ -171,7 +170,7 @@ fn index_from_signed_operation(signed_operation: SignedPrismOperation) -> anyhow
 }
 
 fn index_from_operation(prism_operation: PrismOperation) -> anyhow::Result<IntermediateIndexedOperation> {
-    let operation_hash = sha256(prism_operation.encode_to_vec());
+    let operation_hash = prism_operation.operation_hash();
     match prism_operation.operation {
         Some(Operation::CreateDid(_)) => Ok(IntermediateIndexedOperation::Ssi {
             did: CanonicalPrismDid::from_operation(&prism_operation)?,

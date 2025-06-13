@@ -94,7 +94,7 @@ fn did_document_body(did: &Did, state: &DidState) -> Markup {
     html! {
         div class="flex justify-center w-full" {
             div class="w-full m-4 space-y-4" {
-                p class="text-2xl font-bold" { "DID document" }
+                p class="text-2xl font-bold" { "DID state" }
                 a class="btn btn-xs btn-outline" href=(did_doc_url) target="_blank" { "Resolver API" }
                 (context_card(contexts))
                 (public_key_card(public_keys))
