@@ -12,7 +12,6 @@ use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use maud::{Markup, html};
 
 use crate::app::service::error::ResolutionError;
-use crate::http::models::new_did_document;
 use crate::http::{components, urls};
 
 pub fn index(network: Option<NetworkIdentifier>) -> Markup {
@@ -87,7 +86,7 @@ fn resolution_error_body(error: &ResolutionError) -> Markup {
 }
 
 fn did_document_body(did: &Did, state: &DidState) -> Markup {
-    let did_doc = new_did_document(did, state);
+    let did_doc = state.to_did_document(did);
     let contexts = state.context.as_slice();
     let public_keys = state.public_keys.as_slice();
     let did_doc_url = urls::ApiDid::new_uri(did.to_string());

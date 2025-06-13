@@ -2,46 +2,48 @@ use identus_apollo::jwk::EncodeJwk;
 use identus_did_core::{
     Did, DidDocument, Service, ServiceEndpoint, ServiceType, StringOrMap, VerificationMethod, VerificationMethodOrRef,
 };
-use identus_did_prism::did::operation::KeyUsage;
-use identus_did_prism::did::{DidState, operation};
 
-pub fn new_did_document(did: &Did, did_state: &DidState) -> DidDocument {
-    let mut context = vec!["https://www.w3.org/ns/did/v1".to_string()];
-    context.extend(did_state.context.clone());
+use crate::did::operation::KeyUsage;
+use crate::did::{DidState, operation};
 
-    let get_relationship = |usage: KeyUsage| -> Vec<VerificationMethodOrRef> {
-        did_state
+impl DidState {
+    pub fn to_did_document(&self, did: &Did) -> DidDocument {
+        let mut context = vec!["https://www.w3.org/ns/did/v1".to_string()];
+        context.extend(self.context.clone());
+
+        let get_relationship = |usage: KeyUsage| -> Vec<VerificationMethodOrRef> {
+            self.public_keys
+                .iter()
+                .filter(|k| k.data.usage() == usage)
+                .map(|k| VerificationMethodOrRef::Ref(format!("{}#{}", did, k.id)))
+                .collect()
+        };
+        let verification_method = self
             .public_keys
             .iter()
-            .filter(|k| k.data.usage() == usage)
-            .map(|k| VerificationMethodOrRef::Ref(format!("{}#{}", did, k.id)))
-            .collect()
-    };
-    let verification_method = did_state
-        .public_keys
-        .iter()
-        .filter(|k| {
-            const W3C_KEY_TYPES: [KeyUsage; 5] = [
-                KeyUsage::AuthenticationKey,
-                KeyUsage::IssuingKey,
-                KeyUsage::KeyAgreementKey,
-                KeyUsage::CapabilityInvocationKey,
-                KeyUsage::CapabilityDelegationKey,
-            ];
-            W3C_KEY_TYPES.iter().any(|usage| usage == &k.data.usage())
-        })
-        .flat_map(|k| transform_key_jwk(did, k))
-        .collect();
-    DidDocument {
-        context,
-        id: did.clone(),
-        verification_method,
-        authentication: Some(get_relationship(KeyUsage::AuthenticationKey)),
-        assertion_method: Some(get_relationship(KeyUsage::IssuingKey)),
-        key_agreement: Some(get_relationship(KeyUsage::KeyAgreementKey)),
-        capability_invocation: Some(get_relationship(KeyUsage::CapabilityInvocationKey)),
-        capability_delegation: Some(get_relationship(KeyUsage::CapabilityDelegationKey)),
-        service: Some(did_state.services.iter().map(transform_service).collect()),
+            .filter(|k| {
+                const W3C_KEY_TYPES: [KeyUsage; 5] = [
+                    KeyUsage::AuthenticationKey,
+                    KeyUsage::IssuingKey,
+                    KeyUsage::KeyAgreementKey,
+                    KeyUsage::CapabilityInvocationKey,
+                    KeyUsage::CapabilityDelegationKey,
+                ];
+                W3C_KEY_TYPES.iter().any(|usage| usage == &k.data.usage())
+            })
+            .flat_map(|k| transform_key_jwk(did, k))
+            .collect();
+        DidDocument {
+            context,
+            id: did.clone(),
+            verification_method,
+            authentication: Some(get_relationship(KeyUsage::AuthenticationKey)),
+            assertion_method: Some(get_relationship(KeyUsage::IssuingKey)),
+            key_agreement: Some(get_relationship(KeyUsage::KeyAgreementKey)),
+            capability_invocation: Some(get_relationship(KeyUsage::CapabilityInvocationKey)),
+            capability_delegation: Some(get_relationship(KeyUsage::CapabilityDelegationKey)),
+            service: Some(self.services.iter().map(transform_service).collect()),
+        }
     }
 }
 

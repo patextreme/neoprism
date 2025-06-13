@@ -16,6 +16,7 @@ use crate::did::operation::StorageData;
 use crate::proto::PrismOperation;
 use crate::proto::prism_operation::Operation;
 
+pub mod did_doc;
 pub mod error;
 pub mod operation;
 

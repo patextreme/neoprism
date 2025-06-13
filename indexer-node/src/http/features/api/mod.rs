@@ -9,7 +9,6 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use crate::AppState;
 use crate::app::service::error::ResolutionError;
-use crate::http::models::new_did_document;
 use crate::http::urls;
 
 #[derive(OpenApi)]
@@ -43,6 +42,6 @@ async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>) -> 
         Err(ResolutionError::InvalidDid { .. }) => Err(StatusCode::BAD_REQUEST),
         Err(ResolutionError::NotFound) => Err(StatusCode::NOT_FOUND),
         Err(ResolutionError::InternalError { .. }) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-        Ok((did, did_state)) => Ok(Json(new_did_document(&did.to_did(), &did_state))),
+        Ok((did, did_state)) => Ok(Json(did_state.to_did_document(&did.to_did()))),
     }
 }
