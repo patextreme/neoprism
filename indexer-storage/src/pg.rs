@@ -68,7 +68,7 @@ impl OperationRepo for PostgresDb {
         })
     }
 
-    async fn get_unindexed_raw_operations(
+    async fn get_raw_operations_unindexed(
         &self,
     ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
         let mut tx = self.pool.begin().await?;
@@ -118,6 +118,38 @@ impl OperationRepo for PostgresDb {
         Ok(result)
     }
 
+    async fn get_raw_operation_vdr_by_operation_hash(
+        &self,
+        operation_hash: &Sha256Digest,
+    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+        let vdr_operation = self
+            .db_ctx
+            .list::<entity::IndexedVdrOperation>(
+                &mut tx,
+                Filter::all([entity::IndexedVdrOperationFilter::operation_hash().eq(operation_hash.to_vec())]),
+                Sort::empty(),
+                Some(PaginationInput { page: 0, limit: 1 }),
+            )
+            .await?
+            .data
+            .into_iter()
+            .next();
+
+        let result = match vdr_operation {
+            None => None,
+            Some(op) => self
+                .db_ctx
+                .get::<entity::RawOperation>(&mut tx, op.raw_operation_id)
+                .await?
+                .map(parse_raw_operation)
+                .transpose()?,
+        };
+
+        tx.commit().await?;
+        Ok(result)
+    }
+
     async fn insert_raw_operations(
         &self,
         operations: Vec<(OperationMetadata, SignedPrismOperation)>,
@@ -154,7 +186,7 @@ impl OperationRepo for PostgresDb {
     async fn insert_indexed_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error> {
         let mut tx = self.pool.begin().await?;
         for op in operations {
-            // mark as indexed
+            // mark raw_operation as indexed
             self.db_ctx
                 .update::<entity::RawOperation>(
                     &mut tx,
@@ -166,7 +198,7 @@ impl OperationRepo for PostgresDb {
                 )
                 .await?;
 
-            // write to indexed table
+            // write to indexing table
             match op {
                 IndexedOperation::Ssi { raw_operation_id, did } => {
                     self.db_ctx
@@ -204,38 +236,6 @@ impl OperationRepo for PostgresDb {
         }
         tx.commit().await?;
         Ok(())
-    }
-
-    async fn get_vdr_raw_operation_by_operation_hash(
-        &self,
-        operation_hash: &Sha256Digest,
-    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
-        let mut tx = self.pool.begin().await?;
-        let vdr_operation = self
-            .db_ctx
-            .list::<entity::IndexedVdrOperation>(
-                &mut tx,
-                Filter::all([entity::IndexedVdrOperationFilter::operation_hash().eq(operation_hash.to_vec())]),
-                Sort::empty(),
-                Some(PaginationInput { page: 0, limit: 1 }),
-            )
-            .await?
-            .data
-            .into_iter()
-            .next();
-
-        let result = match vdr_operation {
-            None => None,
-            Some(op) => self
-                .db_ctx
-                .get::<entity::RawOperation>(&mut tx, op.raw_operation_id)
-                .await?
-                .map(parse_raw_operation)
-                .transpose()?,
-        };
-
-        tx.commit().await?;
-        Ok(result)
     }
 }
 

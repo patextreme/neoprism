@@ -41,7 +41,7 @@ pub trait OperationRepo {
 
     async fn get_all_dids(&self, page: u32, page_size: u32) -> Result<Paginated<CanonicalPrismDid>, Self::Error>;
 
-    async fn get_unindexed_raw_operations(
+    async fn get_raw_operations_unindexed(
         &self,
     ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
 
@@ -50,17 +50,17 @@ pub trait OperationRepo {
         did: &CanonicalPrismDid,
     ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
 
+    async fn get_raw_operation_vdr_by_operation_hash(
+        &self,
+        operation_hash: &Sha256Digest,
+    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
+
     async fn insert_raw_operations(
         &self,
         operations: Vec<(OperationMetadata, SignedPrismOperation)>,
     ) -> Result<(), Self::Error>;
 
     async fn insert_indexed_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error>;
-
-    async fn get_vdr_raw_operation_by_operation_hash(
-        &self,
-        operation_hash: &Sha256Digest,
-    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
 }
 
 #[async_trait::async_trait]

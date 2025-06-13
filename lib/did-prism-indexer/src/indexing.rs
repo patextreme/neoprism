@@ -29,7 +29,7 @@ where
     <Repo as OperationRepo>::Error: Send + Sync + 'static,
 {
     loop {
-        let unindexed_operations = repo.get_unindexed_raw_operations().await?;
+        let unindexed_operations = repo.get_raw_operations_unindexed().await?;
         if unindexed_operations.is_empty() {
             return Ok(());
         }
@@ -60,7 +60,7 @@ where
                             did,
                         },
                         None => {
-                            tracing::warn!("SignedPrismOperation {:?} is ignored since it cannot be indexed.", meta,);
+                            tracing::warn!("SignedPrismOperation {:?} is ignored since it cannot be indexed.", meta);
                             IndexedOperation::Ignored { raw_operation_id }
                         }
                     }
@@ -139,7 +139,7 @@ where
         };
 
         let parent = repo
-            .get_vdr_raw_operation_by_operation_hash(&parsed_parent_hash)
+            .get_raw_operation_vdr_by_operation_hash(&parsed_parent_hash)
             .await?;
         match parent {
             None => return Ok(None), // no root found
