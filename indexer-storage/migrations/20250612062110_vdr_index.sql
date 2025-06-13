@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS indexed_ssi_operation (
     id UUID DEFAULT gen_random_uuid(),
     raw_operation_id UUID NOT NULL UNIQUE,
     did BYTEA NOT NULL,
+    indexed_at TIMESTAMPTZ NOT NULL,
     FOREIGN KEY (raw_operation_id) REFERENCES raw_operation (id) ON DELETE CASCADE
 );
 
@@ -31,6 +32,7 @@ CREATE TABLE IF NOT EXISTS indexed_vdr_operation (
     init_operation_hash BYTEA NOT NULL,
     prev_operation_hash BYTEA,
     did BYTEA NOT NULL,
+    indexed_at TIMESTAMPTZ NOT NULL,
     FOREIGN KEY (raw_operation_id) REFERENCES raw_operation (id) ON DELETE CASCADE
 );
 

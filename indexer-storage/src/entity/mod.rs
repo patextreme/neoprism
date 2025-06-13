@@ -56,6 +56,8 @@ pub struct IndexedSsiOperation {
     pub id: Uuid,
     pub raw_operation_id: Uuid,
     pub did: DidSuffix,
+    #[lazybe(created_at)]
+    pub indexed_at: DateTime<Utc>,
 }
 
 #[derive(Entity)]
@@ -69,6 +71,8 @@ pub struct IndexedVdrOperation {
     pub init_operation_hash: Vec<u8>,
     pub prev_operation_hash: Option<Vec<u8>>,
     pub did: DidSuffix,
+    #[lazybe(created_at)]
+    pub indexed_at: DateTime<Utc>,
 }
 
 #[derive(Entity)]
