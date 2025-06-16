@@ -8,6 +8,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, Newtype, derive_more::From)]
 pub struct DidSuffix(Vec<u8>);
 
+impl From<CanonicalPrismDid> for DidSuffix {
+    fn from(value: CanonicalPrismDid) -> Self {
+        value.suffix.to_vec().into()
+    }
+}
+
 impl TryFrom<DidSuffix> for CanonicalPrismDid {
     type Error = crate::Error;
 
@@ -33,13 +39,40 @@ pub struct DltCursor {
 pub struct RawOperation {
     #[lazybe(primary_key)]
     pub id: Uuid,
-    pub did: DidSuffix,
     pub signed_operation_data: Vec<u8>,
     pub slot: i64,
     pub block_number: i64,
     pub cbt: DateTime<Utc>,
     pub absn: i32,
     pub osn: i32,
+    pub is_indexed: bool,
+}
+
+#[derive(Entity)]
+#[lazybe(table = "indexed_ssi_operation")]
+#[allow(unused)]
+pub struct IndexedSsiOperation {
+    #[lazybe(primary_key)]
+    pub id: Uuid,
+    pub raw_operation_id: Uuid,
+    pub did: DidSuffix,
+    #[lazybe(created_at)]
+    pub indexed_at: DateTime<Utc>,
+}
+
+#[derive(Entity)]
+#[lazybe(table = "indexed_vdr_operation")]
+#[allow(unused)]
+pub struct IndexedVdrOperation {
+    #[lazybe(primary_key)]
+    pub id: Uuid,
+    pub raw_operation_id: Uuid,
+    pub operation_hash: Vec<u8>,
+    pub init_operation_hash: Vec<u8>,
+    pub prev_operation_hash: Option<Vec<u8>>,
+    pub did: DidSuffix,
+    #[lazybe(created_at)]
+    pub indexed_at: DateTime<Utc>,
 }
 
 #[derive(Entity)]
@@ -55,4 +88,35 @@ pub struct DidStats {
     pub first_block: i64,
     pub first_slot: i64,
     pub first_cbt: DateTime<Utc>,
+}
+
+#[derive(Entity)]
+#[lazybe(table = "raw_operation_by_did")]
+#[allow(unused)]
+pub struct RawOperationByDid {
+    #[lazybe(primary_key)]
+    pub id: Uuid,
+    pub signed_operation_data: Vec<u8>,
+    pub slot: i64,
+    pub block_number: i64,
+    pub cbt: DateTime<Utc>,
+    pub absn: i32,
+    pub osn: i32,
+    pub is_indexed: bool,
+    pub did: DidSuffix,
+}
+
+impl From<RawOperationByDid> for RawOperation {
+    fn from(value: RawOperationByDid) -> Self {
+        Self {
+            id: value.id,
+            signed_operation_data: value.signed_operation_data,
+            slot: value.slot,
+            block_number: value.block_number,
+            cbt: value.cbt,
+            absn: value.absn,
+            osn: value.osn,
+            is_indexed: value.is_indexed,
+        }
+    }
 }

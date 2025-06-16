@@ -4,12 +4,13 @@
 use app::service::DidService;
 use clap::Parser;
 use cli::CliArgs;
-use identus_did_prism::dlt::oura::OuraN2NSource;
-use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
+use identus_did_prism::dlt::DltCursor;
+use identus_did_prism_indexer::dlt::NetworkIdentifier;
+use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use indexer_storage::PostgresDb;
 use tower_http::trace::TraceLayer;
 
-use crate::app::worker::DltSyncWorker;
+use crate::app::worker::{DltIndexWorker, DltSyncWorker};
 
 mod app;
 mod cli;
@@ -56,9 +57,12 @@ pub async fn start_server() -> anyhow::Result<()> {
 
         cursor_rx = Some(source.cursor_receiver());
         network = Some(network_identifier);
-        let sync_app = DltSyncWorker::new(db.clone(), source);
-        tokio::spawn(sync_app.run());
+        let sync_worker = DltSyncWorker::new(db.clone(), source);
+        let index_worker = DltIndexWorker::new(db.clone());
+        tokio::spawn(sync_worker.run());
+        tokio::spawn(index_worker.run());
     }
+
     let state = AppState {
         did_service,
         cursor_rx,

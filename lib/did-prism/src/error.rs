@@ -1,7 +1,5 @@
 use crate::utils::Location;
 
-pub(crate) type StdError = Box<dyn std::error::Error + Send + Sync>;
-
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum InvalidInputSizeError {
     #[display("expected input size of {expected} but got {actual} for type {type_name} {location}")]

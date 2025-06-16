@@ -1,5 +1,4 @@
-use identus_did_prism::dlt::{DltSource, OperationMetadata};
-use identus_did_prism::repo::OperationRepo;
+use identus_did_prism_indexer::{DltSource, run_indexer_loop, run_sync_loop};
 use indexer_storage::PostgresDb;
 
 pub struct DltSyncWorker<Src> {
@@ -16,40 +15,26 @@ where
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
-        let mut rx = self.source.receiver().expect("Unable to create a DLT source");
+        run_sync_loop(&self.store, self.source).await // block forever
+    }
+}
 
-        while let Some(published_atala_object) = rx.recv().await {
-            let block = published_atala_object.atala_object.block_content;
-            let block_metadata = published_atala_object.block_metadata;
-            let signed_operations = block.map(|i| i.operations).unwrap_or_default();
+pub struct DltIndexWorker {
+    store: PostgresDb,
+}
 
-            let mut insert_batch = Vec::with_capacity(signed_operations.len());
-            for (idx, signed_operation) in signed_operations.into_iter().enumerate() {
-                let has_operation = signed_operation
-                    .operation
-                    .as_ref()
-                    .and_then(|i| i.operation.as_ref())
-                    .is_some();
+impl DltIndexWorker {
+    pub fn new(store: PostgresDb) -> Self {
+        Self { store }
+    }
 
-                if !has_operation {
-                    continue;
-                }
-
-                insert_batch.push((
-                    OperationMetadata {
-                        block_metadata: block_metadata.clone(),
-                        osn: idx as u32,
-                    },
-                    signed_operation,
-                ));
-            }
-
-            let insert_result = self.store.insert_operations(insert_batch).await;
-
-            if let Err(e) = insert_result {
+    pub async fn run(self) -> anyhow::Result<()> {
+        loop {
+            let result = run_indexer_loop(&self.store).await;
+            if let Err(e) = result {
                 tracing::error!("{:?}", e);
             }
+            tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
         }
-        Ok(())
     }
 }

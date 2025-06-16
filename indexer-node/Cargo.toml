@@ -33,5 +33,9 @@ utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
 
 identus-apollo = { workspace = true, features = ["hex", "jwk"] }
 identus-did-core = { workspace = true, features = ["openapi"] }
-identus-did-prism = { workspace = true, features = ["oura"] }
+identus-did-prism = { workspace = true }
+identus-did-prism-indexer = { workspace = true, features = ["oura"] }
 indexer-storage = { workspace = true }
+
+[dev-dependencies]
+prost = { workspace = true }

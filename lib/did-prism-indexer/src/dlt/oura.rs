@@ -3,6 +3,8 @@ use std::sync::Arc;
 use std::sync::mpsc::RecvTimeoutError;
 
 use identus_apollo::hex::HexStr;
+use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
+use identus_did_prism::location;
 use oura::model::{Event, EventData};
 use oura::pipelining::{SourceProvider, StageReceiver};
 use oura::sources::n2n::Config;
@@ -12,23 +14,19 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
 use super::error::DltError;
-use super::{DltCursor, DltSource, PublishedAtalaObject};
+use crate::DltSource;
 use crate::dlt::NetworkIdentifier;
-use crate::location;
 use crate::repo::DltCursorRepo;
 
 mod model {
-    use std::str::FromStr;
-
     use chrono::{DateTime, Utc};
-    use identus_apollo::hex::HexStr;
+    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject};
+    use identus_did_prism::proto::PrismObject;
     use oura::model::{EventContext, MetadataRecord};
     use prost::Message;
     use serde::{Deserialize, Serialize};
 
     use crate::dlt::error::MetadataReadError;
-    use crate::dlt::{BlockMetadata, PublishedAtalaObject};
-    use crate::proto::AtalaObject;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct MetadataEvent {
@@ -76,7 +74,7 @@ mod model {
     pub fn parse_oura_event(
         context: EventContext,
         metadata: MetadataRecord,
-    ) -> Result<PublishedAtalaObject, MetadataReadError> {
+    ) -> Result<PublishedPrismObject, MetadataReadError> {
         // parse metadata
         let block_hash = &context.block_hash;
         let tx_idx = context.tx_idx;
@@ -100,42 +98,51 @@ mod model {
             })?,
         };
 
-        // parse atala_block
-        let hex_group = match metadata.content {
-            oura::model::MetadatumRendition::MapJson(json) => {
-                let meta = serde_json::from_value::<MetadataMapJson>(json).map_err(|e| {
-                    MetadataReadError::InvalidJsonType {
-                        source: e.into(),
-                        block_hash: block_hash.clone(),
-                        tx_idx,
-                    }
-                })?;
-                meta.c
-            }
-            _ => Err(MetadataReadError::InvalidJsonType {
-                source: "Metadata is not a MapJson type".to_string().into(),
-                block_hash: block_hash.clone(),
-                tx_idx,
-            })?,
-        };
-        let hex = hex_group.join("");
-        let bytes = HexStr::from_str(&hex)
-            .map_err(|e| MetadataReadError::AtalaBlockHexDecode {
-                source: e,
-                block_hash: block_hash.clone(),
-                tx_idx,
-            })?
-            .to_bytes();
-        let atala_object =
-            AtalaObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::AtalaBlockProtoDecode {
+        // parse prism_block
+        let byte_group = match metadata.metadadum {
+            pallas_primitives::alonzo::Metadatum::Map(kv) => kv
+                .to_vec()
+                .into_iter()
+                .find(|(k, _)| match k {
+                    pallas_primitives::alonzo::Metadatum::Text(k) => k == "c",
+                    _ => false,
+                })
+                .and_then(|(_, v)| match v {
+                    pallas_primitives::alonzo::Metadatum::Array(ms) => Some(ms),
+                    _ => None,
+                })
+                .and_then(|byte_group| {
+                    byte_group
+                        .into_iter()
+                        .map(|b| match b {
+                            pallas_primitives::alonzo::Metadatum::Bytes(bytes) => Some(bytes.to_vec()),
+                            _ => None,
+                        })
+                        .collect::<Option<Vec<_>>>()
+                }),
+            _ => None,
+        }
+        .ok_or(MetadataReadError::InvalidMetadataType {
+            source: "Metadata is not a valid type".to_string().into(),
+            block_hash: block_hash.clone(),
+            tx_idx,
+        })?;
+
+        let mut bytes = Vec::with_capacity(64 * byte_group.len());
+        for mut b in byte_group.into_iter() {
+            bytes.append(&mut b);
+        }
+
+        let prism_object =
+            PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::PrismBlockProtoDecode {
                 source: e,
                 block_hash: block_hash.clone(),
                 tx_idx,
             })?;
 
-        Ok(PublishedAtalaObject {
+        Ok(PublishedPrismObject {
             block_metadata,
-            atala_object,
+            prism_object,
         })
     }
 }
@@ -235,8 +242,8 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
 }
 
 impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
-    fn receiver(self) -> Result<Receiver<PublishedAtalaObject>, String> {
-        let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedAtalaObject>(1024);
+    fn receiver(self) -> Result<Receiver<PublishedPrismObject>, String> {
+        let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedPrismObject>(1024);
 
         let cursor_persist_worker = CursorPersistWorker {
             cursor_rx: self.cursor_tx.subscribe(),
@@ -259,7 +266,7 @@ impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
 struct OuraStreamWorker {
     with_utils: WithUtils<Config>,
     cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
-    event_tx: Sender<PublishedAtalaObject>,
+    event_tx: Sender<PublishedPrismObject>,
 }
 
 impl OuraStreamWorker {
@@ -269,7 +276,7 @@ impl OuraStreamWorker {
             loop {
                 let with_utils = self.build_with_util();
                 tracing::info!("Bootstraping oura pipeline thread");
-                let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::Bootstrap {
+                let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::InitSource {
                     source: e.to_string().into(),
                 })?;
 
@@ -313,7 +320,7 @@ impl OuraStreamWorker {
         loop {
             let handle_result = match receiver.recv_timeout(TIMEOUT) {
                 Ok(event) => {
-                    let handle_result = self.handle_atala_event(event.clone());
+                    let handle_result = self.handle_prism_event(event.clone());
                     self.persist_cursor(&event);
                     handle_result
                 }
@@ -350,7 +357,7 @@ impl OuraStreamWorker {
         let _ = self.cursor_tx.send(Some(cursor));
     }
 
-    fn handle_atala_event(&self, event: Event) -> Result<(), DltError> {
+    fn handle_prism_event(&self, event: Event) -> Result<(), DltError> {
         let EventData::Metadata(meta) = event.data else {
             return Ok(());
         };
@@ -360,23 +367,23 @@ impl OuraStreamWorker {
 
         let context = event.context;
         tracing::info!(
-            "Detect a new atala_block on slot ({}, {})",
+            "Detected a new prism_block on slot ({}, {})",
             context.slot.unwrap_or_default(),
             context.block_hash.as_deref().unwrap_or_default(),
         );
 
-        let parsed_atala_object = self::model::parse_oura_event(context, meta);
-        match parsed_atala_object {
-            Ok(atala_object) => self
+        let parsed_prism_object = self::model::parse_oura_event(context, meta);
+        match parsed_prism_object {
+            Ok(prism_object) => self
                 .event_tx
-                .blocking_send(atala_object)
+                .blocking_send(prism_object)
                 .map_err(|e| DltError::EventHandling {
                     source: e.to_string().into(),
                     location: location!(),
                 })?,
             Err(e) => {
                 // TODO: add debug level error report
-                tracing::warn!("Unable to parse oura event into AtalaObject. ({})", e);
+                tracing::warn!("Unable to parse oura event into PrismObject. ({})", e);
             }
         }
 

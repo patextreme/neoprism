@@ -1,8 +1,8 @@
 use error::{InvalidDid, ResolutionError};
 use identus_did_prism::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidOps};
 use identus_did_prism::protocol::resolver::{ResolutionDebug, resolve_published, resolve_unpublished};
-use identus_did_prism::repo::OperationRepo;
 use identus_did_prism::utils::paging::Paginated;
+use identus_did_prism_indexer::repo::OperationRepo;
 use indexer_storage::PostgresDb;
 
 pub mod error;
@@ -33,9 +33,12 @@ impl DidService {
 
         let operations = self
             .db
-            .get_operations_by_did(&canonical_did)
+            .get_raw_operations_by_did(&canonical_did)
             .await
-            .map_err(|e| ResolutionError::InternalError { source: e.into() })?;
+            .map_err(|e| ResolutionError::InternalError { source: e.into() })?
+            .into_iter()
+            .map(|(_, meta, signed_operation)| (meta, signed_operation))
+            .collect::<Vec<_>>();
 
         if operations.is_empty() {
             match &did {

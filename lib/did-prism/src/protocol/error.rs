@@ -1,3 +1,5 @@
+use identus_apollo::hash::Sha256Digest;
+
 use crate::did::error::{Error as DidError, PublicKeyIdError};
 use crate::did::operation::{KeyUsage, PublicKeyId, ServiceId};
 
@@ -10,16 +12,16 @@ pub enum ProcessError {
     DidStateInitFromNonCreateOperation,
     #[display("did state update cannot be performed by CreateOperation")]
     DidStateUpdateFromCreateOperation,
-    #[display("operation is missing from SignedAtalaOperation")]
-    SignedAtalaOperationMissingOperation,
-    #[display("invalid signed_with key id in SignedAtalaOperation")]
-    SignedAtalaOperationInvalidSignedWith { source: PublicKeyIdError },
+    #[display("operation is missing from SignedPrismOperation")]
+    SignedPrismOperationMissingOperation,
+    #[display("invalid signed_with key id in SignedPrismOperation")]
+    SignedPrismOperationInvalidSignedWith { source: PublicKeyIdError },
     #[display("signed_with key id {id} not found")]
-    SignedAtalaOperationSignedWithKeyNotFound { id: PublicKeyId },
+    SignedPrismOperationSignedWithKeyNotFound { id: PublicKeyId },
     #[display("signed_with key id {id} has usage of {usage:?} which is not a master key")]
-    SignedAtalaOperationSignedWithNonMasterKey { id: PublicKeyId, usage: KeyUsage },
-    #[display("signature verification failed for SignedAtalaOperation")]
-    SignedAtalaOperationInvalidSignature,
+    SignedPrismOperationSignedWithInvalidKey { id: PublicKeyId, usage: KeyUsage },
+    #[display("signature verification failed for SignedPrismOperation")]
+    SignedPrismOperationInvalidSignature,
     #[from]
     #[display("applied operation has conflict with the current did state")]
     DidStateConflict { source: DidStateConflictError },
@@ -51,4 +53,18 @@ pub enum DidStateConflictError {
     AfterUpdatePublicKeyExceedLimit { limit: usize, actual: usize },
     #[display("did state have {actual} services which is greater than the limit {limit}")]
     AfterUpdateServiceExceedLimit { limit: usize, actual: usize },
+    #[display("cannot add storage entry since entry with same hash already exist {initial_hash:?}")]
+    AddStorageEntryWithExistingHash { initial_hash: Sha256Digest },
+    #[display(
+        "cannot update storage entry since entry with hash {prev_operation_hash:?} does not exist in the did state"
+    )]
+    UpdateStorageEntryNotExists { prev_operation_hash: Sha256Digest },
+    #[display("cannot update storage entry since entry with hash {prev_operation_hash:?} is already revoked")]
+    UpdateStorageEntryAlreadyRevoked { prev_operation_hash: Sha256Digest },
+    #[display(
+        "cannot revoke storage entry since entry with hash {previous_operation_hash:?} does not exist in the did state"
+    )]
+    RevokeStorageEntryNotExists { previous_operation_hash: Sha256Digest },
+    #[display("cannot revoke storage entry since entry with hash {previous_operation_hash:?} is already revoked")]
+    RevokeStorageEntryAlreadyRevoked { previous_operation_hash: Sha256Digest },
 }

@@ -1,7 +1,9 @@
+#![cfg(all(feature = "secp256k1", feature = "hex"))]
+
 use std::str::FromStr;
 
+use identus_apollo::crypto::Verifiable;
 use identus_apollo::crypto::secp256k1::Secp256k1PublicKey;
-use identus_apollo::crypto::{ToPublicKey, Verifiable};
 use identus_apollo::hex::HexStr;
 
 /// test vector from https://github.com/hyperledger/identus-apollo/pull/154/files
@@ -318,7 +320,7 @@ struct TestInput {
 impl TestInput {
     pub fn public_key(&self) -> Secp256k1PublicKey {
         let bytes = HexStr::from_str(self.public_key).unwrap().to_bytes();
-        bytes.to_public_key().unwrap()
+        Secp256k1PublicKey::from_slice(&bytes).unwrap()
     }
 
     pub fn signature(&self) -> Vec<u8> {

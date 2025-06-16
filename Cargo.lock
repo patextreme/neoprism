@@ -1192,11 +1192,11 @@ dependencies = [
 
 [[package]]
 name = "getopts"
-version = "0.2.22"
+version = "0.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65f92ffdcc7377b15ba73857be6a1a2fd54aec37baca587b96bc8ea3f8757088"
+checksum = "cba6ae63eb948698e300f645f87c70f76630d505f23b8907cf1e193ee85048c1"
 dependencies = [
- "unicode-width",
+ "unicode-width 0.2.0",
 ]
 
 [[package]]
@@ -1632,24 +1632,38 @@ dependencies = [
 name = "identus-did-prism"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "chrono",
  "derive_more",
  "enum_dispatch",
  "identus-apollo",
  "identus-did-core",
  "im-rc",
- "oura",
  "prost",
  "prost-build",
- "prost-types",
  "regex",
- "serde",
  "serde_json",
+ "tracing",
+ "uriparse",
+]
+
+[[package]]
+name = "identus-did-prism-indexer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "derive_more",
+ "identus-apollo",
+ "identus-did-prism",
+ "oura",
+ "pallas-primitives",
+ "prost",
+ "serde",
  "strum 0.27.1",
  "tokio",
  "tracing",
- "uriparse",
+ "uuid",
 ]
 
 [[package]]
@@ -1699,9 +1713,11 @@ dependencies = [
  "identus-apollo",
  "identus-did-core",
  "identus-did-prism",
+ "identus-did-prism-indexer",
  "indexer-storage",
  "lazybe",
  "maud",
+ "prost",
  "serde",
  "serde_json",
  "sqlx",
@@ -1722,12 +1738,14 @@ dependencies = [
  "derive_more",
  "identus-apollo",
  "identus-did-prism",
+ "identus-did-prism-indexer",
  "lazybe",
  "prost",
  "sea-query",
  "serde",
  "sqlx",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -2272,8 +2290,7 @@ checksum = "e2355d85b9a3786f481747ced0e0ff2ba35213a1f9bd406ed906554d7af805a1"
 [[package]]
 name = "oura"
 version = "1.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddfea0182a0ff767d257dc0973668934f123b4b33e3961d0ea589d48d04dd1f7"
+source = "git+https://github.com/patextreme/oura.git?rev=dd10323ecf95dcd7dd45edb46ef566d19af2eff8#dd10323ecf95dcd7dd45edb46ef566d19af2eff8"
 dependencies = [
  "bech32",
  "clap 3.2.25",
@@ -3874,9 +3891,9 @@ checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.24"
+version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5033c97c4262335cded6d6fc3e5c18ab755e1a3dc96376350f3d8e9f009ad956"
+checksum = "5c5713f0fc4b5db668a2ac63cdb7bb4469d8c9fed047b1d0292cc7b0ce2ba921"
 dependencies = [
  "tinyvec",
 ]
@@ -3899,7 +3916,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a04be5ca5f7a4a7270ffea82bc41c59b87c611ed04f20e77c338e8d3c2348e42"
 dependencies = [
- "unicode-width",
+ "unicode-width 0.1.14",
 ]
 
 [[package]]
@@ -3907,6 +3924,12 @@ name = "unicode-width"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
+
+[[package]]
+name = "unicode-width"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fc81956842c57dac11422a97c3b8195a1ff727f06e85c84ed2e8aa277c9a0fd"
 
 [[package]]
 name = "unicode-xid"
@@ -4010,6 +4033,7 @@ checksum = "3cf4199d1e5d15ddd86a694e4d0dffa9c323ce759fea589f00fef9d81cc1931d"
 dependencies = [
  "getrandom 0.3.3",
  "js-sys",
+ "serde",
  "wasm-bindgen",
 ]
 

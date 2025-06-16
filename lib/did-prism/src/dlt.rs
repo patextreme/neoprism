@@ -1,13 +1,6 @@
 use chrono::{DateTime, Utc};
-use strum::VariantArray;
-use tokio::sync::mpsc::Receiver;
 
-use crate::proto::AtalaObject;
-
-pub mod error;
-
-#[cfg(feature = "oura")]
-pub mod oura;
+use crate::proto::PrismObject;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DltCursor {
@@ -24,19 +17,19 @@ pub struct BlockMetadata {
     pub block_number: u64,
     /// Cardano block timestamp
     pub cbt: DateTime<Utc>,
-    /// AtalaBlock seqeuence number
+    /// PrismBlock seqeuence number
     ///
-    /// This is used to order AtalaBlock within the same Cardano block
+    /// This is used to order PrismBlock within the same Cardano block
     pub absn: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OperationMetadata {
-    /// AtalaBlock metadata
+    /// PrismBlock metadata
     pub block_metadata: BlockMetadata,
     /// Operation sequence number
     ///
-    /// This is used to order AtalaOperation within the same AtalaBlock
+    /// This is used to order PrismOperation within the same PrismBlock
     pub osn: u32,
 }
 
@@ -53,31 +46,7 @@ impl OperationMetadata {
 }
 
 #[derive(Debug, Clone)]
-pub struct PublishedAtalaObject {
+pub struct PublishedPrismObject {
     pub block_metadata: BlockMetadata,
-    pub atala_object: AtalaObject,
-}
-
-pub trait DltSource {
-    fn receiver(self) -> Result<Receiver<PublishedAtalaObject>, String>;
-}
-
-pub trait DltSink {
-    fn send(&mut self, atala_object: AtalaObject);
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
-pub enum NetworkIdentifier {
-    #[strum(serialize = "mainnet")]
-    Mainnet,
-    #[strum(serialize = "preprod")]
-    Preprod,
-    #[strum(serialize = "preview")]
-    Preview,
-}
-
-impl NetworkIdentifier {
-    pub fn variants() -> &'static [Self] {
-        Self::VARIANTS
-    }
+    pub prism_object: PrismObject,
 }

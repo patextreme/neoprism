@@ -1,7 +1,8 @@
 use identus_apollo::hex::HexStr;
 use identus_did_prism::did::CanonicalPrismDid;
-use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
+use identus_did_prism::dlt::DltCursor;
 use identus_did_prism::utils::paging::Paginated;
+use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use maud::{Markup, html};
 
 use crate::http::features::ui_explorer::models::PageQuery;

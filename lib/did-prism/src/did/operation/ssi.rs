@@ -2,60 +2,41 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 
 use enum_dispatch::enum_dispatch;
+use identus_apollo::crypto::Error as CryptoError;
 use identus_apollo::crypto::ed25519::Ed25519PublicKey;
 use identus_apollo::crypto::secp256k1::Secp256k1PublicKey;
 use identus_apollo::crypto::x25519::X25519PublicKey;
-use identus_apollo::crypto::{Error as CryptoError, ToPublicKey};
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::jwk::EncodeJwk;
 use regex::Regex;
 
-use super::CanonicalPrismDid;
-use super::error::{
-    CreateOperationError, DeactivateOperationError, Error, PublicKeyError, PublicKeyIdError, ServiceEndpointError,
-    ServiceError, ServiceIdError, ServiceTypeError, UpdateOperationError,
+use crate::did::CanonicalPrismDid;
+use crate::did::error::{
+    CreateDidOperationError, DeactivateDidOperationError, PublicKeyError, PublicKeyIdError, ServiceEndpointError,
+    ServiceError, ServiceIdError, ServiceTypeError, UpdateDidOperationError,
 };
+use crate::did::operation::OperationParameters;
 use crate::error::InvalidInputSizeError;
 use crate::location;
-use crate::prelude::{AtalaOperation, SignedAtalaOperation};
-use crate::proto::atala_operation::Operation;
 use crate::proto::public_key::KeyData;
 use crate::proto::update_did_action::Action;
-use crate::proto::{self, CreateDidOperation, DeactivateDidOperation, UpdateDidAction, UpdateDidOperation};
-use crate::protocol::ProtocolParameter;
+use crate::proto::{self, ProtoCreateDid, ProtoDeactivateDid, ProtoUpdateDid, UpdateDidAction};
 use crate::utils::{is_slice_unique, is_uri, is_uri_fragment};
 
 static SERVICE_TYPE_NAME_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Za-z0-9\-_]+(\s*[A-Za-z0-9\-_])*$").expect("ServiceTypeName regex is invalid"));
 
-pub fn get_did_from_operation(atala_operation: &AtalaOperation) -> Result<CanonicalPrismDid, Error> {
-    match &atala_operation.operation {
-        Some(Operation::CreateDid(_)) => Ok(CanonicalPrismDid::from_operation(atala_operation)?),
-        Some(Operation::UpdateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
-        Some(Operation::DeactivateDid(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.id)?),
-        Some(Operation::ProtocolVersionUpdate(op)) => Ok(CanonicalPrismDid::from_suffix_str(&op.proposer_did)?),
-        None => Err(Error::OperationMissingFromAtalaOperation),
-    }
-}
-
-pub fn get_did_from_signed_operation(signed_operation: &SignedAtalaOperation) -> Result<CanonicalPrismDid, Error> {
-    match &signed_operation.operation {
-        Some(operation) => get_did_from_operation(operation),
-        None => Err(Error::OperationMissingFromAtalaOperation),
-    }
-}
-
 #[derive(Debug, Clone)]
-pub struct CreateOperation {
+pub struct CreateDidOperation {
     pub public_keys: Vec<PublicKey>,
     pub services: Vec<Service>,
     pub context: Vec<String>,
 }
 
-impl CreateOperation {
-    pub fn parse(param: &ProtocolParameter, operation: &CreateDidOperation) -> Result<Self, CreateOperationError> {
+impl CreateDidOperation {
+    pub fn parse(param: &OperationParameters, operation: &ProtoCreateDid) -> Result<Self, CreateDidOperationError> {
         let Some(did_data) = &operation.did_data else {
-            Err(CreateOperationError::MissingDidData)?
+            Err(CreateDidOperationError::MissingDidData)?
         };
 
         let public_keys = did_data
@@ -82,11 +63,11 @@ impl CreateOperation {
     }
 
     fn validate_public_key_list(
-        param: &ProtocolParameter,
+        param: &OperationParameters,
         public_keys: &[PublicKey],
-    ) -> Result<(), CreateOperationError> {
+    ) -> Result<(), CreateDidOperationError> {
         if public_keys.len() > param.max_public_keys {
-            Err(CreateOperationError::TooManyPublicKeys {
+            Err(CreateDidOperationError::TooManyPublicKeys {
                 source: InvalidInputSizeError::TooBig {
                     limit: param.max_public_keys,
                     actual: public_keys.len(),
@@ -96,16 +77,16 @@ impl CreateOperation {
             })?
         }
 
-        if !public_keys.iter().any(|i| i.usage() == KeyUsage::MasterKey) {
-            Err(CreateOperationError::MissingMasterKey)?
+        if !public_keys.iter().any(|i| i.data.usage() == KeyUsage::MasterKey) {
+            Err(CreateDidOperationError::MissingMasterKey)?
         }
 
         Ok(())
     }
 
-    fn validate_service_list(param: &ProtocolParameter, services: &[Service]) -> Result<(), CreateOperationError> {
+    fn validate_service_list(param: &OperationParameters, services: &[Service]) -> Result<(), CreateDidOperationError> {
         if services.len() > param.max_services {
-            return Err(CreateOperationError::TooManyServices {
+            return Err(CreateDidOperationError::TooManyServices {
                 source: InvalidInputSizeError::TooBig {
                     limit: param.max_public_keys,
                     actual: services.len(),
@@ -118,31 +99,31 @@ impl CreateOperation {
         Ok(())
     }
 
-    fn validate_context_list(contexts: &[String]) -> Result<(), CreateOperationError> {
+    fn validate_context_list(contexts: &[String]) -> Result<(), CreateDidOperationError> {
         if is_slice_unique(contexts) {
             Ok(())
         } else {
-            Err(CreateOperationError::DuplicateContext)?
+            Err(CreateDidOperationError::DuplicateContext)?
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct UpdateOperation {
+pub struct UpdateDidOperation {
     pub id: CanonicalPrismDid,
     pub prev_operation_hash: Sha256Digest,
     pub actions: Vec<UpdateOperationAction>,
 }
 
-impl UpdateOperation {
-    pub fn parse(param: &ProtocolParameter, operation: &UpdateDidOperation) -> Result<Self, UpdateOperationError> {
+impl UpdateDidOperation {
+    pub fn parse(param: &OperationParameters, operation: &ProtoUpdateDid) -> Result<Self, UpdateDidOperationError> {
         if operation.actions.is_empty() {
-            Err(UpdateOperationError::EmptyAction)?
+            Err(UpdateDidOperationError::EmptyAction)?
         }
 
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
-            .map_err(|e| UpdateOperationError::InvalidPreviousOperationHash { source: e })?;
+            .map_err(|e| UpdateDidOperationError::InvalidPreviousOperationHash { source: e })?;
 
         let actions = operation
             .actions
@@ -176,7 +157,10 @@ pub enum UpdateOperationAction {
 }
 
 impl UpdateOperationAction {
-    pub fn parse(action: &UpdateDidAction, param: &ProtocolParameter) -> Result<Option<Self>, UpdateOperationError> {
+    pub fn parse(
+        action: &UpdateDidAction,
+        param: &OperationParameters,
+    ) -> Result<Option<Self>, UpdateDidOperationError> {
         let Some(action) = &action.action else {
             return Ok(None);
         };
@@ -187,14 +171,14 @@ impl UpdateOperationAction {
                     let parsed_key = PublicKey::parse(pk, param)?;
                     Self::AddKey(parsed_key)
                 }
-                None => Err(UpdateOperationError::MissingUpdateActionData {
+                None => Err(UpdateDidOperationError::MissingUpdateActionData {
                     action_type: std::any::type_name_of_val(add_key),
                     field_name: "key",
                 })?,
             },
             Action::RemoveKey(remove_key) => {
                 let key_id = PublicKeyId::parse(&remove_key.key_id, param.max_id_size).map_err(|e| {
-                    UpdateOperationError::InvalidPublicKey {
+                    UpdateDidOperationError::InvalidPublicKey {
                         source: PublicKeyError::InvalidKeyId {
                             source: e,
                             id: remove_key.key_id.clone(),
@@ -208,14 +192,14 @@ impl UpdateOperationAction {
                     let parsed_service = Service::parse(service, param)?;
                     Self::AddService(parsed_service)
                 }
-                None => Err(UpdateOperationError::MissingUpdateActionData {
+                None => Err(UpdateDidOperationError::MissingUpdateActionData {
                     action_type: std::any::type_name_of_val(add_service),
                     field_name: "service",
                 })?,
             },
             Action::RemoveService(remove_service) => {
                 let service_id = ServiceId::parse(&remove_service.service_id, param.max_id_size).map_err(|e| {
-                    UpdateOperationError::InvalidService {
+                    UpdateDidOperationError::InvalidService {
                         source: ServiceError::InvalidServiceId {
                             source: e,
                             id: remove_service.service_id.clone(),
@@ -226,38 +210,36 @@ impl UpdateOperationAction {
             }
             Action::UpdateService(update_service) => {
                 let service_id = ServiceId::parse(&update_service.service_id, param.max_id_size).map_err(|e| {
-                    UpdateOperationError::InvalidService {
+                    UpdateDidOperationError::InvalidService {
                         source: ServiceError::InvalidServiceId {
                             source: e,
                             id: update_service.service_id.clone(),
                         },
                     }
                 })?;
-                let service_type = match Some(update_service.r#type.clone()).filter(|i| !i.is_empty()) {
-                    Some(s) => {
-                        Some(
-                            ServiceType::parse(&s, param).map_err(|e| UpdateOperationError::InvalidService {
+                let service_type =
+                    match Some(update_service.r#type.clone()).filter(|i| !i.is_empty()) {
+                        Some(s) => Some(ServiceType::parse(&s, param).map_err(|e| {
+                            UpdateDidOperationError::InvalidService {
                                 source: ServiceError::InvalidServiceType {
                                     source: e,
                                     type_name: update_service.r#type.clone(),
-                                },
-                            })?,
-                        )
-                    }
-                    None => None,
-                };
-                let service_endpoints =
-                    match Some(update_service.service_endpoints.clone()).filter(|i| !i.is_empty()) {
-                        Some(s) => Some(ServiceEndpoint::parse(&s, param).map_err(|e| {
-                            UpdateOperationError::InvalidService {
-                                source: ServiceError::InvalidServiceEndpoint {
-                                    source: e,
-                                    endpoint: update_service.service_endpoints.clone(),
                                 },
                             }
                         })?),
                         None => None,
                     };
+                let service_endpoints = match Some(update_service.service_endpoints.clone()).filter(|i| !i.is_empty()) {
+                    Some(s) => Some(ServiceEndpoint::parse(&s, param).map_err(|e| {
+                        UpdateDidOperationError::InvalidService {
+                            source: ServiceError::InvalidServiceEndpoint {
+                                source: e,
+                                endpoint: update_service.service_endpoints.clone(),
+                            },
+                        }
+                    })?),
+                    None => None,
+                };
                 Self::UpdateService {
                     id: service_id,
                     r#type: service_type,
@@ -272,16 +254,16 @@ impl UpdateOperationAction {
 }
 
 #[derive(Debug, Clone)]
-pub struct DeactivateOperation {
+pub struct DeactivateDidOperation {
     pub id: CanonicalPrismDid,
     pub prev_operation_hash: Sha256Digest,
 }
 
-impl DeactivateOperation {
-    pub fn parse(operation: &DeactivateDidOperation) -> Result<Self, DeactivateOperationError> {
+impl DeactivateDidOperation {
+    pub fn parse(operation: &ProtoDeactivateDid) -> Result<Self, DeactivateDidOperationError> {
         let id = CanonicalPrismDid::from_suffix_str(&operation.id)?;
         let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
-            .map_err(|e| DeactivateOperationError::InvalidPreviousOperationHash { source: e })?;
+            .map_err(|e| DeactivateDidOperationError::InvalidPreviousOperationHash { source: e })?;
 
         Ok(Self {
             id,
@@ -361,7 +343,7 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn parse(public_key: &proto::PublicKey, param: &ProtocolParameter) -> Result<Self, PublicKeyError> {
+    pub fn parse(public_key: &proto::PublicKey, param: &OperationParameters) -> Result<Self, PublicKeyError> {
         let id = PublicKeyId::parse(&public_key.id, param.max_id_size).map_err(|e| PublicKeyError::InvalidKeyId {
             source: e,
             id: public_key.id.to_string(),
@@ -370,38 +352,33 @@ impl PublicKey {
         let Some(key_data) = &public_key.key_data else {
             Err(PublicKeyError::MissingKeyData { id: id.clone() })?
         };
-        let pk = NonMasterPublicKey::parse(key_data)
+        let pk = NonOperationPublicKey::parse(key_data)
             .map_err(|e| PublicKeyError::InvalidKeyData {
                 source: e,
                 id: id.clone(),
             })?
             .ok_or_else(|| PublicKeyError::UnsupportedCurve { id: id.clone() })?;
         let data = match (usage, pk) {
-            (KeyUsage::MasterKey, NonMasterPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
+            (KeyUsage::MasterKey, NonOperationPublicKey::Secp256k1(pk)) => PublicKeyData::Master { data: pk },
             (KeyUsage::MasterKey, _) => Err(PublicKeyError::MasterKeyNotSecp256k1 { id: id.clone() })?,
+            (KeyUsage::VdrKey, NonOperationPublicKey::Secp256k1(pk)) => PublicKeyData::Vdr { data: pk },
+            (KeyUsage::VdrKey, _) => Err(PublicKeyError::VdrKeyNotSecp256k1 { id: id.clone() })?,
             (usage, pk) => PublicKeyData::Other { data: pk, usage },
         };
 
         Ok(Self { id, data })
     }
-
-    pub fn usage(&self) -> KeyUsage {
-        match &self.data {
-            PublicKeyData::Master { .. } => KeyUsage::MasterKey,
-            PublicKeyData::Other { usage, .. } => *usage,
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[enum_dispatch(EncodeVec)]
-pub enum NonMasterPublicKey {
+pub enum NonOperationPublicKey {
     Secp256k1(Secp256k1PublicKey),
     Ed25519(Ed25519PublicKey),
     X25519(X25519PublicKey),
 }
 
-impl NonMasterPublicKey {
+impl NonOperationPublicKey {
     pub fn parse(key_data: &KeyData) -> Result<Option<Self>, CryptoError> {
         let curve_name: &str = match key_data {
             KeyData::EcKeyData(k) => &k.curve,
@@ -423,44 +400,62 @@ impl NonMasterPublicKey {
                 data.push(0x04);
                 data.extend_from_slice(k.x.as_ref());
                 data.extend_from_slice(k.y.as_ref());
-                data.to_public_key()?
+                Secp256k1PublicKey::from_slice(&data)?
             }
-            KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
+            KeyData::CompressedEcKeyData(k) => Secp256k1PublicKey::from_slice(&k.data)?,
         };
         Ok(pk)
     }
 
     fn convert_ed25519(key_data: &KeyData) -> Result<Ed25519PublicKey, CryptoError> {
         let pk = match key_data {
-            KeyData::EcKeyData(k) => k.x.to_public_key()?,
-            KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
+            KeyData::EcKeyData(k) => Ed25519PublicKey::from_slice(&k.x)?,
+            KeyData::CompressedEcKeyData(k) => Ed25519PublicKey::from_slice(&k.data)?,
         };
         Ok(pk)
     }
 
     fn convert_x25519(key_data: &KeyData) -> Result<X25519PublicKey, CryptoError> {
         let pk = match key_data {
-            KeyData::EcKeyData(k) => k.x.to_public_key()?,
-            KeyData::CompressedEcKeyData(k) => k.data.to_public_key()?,
+            KeyData::EcKeyData(k) => X25519PublicKey::from_slice(&k.x)?,
+            KeyData::CompressedEcKeyData(k) => X25519PublicKey::from_slice(&k.data)?,
         };
         Ok(pk)
     }
 }
 
-impl EncodeJwk for NonMasterPublicKey {
+impl EncodeJwk for NonOperationPublicKey {
     fn encode_jwk(&self) -> identus_apollo::jwk::Jwk {
         match self {
-            NonMasterPublicKey::Secp256k1(pk) => pk.encode_jwk(),
-            NonMasterPublicKey::Ed25519(pk) => pk.encode_jwk(),
-            NonMasterPublicKey::X25519(pk) => pk.encode_jwk(),
+            NonOperationPublicKey::Secp256k1(pk) => pk.encode_jwk(),
+            NonOperationPublicKey::Ed25519(pk) => pk.encode_jwk(),
+            NonOperationPublicKey::X25519(pk) => pk.encode_jwk(),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicKeyData {
-    Master { data: Secp256k1PublicKey },
-    Other { data: NonMasterPublicKey, usage: KeyUsage },
+    Master {
+        data: Secp256k1PublicKey,
+    },
+    Vdr {
+        data: Secp256k1PublicKey,
+    },
+    Other {
+        data: NonOperationPublicKey,
+        usage: KeyUsage,
+    },
+}
+
+impl PublicKeyData {
+    pub fn usage(&self) -> KeyUsage {
+        match &self {
+            Self::Master { .. } => KeyUsage::MasterKey,
+            Self::Vdr { .. } => KeyUsage::VdrKey,
+            Self::Other { usage, .. } => *usage,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -472,6 +467,7 @@ pub enum KeyUsage {
     RevocationKey,
     CapabilityInvocationKey,
     CapabilityDelegationKey,
+    VdrKey,
 }
 
 impl KeyUsage {
@@ -484,6 +480,7 @@ impl KeyUsage {
             proto::KeyUsage::RevocationKey => Some(Self::RevocationKey),
             proto::KeyUsage::CapabilityInvocationKey => Some(Self::CapabilityInvocationKey),
             proto::KeyUsage::CapabilityDelegationKey => Some(Self::CapabilityDelegationKey),
+            proto::KeyUsage::VdrKey => Some(Self::VdrKey),
             proto::KeyUsage::UnknownKey => None,
         }
     }
@@ -497,7 +494,7 @@ pub struct Service {
 }
 
 impl Service {
-    pub fn parse(service: &proto::Service, param: &ProtocolParameter) -> Result<Self, ServiceError> {
+    pub fn parse(service: &proto::Service, param: &OperationParameters) -> Result<Self, ServiceError> {
         let id = ServiceId::parse(&service.id, param.max_id_size).map_err(|e| ServiceError::InvalidServiceId {
             source: e,
             id: service.id.to_string(),
@@ -528,7 +525,7 @@ pub enum ServiceType {
 }
 
 impl ServiceType {
-    pub fn parse(service_type: &str, param: &ProtocolParameter) -> Result<Self, ServiceTypeError> {
+    pub fn parse(service_type: &str, param: &OperationParameters) -> Result<Self, ServiceTypeError> {
         if service_type.len() > param.max_type_size {
             Err(ServiceTypeError::ExceedMaxSize {
                 limit: param.max_type_size,
@@ -579,7 +576,7 @@ pub enum ServiceEndpoint {
 }
 
 impl ServiceEndpoint {
-    pub fn parse(service_endpoint: &str, param: &ProtocolParameter) -> Result<Self, ServiceEndpointError> {
+    pub fn parse(service_endpoint: &str, param: &OperationParameters) -> Result<Self, ServiceEndpointError> {
         if service_endpoint.len() > param.max_service_endpoint_size {
             Err(ServiceEndpointError::ExceedMaxSize {
                 limit: param.max_service_endpoint_size,

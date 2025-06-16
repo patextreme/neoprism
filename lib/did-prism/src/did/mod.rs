@@ -1,19 +1,22 @@
+use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::LazyLock;
 
 use enum_dispatch::enum_dispatch;
 use error::DidSyntaxError;
 use identus_apollo::base64::Base64UrlStrNoPad;
-use identus_apollo::hash::{Sha256Digest, sha256};
+use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use identus_did_core::Did;
 use prost::Message;
 use regex::Regex;
 
 use self::operation::{PublicKey, Service};
-use crate::proto::AtalaOperation;
-use crate::proto::atala_operation::Operation;
+use crate::did::operation::StorageData;
+use crate::proto::PrismOperation;
+use crate::proto::prism_operation::Operation;
 
+pub mod did_doc;
 pub mod error;
 pub mod operation;
 
@@ -91,7 +94,7 @@ impl PrismDidOps for LongFormPrismDid {
 }
 
 impl CanonicalPrismDid {
-    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, Error> {
+    pub fn from_operation(operation: &PrismOperation) -> Result<Self, Error> {
         Ok(LongFormPrismDid::from_operation(operation)?.into_canonical())
     }
 
@@ -111,21 +114,21 @@ impl CanonicalPrismDid {
 }
 
 impl LongFormPrismDid {
-    pub fn from_operation(operation: &AtalaOperation) -> Result<Self, Error> {
+    pub fn from_operation(operation: &PrismOperation) -> Result<Self, Error> {
         match operation.operation {
             Some(Operation::CreateDid(_)) => {
                 let bytes = operation.encode_to_vec();
-                let suffix = sha256(bytes.clone());
+                let suffix = operation.operation_hash();
                 let encoded_state = Base64UrlStrNoPad::from(bytes);
                 Ok(Self { suffix, encoded_state })
             }
-            None => Err(Error::OperationMissingFromAtalaOperation),
+            None => Err(Error::OperationMissingFromPrismOperation),
             Some(_) => Err(Error::LongFormDidNotFromCreateOperation),
         }
     }
 
-    pub fn operation(&self) -> Result<AtalaOperation, Error> {
-        let operation = AtalaOperation::decode(self.encoded_state.to_bytes().as_slice()).map_err(|e| {
+    pub fn operation(&self) -> Result<PrismOperation, Error> {
+        let operation = PrismOperation::decode(self.encoded_state.to_bytes().as_slice()).map_err(|e| {
             DidSyntaxError::DidEncodedStateInvalidProto {
                 source: e,
                 did: self.to_string(),
@@ -181,7 +184,7 @@ impl FromStr for PrismDid {
                             source: e,
                             encoded_state: match_group_2.to_string(),
                         })?;
-                let operation = AtalaOperation::decode(encoded_state.to_bytes().as_slice()).map_err(|e| {
+                let operation = PrismOperation::decode(encoded_state.to_bytes().as_slice()).map_err(|e| {
                     DidSyntaxError::DidEncodedStateInvalidProto {
                         source: e,
                         did: s.to_string(),
@@ -215,7 +218,15 @@ impl FromStr for PrismDid {
 pub struct DidState {
     pub did: CanonicalPrismDid,
     pub context: Vec<String>,
-    pub last_operation_hash: Sha256Digest,
+    pub last_operation_hash: Rc<Sha256Digest>,
     pub public_keys: Vec<PublicKey>,
     pub services: Vec<Service>,
+    pub storage: Vec<StorageState>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StorageState {
+    pub init_operation_hash: Rc<Sha256Digest>,
+    pub last_operation_hash: Rc<Sha256Digest>,
+    pub data: Rc<StorageData>,
 }

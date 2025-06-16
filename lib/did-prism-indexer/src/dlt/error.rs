@@ -1,10 +1,11 @@
-use crate::error::StdError;
-use crate::utils::Location;
+use identus_did_prism::utils::Location;
+
+type StdError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum DltError {
-    #[display("unable to bootstrap DLT source")]
-    Bootstrap { source: StdError },
+    #[display("unable to initialize DLT source")]
+    InitSource { source: StdError },
     #[display("timeout receiving event from DLT source {location}")]
     EventRecvTimeout { location: Location },
     #[display("event source has disconnected {location}")]
@@ -18,19 +19,19 @@ pub enum DltError {
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub(crate) enum MetadataReadError {
     #[display("metadata is not a valid json on block {block_hash:?} tx {tx_idx:?}")]
-    InvalidJsonType {
+    InvalidMetadataType {
         source: StdError,
         block_hash: Option<String>,
         tx_idx: Option<usize>,
     },
-    #[display("cannot decode atala_block hex on block {block_hash:?} tx {tx_idx:?}")]
-    AtalaBlockHexDecode {
+    #[display("cannot decode prism_block hex on block {block_hash:?} tx {tx_idx:?}")]
+    PrismBlockHexDecode {
         source: identus_apollo::hex::Error,
         block_hash: Option<String>,
         tx_idx: Option<usize>,
     },
-    #[display("cannot decode atala_block protobuf on block {block_hash:?} tx {tx_idx:?}")]
-    AtalaBlockProtoDecode {
+    #[display("cannot decode prism_block protobuf on block {block_hash:?} tx {tx_idx:?}")]
+    PrismBlockProtoDecode {
         source: prost::DecodeError,
         block_hash: Option<String>,
         tx_idx: Option<usize>,

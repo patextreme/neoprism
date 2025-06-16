@@ -10,7 +10,6 @@ use crate::AppState;
 
 mod components;
 mod features;
-mod models;
 mod urls;
 
 pub fn router(assets_dir: &Path) -> Router<AppState> {

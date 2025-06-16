@@ -8,20 +8,29 @@ use crate::error::InvalidInputSizeError;
 pub enum Error {
     #[display("operation type provided when creating a long-form DID is not CreateDidOperation")]
     LongFormDidNotFromCreateOperation,
-    #[display("operation does not exist in AtalaOperation")]
-    OperationMissingFromAtalaOperation,
+    #[display("operation does not exist in PrismOperation")]
+    OperationMissingFromPrismOperation,
     #[from]
     #[display("invalid did syntax")]
     InvalidDidSyntax { source: DidSyntaxError },
     #[from]
-    #[display("error occurred in CreateOperation")]
-    CreateOperation { source: CreateOperationError },
+    #[display("error occurred in CreateDidOperation")]
+    CreateDidOperation { source: CreateDidOperationError },
     #[from]
-    #[display("error occurred in UpdateOperation")]
-    UpdateOperation { source: UpdateOperationError },
+    #[display("error occurred in UpdateDidOperation")]
+    UpdateDidOperation { source: UpdateDidOperationError },
     #[from]
-    #[display("error occurred in DeactivateOperation")]
-    DeactivateOperation { source: DeactivateOperationError },
+    #[display("error occurred in DeactivateDidOperation")]
+    DeactivateDidOperation { source: DeactivateDidOperationError },
+    #[from]
+    #[display("error occurred in CreateStorageOperation")]
+    CreateStorageOperation { source: CreateStorageOperationError },
+    #[from]
+    #[display("error occurred in UpdateStorageOperation")]
+    UpdateStorageOperation { source: UpdateStorageOperationError },
+    #[from]
+    #[display("error occurred in DeactivateStorageOperation")]
+    DeactivateStorageOperation { source: DeactivateStorageOperationError },
 }
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
@@ -56,54 +65,54 @@ pub enum DidSyntaxError {
 }
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
-pub enum CreateOperationError {
-    #[display("missing did_data in CreateOperation")]
+pub enum CreateDidOperationError {
+    #[display("missing did_data in CreateDidOperation")]
     MissingDidData,
-    #[display("no master key found in CreateOperation")]
+    #[display("no master key found in CreateDidOperation")]
     MissingMasterKey,
     #[from]
-    #[display("invalid public key found in CreateOperation")]
+    #[display("invalid public key found in CreateDidOperation")]
     InvalidPublicKey { source: PublicKeyError },
     #[from]
-    #[display("invalid service found in CreateOperation")]
+    #[display("invalid service found in CreateDidOperation")]
     InvalidService { source: ServiceError },
     #[display("invalid input size for public keys")]
     TooManyPublicKeys { source: InvalidInputSizeError },
     #[display("invalid input size for services")]
     TooManyServices { source: InvalidInputSizeError },
-    #[display("duplicate context found in CreateOperation")]
+    #[display("duplicate context found in CreateDidOperation")]
     DuplicateContext,
 }
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
-pub enum UpdateOperationError {
-    #[display("update action does not exist in UpdateOperation")]
+pub enum UpdateDidOperationError {
+    #[display("update action does not exist in UpdateDidOperation")]
     EmptyAction,
     #[from]
-    #[display("invalid previous operation hash in UpdateOperation")]
+    #[display("invalid previous operation hash in UpdateDidOperation")]
     InvalidPreviousOperationHash { source: identus_apollo::hash::Error },
     #[from]
-    #[display("did provided in UpdateOperation is not valid")]
+    #[display("did provided in UpdateDidOperation is not valid")]
     InvalidDidSyntax { source: DidSyntaxError },
-    #[display("update action type '{action_type}' in UpdateOperation is missing a field '{field_name}'")]
+    #[display("update action type '{action_type}' in UpdateDidOperation is missing a field '{field_name}'")]
     MissingUpdateActionData {
         action_type: &'static str,
         field_name: &'static str,
     },
     #[from]
-    #[display("invalid public key found in CreateOperation")]
+    #[display("invalid public key found in CreateDidOperation")]
     InvalidPublicKey { source: PublicKeyError },
     #[from]
-    #[display("invalid service found in CreateOperation")]
+    #[display("invalid service found in CreateDidOperation")]
     InvalidService { source: ServiceError },
 }
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
-pub enum DeactivateOperationError {
-    #[display("invalid previous operation hash in DeactivateOperation")]
+pub enum DeactivateDidOperationError {
+    #[display("invalid previous operation hash in DeactivateDidOperation")]
     InvalidPreviousOperationHash { source: identus_apollo::hash::Error },
     #[from]
-    #[display("did provided in DeactivateOperation is not valid")]
+    #[display("did provided in DeactivateDidOperation is not valid")]
     InvalidDidSyntax { source: DidSyntaxError },
 }
 
@@ -124,6 +133,11 @@ pub enum PublicKeyError {
     },
     #[display("master key id {id} does not have key type of secp256k1")]
     MasterKeyNotSecp256k1 {
+        #[error(not(source))]
+        id: PublicKeyId,
+    },
+    #[display("vdr key id {id} does not have key type of secp256k1")]
+    VdrKeyNotSecp256k1 {
         #[error(not(source))]
         id: PublicKeyId,
     },
@@ -199,4 +213,27 @@ pub enum ServiceEndpointError {
     Empty,
     #[display("service endpoint does not conform to the syntax")]
     InvalidSyntax,
+}
+
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+pub enum CreateStorageOperationError {
+    #[from]
+    #[display("did provided in CreateStorageOperation is not valid")]
+    InvalidDidSyntax { source: DidSyntaxError },
+    #[display("missing storage data in CreateStorageOperation")]
+    EmptyStorageData,
+}
+
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+pub enum UpdateStorageOperationError {
+    #[display("invalid previous operation hash in UpdateStorageOperation")]
+    InvalidPreviousOperationHash { source: identus_apollo::hash::Error },
+    #[display("missing storage data in UpdateStorageOperation")]
+    EmptyStorageData,
+}
+
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+pub enum DeactivateStorageOperationError {
+    #[display("invalid previous operation hash in UpdateStorageOperation")]
+    InvalidPreviousOperationHash { source: identus_apollo::hash::Error },
 }

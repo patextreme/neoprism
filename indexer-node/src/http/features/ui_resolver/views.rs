@@ -1,16 +1,17 @@
 use std::error::Report;
 
+use identus_apollo::hex::HexStr;
 use identus_apollo::jwk::EncodeJwk;
 use identus_did_core::{Did, DidDocument};
 use identus_did_prism::did::operation::{self, PublicKey};
-use identus_did_prism::did::{DidState, PrismDid, PrismDidOps};
-use identus_did_prism::dlt::{NetworkIdentifier, OperationMetadata};
-use identus_did_prism::proto::SignedAtalaOperation;
+use identus_did_prism::did::{DidState, PrismDid, PrismDidOps, StorageState};
+use identus_did_prism::dlt::OperationMetadata;
+use identus_did_prism::proto::SignedPrismOperation;
 use identus_did_prism::protocol::error::ProcessError;
+use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use maud::{Markup, html};
 
 use crate::app::service::error::ResolutionError;
-use crate::http::models::new_did_document;
 use crate::http::{components, urls};
 
 pub fn index(network: Option<NetworkIdentifier>) -> Markup {
@@ -22,7 +23,7 @@ pub fn resolve(
     network: Option<NetworkIdentifier>,
     did_str: &str,
     did_state: Result<(PrismDid, DidState), ResolutionError>,
-    did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>,
+    did_debug: Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>,
 ) -> Markup {
     let resolution_body = match did_state.as_ref() {
         Err(e) => resolution_error_body(e),
@@ -85,18 +86,20 @@ fn resolution_error_body(error: &ResolutionError) -> Markup {
 }
 
 fn did_document_body(did: &Did, state: &DidState) -> Markup {
-    let did_doc = new_did_document(did, state);
+    let did_doc = state.to_did_document(did);
     let contexts = state.context.as_slice();
     let public_keys = state.public_keys.as_slice();
     let did_doc_url = urls::ApiDid::new_uri(did.to_string());
+    let storages = &state.storage;
     html! {
         div class="flex justify-center w-full" {
             div class="w-full m-4 space-y-4" {
-                p class="text-2xl font-bold" { "DID document" }
+                p class="text-2xl font-bold" { "DID state" }
                 a class="btn btn-xs btn-outline" href=(did_doc_url) target="_blank" { "Resolver API" }
                 (context_card(contexts))
                 (public_key_card(public_keys))
                 (service_card(&did_doc))
+                (storage_card(&storages))
             }
         }
     }
@@ -129,10 +132,11 @@ fn public_key_card(public_keys: &[PublicKey]) -> Markup {
         .map(|pk| {
             let jwk = match &pk.data {
                 operation::PublicKeyData::Master { data } => data.encode_jwk(),
+                operation::PublicKeyData::Vdr { data } => data.encode_jwk(),
                 operation::PublicKeyData::Other { data, .. } => data.encode_jwk(),
             };
             let key_id = pk.id.to_string();
-            let key_usage = format!("{:?}", pk.usage());
+            let key_usage = format!("{:?}", pk.data.usage());
             let curve = jwk.crv;
             let encoded_x = jwk.x.map(|i| i.to_string()).unwrap_or_default();
             let encoded_y = jwk.y.map(|i| i.to_string()).unwrap_or_default();
@@ -204,7 +208,48 @@ fn service_card(did_doc: &DidDocument) -> Markup {
     }
 }
 
-fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedAtalaOperation, Option<ProcessError>)>) -> Markup {
+fn storage_card(storages: &[StorageState]) -> Markup {
+    let mut sorted_storages = storages.to_vec();
+    sorted_storages.sort_by_key(|s| s.init_operation_hash.to_vec());
+
+    let storage_elems = sorted_storages
+        .iter()
+        .map(|s| {
+            let init_hash_hex = HexStr::from(s.init_operation_hash.as_bytes()).to_string();
+            let last_hash_hex = HexStr::from(s.last_operation_hash.as_bytes()).to_string();
+            let data = format!("{:?}", s.data);
+            html! {
+                li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
+                    strong { "Init operation hash: " } (init_hash_hex)
+                    br;
+                    strong { "Last operation hash: " } (last_hash_hex)
+                    br;
+                    strong { "Data: " }
+                    br;
+                    div class="bg-base-300 font-mono text-sm text-neutral-content p-3" {
+                        (data)
+                    }
+                }
+            }
+        })
+        .collect::<Vec<_>>();
+
+    html! {
+        div class="card bg-base-200 border border-gray-700" {
+            div class="card-body" {
+                h2 class="card-title" { "VDR entries" }
+                @if storage_elems.is_empty() {
+                    p class="text-neutral-content" { "Empty" }
+                }
+                ul class="space-y-2" {
+                    @for elem in storage_elems { (elem) }
+                }
+            }
+        }
+    }
+}
+
+fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>) -> Markup {
     let op_elems = did_debug
         .iter()
         .map(|(metadata, signed_op, error)| {
