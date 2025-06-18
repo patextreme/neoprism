@@ -103,9 +103,7 @@ impl OperationRepo for PostgresDb {
             .db_ctx
             .list::<entity::RawOperationByDid>(
                 &mut tx,
-                Filter::all([Filter::all([
-                    entity::RawOperationByDidFilter::did().eq(suffix_bytes.into())
-                ])]),
+                Filter::all([entity::RawOperationByDidFilter::did().eq(suffix_bytes.into())]),
                 Sort::empty(),
                 None,
             )
