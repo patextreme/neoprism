@@ -1,9 +1,7 @@
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
 use identus_did_prism::did::operation::KeyUsage;
-use identus_did_prism::proto;
 use identus_did_prism::protocol::resolver;
-
-mod test_utils;
+use identus_did_prism::{proto, test_utils};
 
 #[test]
 fn create_did_only_master_key() {

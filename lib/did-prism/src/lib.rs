@@ -6,6 +6,9 @@ pub mod prelude;
 pub mod protocol;
 pub mod utils;
 
+#[cfg(any(test, feature = "test-utils"))]
+pub mod test_utils;
+
 #[allow(clippy::doc_lazy_continuation)]
 pub mod proto {
     use identus_apollo::hash::{Sha256Digest, sha256};

@@ -4,11 +4,9 @@ use std::str::FromStr;
 use identus_apollo::hex::HexStr;
 use identus_did_prism::did::CanonicalPrismDid;
 use identus_did_prism::did::operation::StorageData;
-use identus_did_prism::proto;
 use identus_did_prism::protocol::resolver;
+use identus_did_prism::{proto, test_utils};
 use prost::Message;
-
-mod test_utils;
 
 #[test]
 fn input_from_scala_did() {

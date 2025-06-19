@@ -39,3 +39,4 @@ indexer-storage = { workspace = true }
 
 [dev-dependencies]
 prost = { workspace = true }
+identus-did-prism = { workspace = true, features = ["test-utils"] }
