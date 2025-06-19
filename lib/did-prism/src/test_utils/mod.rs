@@ -1,11 +1,10 @@
-#![allow(dead_code)]
-
 use chrono::DateTime;
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
 use identus_apollo::hash::Sha256Digest;
-use identus_did_prism::dlt::{BlockMetadata, OperationMetadata};
-use identus_did_prism::proto;
 use prost::Message;
+
+use crate::dlt::{BlockMetadata, OperationMetadata};
+use crate::proto;
 
 const MASTER_KEY: [u8; 32] = [1; 32];
 const MASTER_KEY_NAME: &str = "master-0";

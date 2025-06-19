@@ -1,14 +1,10 @@
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
 use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::did::{CanonicalPrismDid, PrismDidOps};
-use identus_did_prism::proto;
+use identus_did_prism::{proto, test_utils};
 use identus_did_prism_indexer::repo::OperationRepo;
 use identus_did_prism_indexer::run_indexer_loop;
 use indexer_storage::PostgresDb;
-
-// FIXME: shared test crate
-#[path = "../../lib/did-prism/tests/test_utils/mod.rs"]
-mod test_utils;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

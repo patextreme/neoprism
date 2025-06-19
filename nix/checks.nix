@@ -17,7 +17,7 @@ in
     ];
     buildPhase = "cargo b --all-features --all-targets";
     checkPhase = ''
-      sqlfluff lint --dialect postgres ./indexer-storage/migrations
+      sqlfluff lint --dialect postgres ./lib/indexer-storage/migrations
       cargo fmt --check
       cargo clippy --all-features --all-targets -- -D warnings
       cargo test --all-features

@@ -40,78 +40,85 @@ WebUI is available at `http://localhost:8080`
 
 Resolver endpoint is availabe at `http://localhost:8080/api/dids/<did>`
 
-## Run from Cargo
 
-Cargo alias `node` can be used to quickly see all CLI options.
+# Development guide
+
+This project uses Nix for the local development environment and artifact packaging.
+Follow the instructions [here](https://nixos.org/download/#download-nix) to install Nix—it's all you need!
+
+__Entering the development shell__
+
+If you already have `cargo` and other required dependencies (e.g. `protoc`) installed, you can use your own environment.
+Feel free to check [nix shell](./nix/devShells.nix) to see the required dependencies and port it to your own environment.
+
+A recommended approach is to use `nix develop` command to enter the development shell.
+This way, the development shell is consistent and the same version of the libraries are used to build and test.
+
 
 ```bash
-cargo node -h
+nix develop
+
+# you can now run command like "cargo version"
+```
+Note that you may need to enable experiment flake command. Please follow the intructions [here](https://nixos.wiki/wiki/Flakes).
+
+Additionally, you can use `--unset <ENV>` to disable host environment variable to make development shell more pure.
+For example:
+
+```bash
+nix develop --unset PATH
 ```
 
-## About this project
+to disable all binaries available on host `PATH`.
 
-This project aims to enhance efficiency and simplify the [Hyperledger Identus](https://www.lfdecentralizedtrust.org/projects/identus) stack by eliminating the
-DB-sync requirement in [IOG's PRISM Node implementation](https://github.com/input-output-hk/atala-prism).
 
-The project is maintained on a casual basis as my personal time permits, but feel free to open an issue or a pull request.
-Contributions are always welcome.
+## Development quickstart
 
-# Deployment
+Spinning up services in dev shell
 
-The workspace generates a single runnable binary under the `prism-node` crate with the following CLI options:
-
-```
-Usage: prism-node [OPTIONS] --db <DB_URL>
-
-Options:
-      --db <DB_URL>                Database URL (e.g. postgres://user:pass@host:5432/db)
-      --skip-migration             Skip database migration on Node startup
-      --cardano <CARDANO_ADDR>     Address of the Cardano node to consume events from. If not provided, the Node will not sync events from the Cardano node. (e.g. backbone.mainnet.cardanofoundation.org:3001)
-      --network <CARDANO_NETWORK>  A Cardano network to connect to. This option must correlate with the network of the node address provided [default: mainnet]
-      --address <ADDRESS>          Node HTTP server binding address [default: 0.0.0.0]
-  -p, --port <PORT>                Node HTTP server listening port [default: 8080]
-      --assets <ASSETS>            The directory containing the web-ui assets (CSS, Javascripts) [default: ./prism-node/assets]
-  -h, --help                       Print help
+```bash
+nix develop --unset PATH
+npm install
+dbUp
+runNode
 ```
 
-The CLI options enable flexible deployment based on specific needs.
+Cleaning up services in dev shell
 
-A fully functional deployment includes:
+```bash
+dbDown
+```
 
-- `server` – Provides the web UI and a universal resolver endpoint.
-- `sync worker` – Tracks the Cardano node, indexes DID operations, and stores them in the database.
-- `database` – PostgreSQL for data storage.
-- `cardano node` – Serves as the verifiable data registry for DID operations.
+## Frequently used commands
 
-A system operator can use any trusted public `cardano node` instance.
-However, for better performance, the `sync worker` should run close to the `cardano node`, ideally on the same network or host.
+These are commands you can run outside the development shell
 
-## Standalone mode
+| command | description |
+|-|-|
+| `nix flake check` | Run checks to see if it will pass the CI (CI runs this check) |
+| `nix build .#indexer-docker` | Use nix to build the docker image (output available at `./result`) |
+| `nix build .#indexer-docker && cat ./result \| docker load` | Use nix to build the docker image and load it using docker |
 
-In this mode, all components run within a single container.
-To enable this mode, use the following options:
+Assuming you are in the development shell, these are frequently used commands.
 
-- `--cardano=<address>` - to enable the sync worker
+| command | description |
+|-|-|
+| `npm install` | Install the npm dependencies (first time only) |
+| `cargo build` | Build the cargo workspace |
+| `cargo clean` | Clean the cargo workspace |
+| `cargo r -p indexer-node -- -h` | See `indexer-node` service CLI options |
+| `cargo test --all-features` | Run tests which enable all crate features |
 
-![](./docs/diagrams/deploy_standalone.png)
+And these are some scripts provided by the shell to automate local dev workflow
 
-## High-availability mode
-
-In this mode, the `sync worker` and `server` run in separate containers.
-Since multiple containers are used, specific options must be set for each.
-
-- One or more `server` can serve users and clients, connecting to a shared PostgreSQL (optionally in HA mode).
-- A single `sync worker` indexes operations from Cardano.
-
-for `worker` container, use
-
-- `--cardano=<address>` - to enable the sync worker
-
-for `server` container, use
-- `--skip-migration` - to disable db migration
-
-Make sure to not set `--cardano=<address>` for the `server` as
-multiple sync workers are redundnat and may conflict the sync cursor.
-
-![](./docs/diagrams/deploy_ha.png)
-
+| command | description |
+|-|-|
+| `format` | Run formatter on everything |
+| `build` | Building the whole project |
+| `buildAssets` | Building the WebUI assets (css, javascript, static assets) |
+| `dbUp` | Spin up the local database |
+| `dbDown` | Tear down the local database |
+| `pgDump` | Dump the local database to `postgres.dump` file |
+| `pgRestore` | Restore the local database from `postgres.dump` file |
+| `runNode` | Run the `indexer-node` connecting to the local database |
+| `runNode --cardano <ADDR>` | Run the `indexer-node` connecting to the cardano relay at `ADDR` |

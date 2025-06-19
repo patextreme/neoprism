@@ -35,3 +35,7 @@ identus-apollo = { workspace = true, features = [
 
 [build-dependencies]
 prost-build = { workspace = true }
+
+[features]
+default = []
+test-utils = []

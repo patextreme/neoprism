@@ -1,0 +1,28 @@
+services:
+  indexer-node:
+    build:
+      dockerfile: ./docker/Dockerfile
+      context: ..
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      RUST_LOG: oura=warn,prism_core=debug,prism_node=debug,tracing::span=warn,info
+    entrypoint: /app/bin/indexer-node
+    command:
+      - --db
+      - postgres://postgres:postgres@db:5432/postgres
+      - --cardano
+      - backbone.mainnet.cardanofoundation.org:3001
+      - --assets
+      - /app/assets
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres

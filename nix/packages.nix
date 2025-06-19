@@ -7,7 +7,7 @@ let
   };
 in
 rec {
-  resolver-ui-assets =
+  indexer-ui-assets =
     let
       npmDeps = pkgs.buildNpmPackage {
         name = "assets-nodemodules";
@@ -26,13 +26,13 @@ rec {
       installPhase = ''
         mkdir -p ./node_modules
         cp -r ${npmDeps}/* ./node_modules
-        cd indexer-node
+        cd ./service/indexer-node
         mkdir -p $out/assets
         tailwindcss -i ./tailwind.css -o $out/assets/styles.css
       '';
     };
 
-  resolver-bin = rustPlatform.buildRustPackage {
+  indexer-bin = rustPlatform.buildRustPackage {
     name = "neoprism";
     src = pkgs.lib.cleanSource ./..;
     cargoLock = (import ./cargo.nix).cargoLock;
@@ -41,13 +41,13 @@ rec {
     PROTOC = "${pkgs.protobuf}/bin/protoc";
   };
 
-  resolver-docker = pkgs.dockerTools.buildLayeredImage {
+  indexer-docker = pkgs.dockerTools.buildLayeredImage {
     name = "neoprism";
     tag = "0.1.0-SNAPSHOT";
     created = "now";
     contents = [
-      resolver-bin
-      resolver-ui-assets
+      indexer-bin
+      indexer-ui-assets
     ];
     config = {
       Env = [ "RUST_LOG=info,oura=warn" ];
