@@ -4,3 +4,4 @@
 *.dump
 node_modules/
 result
+docker/
