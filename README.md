@@ -41,7 +41,7 @@ WebUI is available at `http://localhost:8080`
 Resolver endpoint is availabe at `http://localhost:8080/api/dids/<did>`
 
 
-# Contributing
+# Development guide
 
 This project uses Nix for the local development environment and artifact packaging.
 Follow the instructions [here](https://nixos.org/download/#download-nix) to install Nix—it's all you need!
@@ -71,6 +71,23 @@ nix develop --unset PATH
 
 to disable all binaries available on host `PATH`.
 
+
+## Development quickstart
+
+Spinning up services in dev shell
+
+```bash
+nix develop --unset PATH
+npm install
+dbUp
+runNode
+```
+
+Cleaning up services in dev shell
+
+```bash
+dbDown
+```
 
 ## Frequently used commands
 
