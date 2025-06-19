@@ -49,6 +49,7 @@ Follow the instructions [here](https://nixos.org/download/#download-nix) to inst
 __Entering the development shell__
 
 If you already have `cargo` and other required dependencies (e.g. `protoc`) installed, you can use your own environment.
+Feel free to check [nix shell](./nix/devShells.nix) to see the required dependencies and port it to your own environment.
 
 A recommended approach is to use `nix develop` command to enter the development shell.
 This way, the development shell is consistent and the same version of the libraries are used to build and test.
