@@ -5,8 +5,8 @@ members = [
   "lib/did-core",
   "lib/did-prism",
   "lib/did-prism-indexer",
-  "indexer-node",
-  "indexer-storage",
+  "lib/indexer-storage",
+  "service/indexer-node",
 ]
 
 [workspace.package]
@@ -20,7 +20,7 @@ identus-apollo = { path = "lib/apollo" }
 identus-did-core = { path = "lib/did-core" }
 identus-did-prism = { path = "lib/did-prism" }
 identus-did-prism-indexer = { path = "lib/did-prism-indexer" }
-indexer-storage = { path = "indexer-storage" }
+indexer-storage = { path = "lib/indexer-storage" }
 # general
 anyhow = "1"
 async-trait = "0.1"

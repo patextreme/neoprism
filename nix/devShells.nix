@@ -16,15 +16,15 @@
           find . | grep '\.nix$' | xargs -I _ bash -c "echo running nixfmt on _ && ${pkgs.nixfmt-rfc-style}/bin/nixfmt _"
           find . | grep '\.toml$' | xargs -I _ bash -c "echo running taplo on _ && ${pkgs.taplo}/bin/taplo format _"
 
-          ${pkgs.sqlfluff}/bin/sqlfluff fix ./indexer-storage/migrations
-          ${pkgs.sqlfluff}/bin/sqlfluff lint ./indexer-storage/migrations
-
-          ${pkgs.dioxus-cli}/bin/dx fmt
           ${rust}/bin/cargo fmt
+
+          cd ${rootDir}/lib/indexer-storage/migrations
+          ${pkgs.sqlfluff}/bin/sqlfluff fix .
+          ${pkgs.sqlfluff}/bin/sqlfluff lint .
         '';
 
         buildAssets = pkgs.writeShellScriptBin "buildAssets" ''
-          cd ${rootDir}/indexer-node
+          cd ${rootDir}/service/indexer-node
           ${pkgs.tailwindcss_4}/bin/tailwindcss -i tailwind.css -o ./assets/styles.css
         '';
 

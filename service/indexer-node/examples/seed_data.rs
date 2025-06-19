@@ -7,7 +7,7 @@ use identus_did_prism_indexer::run_indexer_loop;
 use indexer_storage::PostgresDb;
 
 // FIXME: shared test crate
-#[path = "../../lib/did-prism/tests/test_utils/mod.rs"]
+#[path = "../../../lib/did-prism/tests/test_utils/mod.rs"]
 mod test_utils;
 
 #[tokio::main]
