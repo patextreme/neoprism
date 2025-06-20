@@ -28,7 +28,7 @@ pub struct CliArgs {
     #[arg(short, long, default_value_t = 8080)]
     pub port: u16,
     /// The directory containing the web-ui assets (CSS, Javascripts)
-    #[arg(long, default_value = "./indexer-node/assets")]
+    #[arg(long, default_value = "./service/indexer-node/assets")]
     pub assets: PathBuf,
 }
 
