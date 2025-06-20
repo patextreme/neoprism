@@ -3,8 +3,7 @@ use std::collections::VecDeque;
 use super::{OperationProcessingContext, ProcessError, Published, init_published_context};
 use crate::did::DidState;
 use crate::dlt::OperationMetadata;
-use crate::prelude::PrismOperation;
-use crate::proto::SignedPrismOperation;
+use crate::prelude::*;
 use crate::protocol::init_unpublished_context;
 
 type OperationList = VecDeque<(OperationMetadata, SignedPrismOperation)>;

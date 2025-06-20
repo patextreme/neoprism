@@ -51,7 +51,7 @@ pub enum DidSyntaxError {
         encoded_state: String,
     },
     #[display("did suffix {did} cannot be decoded into protobuf message")]
-    DidEncodedStateInvalidProto { source: prost::DecodeError, did: String },
+    DidEncodedStateInvalidProto { source: protobuf::Error, did: String },
     #[display("unrecognized did pattern {did}")]
     DidSyntaxInvalid {
         #[error(not(source))]

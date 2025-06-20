@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use crate::proto::PrismObject;
+use crate::proto::prism::PrismObject;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DltCursor {

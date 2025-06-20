@@ -8,13 +8,13 @@ use identus_apollo::base64::Base64UrlStrNoPad;
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use identus_did_core::Did;
-use prost::Message;
 use regex::Regex;
 
 use self::operation::{PublicKey, Service};
 use crate::did::operation::StorageData;
-use crate::proto::PrismOperation;
-use crate::proto::prism_operation::Operation;
+use crate::prelude::*;
+use crate::proto::prism::PrismOperation;
+use crate::proto::prism::prism_operation::Operation;
 
 pub mod did_doc;
 pub mod error;

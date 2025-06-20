@@ -6,17 +6,17 @@ use chrono::DateTime;
 use enum_dispatch::enum_dispatch;
 use error::{DidStateConflictError, ProcessError};
 use identus_apollo::hash::Sha256Digest;
+use protobuf::SpecialFields;
 
 use self::v1::V1Processor;
 use crate::did::operation::{PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType, StorageData};
 use crate::did::{CanonicalPrismDid, DidState, StorageState};
 use crate::dlt::{BlockMetadata, OperationMetadata};
-use crate::prelude::PrismOperation;
-use crate::proto::prism_operation::Operation;
-use crate::proto::{
-    ProtoCreateDid, ProtoCreateStorageEntry, ProtoDeactivateDid, ProtoDeactivateStorageEntry,
-    ProtoProtocolVersionUpdate, ProtoUpdateDid, ProtoUpdateStorageEntry, SignedPrismOperation,
-};
+use crate::prelude::*;
+use crate::proto::prism::prism_operation::Operation;
+use crate::proto::prism_ssi::{ProtoCreateDID, ProtoDeactivateDID, ProtoUpdateDID};
+use crate::proto::prism_storage::{ProtoCreateStorageEntry, ProtoDeactivateStorageEntry, ProtoUpdateStorageEntry};
+use crate::proto::prism_version::ProtoProtocolVersionUpdate;
 
 pub mod error;
 pub mod resolver;
@@ -323,7 +323,7 @@ fn init_published_context(
     signed_operation: SignedPrismOperation,
     metadata: OperationMetadata,
 ) -> Result<OperationProcessingContext<Published>, ProcessError> {
-    let Some(operation) = &signed_operation.operation else {
+    let Some(operation) = signed_operation.operation.as_ref() else {
         Err(ProcessError::SignedPrismOperationMissingOperation)?
     };
 
@@ -332,7 +332,8 @@ fn init_published_context(
         Some(Operation::CreateDid(op)) => {
             let initial_state = DidStateRc::new(did);
             let processor = OperationProcessor::V1(V1Processor::default());
-            let candidate_state = processor.create_did(&initial_state, op.clone(), metadata)?;
+            let candidate_state =
+                processor.create_did(&initial_state, metadata, op.clone(), operation.special_fields.clone())?;
             processor.check_signature(&candidate_state, &signed_operation)?;
             Ok(OperationProcessingContext {
                 r#type: PhantomData,
@@ -362,7 +363,12 @@ fn init_unpublished_context(
         Some(Operation::CreateDid(op)) => {
             let initial_state = DidStateRc::new(did);
             let processor = OperationProcessor::V1(V1Processor::default());
-            let candidate_state = processor.create_did(&initial_state, op.clone(), unpublished_metadata)?;
+            let candidate_state = processor.create_did(
+                &initial_state,
+                unpublished_metadata,
+                op.clone(),
+                operation.special_fields.clone(),
+            )?;
             Ok(OperationProcessingContext {
                 r#type: PhantomData,
                 state: candidate_state,
@@ -391,7 +397,7 @@ impl OperationProcessingContext<Published> {
             return (self, Some(e));
         }
 
-        let Some(operation) = signed_operation.operation else {
+        let Some(operation) = signed_operation.operation.into_option() else {
             return (self, Some(ProcessError::SignedPrismOperationMissingOperation));
         };
 
@@ -399,27 +405,27 @@ impl OperationProcessingContext<Published> {
             Some(Operation::CreateDid(_)) => Err(ProcessError::DidStateUpdateFromCreateOperation),
             Some(Operation::UpdateDid(op)) => self
                 .processor
-                .update_did(&self.state, op, metadata)
+                .update_did(&self.state, metadata, op, operation.special_fields)
                 .map(|s| (Some(s), None)),
             Some(Operation::DeactivateDid(op)) => self
                 .processor
-                .deactivate_did(&self.state, op, metadata)
+                .deactivate_did(&self.state, metadata, op, operation.special_fields)
                 .map(|s| (Some(s), None)),
             Some(Operation::ProtocolVersionUpdate(op)) => self
                 .processor
-                .protocol_version_update(op, metadata)
+                .protocol_version_update(metadata, op, operation.special_fields)
                 .map(|s| (None, Some(s))),
             Some(Operation::CreateStorageEntry(op)) => self
                 .processor
-                .create_storage(&self.state, op, metadata)
+                .create_storage(&self.state, metadata, op, operation.special_fields)
                 .map(|s| (Some(s), None)),
             Some(Operation::UpdateStorageEntry(op)) => self
                 .processor
-                .update_storage(&self.state, op, metadata)
+                .update_storage(&self.state, metadata, op, operation.special_fields)
                 .map(|s| (Some(s), None)),
             Some(Operation::DeactivateStorageEntry(op)) => self
                 .processor
-                .deactivate_storage(&self.state, op, metadata)
+                .deactivate_storage(&self.state, metadata, op, operation.special_fields)
                 .map(|s| (Some(s), None)),
             None => Err(ProcessError::SignedPrismOperationMissingOperation),
         };
@@ -446,49 +452,56 @@ trait OperationProcessorOps {
     fn create_did(
         &self,
         state: &DidStateRc,
-        operation: ProtoCreateDid,
         metadata: OperationMetadata,
+        operation: ProtoCreateDID,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError>;
 
     fn update_did(
         &self,
         state: &DidStateRc,
-        operation: ProtoUpdateDid,
         metadata: OperationMetadata,
+        operation: ProtoUpdateDID,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError>;
 
     fn deactivate_did(
         &self,
         state: &DidStateRc,
-        operation: ProtoDeactivateDid,
         metadata: OperationMetadata,
+        operation: ProtoDeactivateDID,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError>;
 
     fn protocol_version_update(
         &self,
-        operation: ProtoProtocolVersionUpdate,
         metadata: OperationMetadata,
+        operation: ProtoProtocolVersionUpdate,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<OperationProcessor, ProcessError>;
 
     fn create_storage(
         &self,
         state: &DidStateRc,
-        operation: ProtoCreateStorageEntry,
         metadata: OperationMetadata,
+        operation: ProtoCreateStorageEntry,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError>;
 
     fn update_storage(
         &self,
         state: &DidStateRc,
-        operation: ProtoUpdateStorageEntry,
         metadata: OperationMetadata,
+        operation: ProtoUpdateStorageEntry,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError>;
 
     fn deactivate_storage(
         &self,
         state: &DidStateRc,
-        operation: ProtoDeactivateStorageEntry,
         metadata: OperationMetadata,
+        operation: ProtoDeactivateStorageEntry,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError>;
 }
 

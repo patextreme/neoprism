@@ -18,7 +18,7 @@ derive_more = { workspace = true, features = [
 ] }
 oura = { workspace = true, optional = true }
 pallas-primitives = { workspace = true, optional = true }
-prost = { workspace = true }
+protobuf = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["sync", "time", "rt"] }
