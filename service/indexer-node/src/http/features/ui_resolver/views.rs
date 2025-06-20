@@ -6,7 +6,7 @@ use identus_did_core::{Did, DidDocument};
 use identus_did_prism::did::operation::{self, PublicKey};
 use identus_did_prism::did::{DidState, PrismDid, PrismDidOps, StorageState};
 use identus_did_prism::dlt::OperationMetadata;
-use identus_did_prism::proto::SignedPrismOperation;
+use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::protocol::error::ProcessError;
 use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use maud::{Markup, html};

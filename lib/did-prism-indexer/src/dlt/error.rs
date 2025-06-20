@@ -32,7 +32,7 @@ pub(crate) enum MetadataReadError {
     },
     #[display("cannot decode prism_block protobuf on block {block_hash:?} tx {tx_idx:?}")]
     PrismBlockProtoDecode {
-        source: prost::DecodeError,
+        source: protobuf::Error,
         block_hash: Option<String>,
         tx_idx: Option<usize>,
     },

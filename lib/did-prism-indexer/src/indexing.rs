@@ -2,8 +2,8 @@ use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use identus_did_prism::did::CanonicalPrismDid;
 use identus_did_prism::dlt::OperationMetadata;
-use identus_did_prism::proto::prism_operation::Operation;
-use identus_did_prism::proto::{PrismOperation, SignedPrismOperation};
+use identus_did_prism::prelude::*;
+use identus_did_prism::proto::prism::prism_operation::Operation;
 
 use crate::DltSource;
 use crate::repo::{IndexedOperation, OperationRepo};
@@ -163,7 +163,7 @@ where
 }
 
 fn index_from_signed_operation(signed_operation: SignedPrismOperation) -> anyhow::Result<IntermediateIndexedOperation> {
-    match signed_operation.operation {
+    match signed_operation.operation.into_option() {
         Some(operation) => index_from_operation(operation),
         None => Err(anyhow::anyhow!("operation does not exist in PrismOperation")),
     }
@@ -197,5 +197,11 @@ fn index_from_operation(prism_operation: PrismOperation) -> anyhow::Result<Inter
             prev_operation_hash: op.previous_operation_hash,
         }),
         None => Err(anyhow::anyhow!("operation does not exist in PrismOperation")),
+        Some(_) => {
+            let operation_hash_hex = HexStr::from(operation_hash.as_bytes());
+            Err(anyhow::anyhow!(
+                "operation type in PrismOperation is not support (operation_hash: {operation_hash_hex})"
+            ))
+        }
     }
 }

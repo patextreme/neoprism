@@ -25,57 +25,71 @@ async fn main() -> anyhow::Result<()> {
     let (op_1_2, op_hash_1_2) = test_utils::new_signed_operation(
         "vdr-1",
         &vdr_sk,
-        proto::prism_operation::Operation::CreateStorageEntry(proto::ProtoCreateStorageEntry {
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
             did_prism_hash: did_1.suffix.to_vec(),
             nonce: vec![1],
-            data: Some(proto::proto_create_storage_entry::Data::Bytes(vec![1, 2, 3])),
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
+                1, 2, 3,
+            ])),
+            special_fields: Default::default(),
         }),
     );
 
     let (op_1_3, op_hash_1_3) = test_utils::new_signed_operation(
         "vdr-1",
         &vdr_sk,
-        proto::prism_operation::Operation::UpdateStorageEntry(proto::ProtoUpdateStorageEntry {
+        proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
             previous_operation_hash: op_hash_1_2.to_vec(),
-            data: Some(proto::proto_update_storage_entry::Data::Bytes(vec![4, 5, 6])),
+            data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
+                4, 5, 6,
+            ])),
+            special_fields: Default::default(),
         }),
     );
 
     let (op_1_4, _) = test_utils::new_signed_operation(
         "vdr-1",
         &vdr_sk,
-        proto::prism_operation::Operation::UpdateStorageEntry(proto::ProtoUpdateStorageEntry {
+        proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
             previous_operation_hash: op_hash_1_3.to_vec(),
-            data: Some(proto::proto_update_storage_entry::Data::Bytes(vec![7, 8, 9])),
+            data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
+                7, 8, 9,
+            ])),
+            special_fields: Default::default(),
         }),
     );
 
     let (op_1_5, _) = test_utils::new_signed_operation(
         "vdr-1",
         &vdr_sk,
-        proto::prism_operation::Operation::CreateStorageEntry(proto::ProtoCreateStorageEntry {
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
             did_prism_hash: did_1.suffix.to_vec(),
             nonce: vec![1, 2],
-            data: Some(proto::proto_create_storage_entry::Data::Bytes(vec![42])),
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![42])),
+            special_fields: Default::default(),
         }),
     );
 
     let (op_2_2, op_hash_2_2) = test_utils::new_signed_operation(
         "vdr-2",
         &vdr_sk,
-        proto::prism_operation::Operation::CreateStorageEntry(proto::ProtoCreateStorageEntry {
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
             did_prism_hash: did_2.suffix.to_vec(),
             nonce: vec![1],
-            data: Some(proto::proto_create_storage_entry::Data::Bytes(vec![1, 2, 3])),
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
+                1, 2, 3,
+            ])),
+            special_fields: Default::default(),
         }),
     );
 
     let (op_2_3, _) = test_utils::new_signed_operation(
         "master-0",
         &master_sk,
-        proto::prism_operation::Operation::DeactivateDid(proto::ProtoDeactivateDid {
+        proto::prism::prism_operation::Operation::DeactivateDid(proto::prism_ssi::ProtoDeactivateDID {
             previous_operation_hash: op_hash_2_2.to_vec(),
             id: did_2.suffix_hex().to_string(),
+            special_fields: Default::default(),
         }),
     );
 
@@ -89,11 +103,11 @@ async fn main() -> anyhow::Result<()> {
 fn create_did_with_vdr_key(
     vdr_sk: &Secp256k1PrivateKey,
     vdr_key_name: &str,
-) -> (proto::SignedPrismOperation, Sha256Digest, CanonicalPrismDid) {
+) -> (proto::prism::SignedPrismOperation, Sha256Digest, CanonicalPrismDid) {
     let options = test_utils::CreateDidOptions {
         public_keys: Some(vec![test_utils::new_public_key(
             vdr_key_name,
-            proto::KeyUsage::VdrKey,
+            proto::prism_ssi::KeyUsage::VDR_KEY,
             vdr_sk,
         )]),
         ..Default::default()

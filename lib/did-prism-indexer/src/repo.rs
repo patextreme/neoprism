@@ -1,7 +1,7 @@
 use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::did::CanonicalPrismDid;
 use identus_did_prism::dlt::{DltCursor, OperationMetadata};
-use identus_did_prism::proto::SignedPrismOperation;
+use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
 use uuid::Uuid;
 

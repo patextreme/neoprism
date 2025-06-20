@@ -107,8 +107,7 @@ fn update_storage_entry() {
             previous_operation_hash: create_storage_op_hash.to_vec(),
             data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
                 4, 5, 6,
-            ]))
-            .into(),
+            ])),
             special_fields: Default::default(),
         }),
     );
