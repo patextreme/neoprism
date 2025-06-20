@@ -18,12 +18,12 @@ pub mod proto {
 
     include!(concat!(env!("OUT_DIR"), "/generated/mod.rs"));
 
-    pub trait ProtoExt: Sized {
+    pub trait MessageExt: Sized {
         fn encode_to_vec(&self) -> Vec<u8>;
         fn decode(bytes: &[u8]) -> protobuf::Result<Self>;
     }
 
-    impl<T: Message> ProtoExt for T {
+    impl<T: Message> MessageExt for T {
         fn encode_to_vec(&self) -> Vec<u8> {
             self.write_to_bytes().expect("Unable to encode protobuf message to vec")
         }
