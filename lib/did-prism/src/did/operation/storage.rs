@@ -3,9 +3,9 @@ use identus_apollo::hex::HexStr;
 
 use crate::did::CanonicalPrismDid;
 use crate::did::error::{CreateStorageOperationError, DeactivateStorageOperationError, UpdateStorageOperationError};
-use crate::proto::proto_create_storage_entry::Data as ProtoCreateStorageData;
-use crate::proto::proto_update_storage_entry::Data as ProtoUpdateStorageData;
-use crate::proto::{ProtoCreateStorageEntry, ProtoDeactivateStorageEntry, ProtoUpdateStorageEntry};
+use crate::proto::prism_storage::proto_create_storage_entry::Data as ProtoCreateStorageData;
+use crate::proto::prism_storage::proto_update_storage_entry::Data as ProtoUpdateStorageData;
+use crate::proto::prism_storage::{ProtoCreateStorageEntry, ProtoDeactivateStorageEntry, ProtoUpdateStorageEntry};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatusListData {

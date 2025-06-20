@@ -21,9 +21,9 @@ use crate::repo::DltCursorRepo;
 mod model {
     use chrono::{DateTime, Utc};
     use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject};
-    use identus_did_prism::proto::PrismObject;
+    use identus_did_prism::prelude::*;
+    use identus_did_prism::proto::prism::PrismObject;
     use oura::model::{EventContext, MetadataRecord};
-    use prost::Message;
     use serde::{Deserialize, Serialize};
 
     use crate::dlt::error::MetadataReadError;

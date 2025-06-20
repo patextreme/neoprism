@@ -38,5 +38,4 @@ identus-did-prism-indexer = { workspace = true, features = ["oura"] }
 indexer-storage = { workspace = true }
 
 [dev-dependencies]
-prost = { workspace = true }
 identus-did-prism = { workspace = true, features = ["test-utils"] }

@@ -9,7 +9,7 @@ chrono = { workspace = true, features = ["serde"] }
 derive_more = { workspace = true, features = ["from", "display", "error"] }
 identus-apollo = { workspace = true, features = ["hex"] }
 lazybe = { workspace = true, features = ["postgres"] }
-prost = { workspace = true }
+protobuf = { workspace = true }
 sea-query = { workspace = true, features = [
   "backend-postgres",
   "with-uuid",

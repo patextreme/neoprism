@@ -1,7 +1,6 @@
 use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::dlt::{BlockMetadata, DltCursor, OperationMetadata};
 use identus_did_prism::prelude::*;
-use identus_did_prism::proto::SignedPrismOperation;
 use identus_did_prism::utils::paging::Paginated;
 use identus_did_prism_indexer::repo::{DltCursorRepo, IndexedOperation, OperationRepo, RawOperationId};
 use lazybe::db::DbOps;

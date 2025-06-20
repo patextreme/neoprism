@@ -1,5 +1,5 @@
 use identus_apollo::crypto::Verifiable;
-use prost::Message;
+use protobuf::SpecialFields;
 
 use super::{DidStateConflictError, DidStateRc, OperationProcessor, OperationProcessorOps, ProcessError};
 use crate::did::Error as DidError;
@@ -8,12 +8,11 @@ use crate::did::operation::{
     OperationParameters, PublicKeyData, PublicKeyId, UpdateDidOperation, UpdateOperationAction, UpdateStorageOperation,
 };
 use crate::dlt::OperationMetadata;
-use crate::prelude::PrismOperation;
-use crate::proto::prism_operation::Operation;
-use crate::proto::{
-    ProtoCreateDid, ProtoCreateStorageEntry, ProtoDeactivateDid, ProtoDeactivateStorageEntry,
-    ProtoProtocolVersionUpdate, ProtoUpdateDid, ProtoUpdateStorageEntry, SignedPrismOperation,
-};
+use crate::prelude::*;
+use crate::proto::prism::prism_operation::Operation;
+use crate::proto::prism_ssi::{ProtoCreateDID, ProtoDeactivateDID, ProtoUpdateDID};
+use crate::proto::prism_storage::{ProtoCreateStorageEntry, ProtoDeactivateStorageEntry, ProtoUpdateStorageEntry};
+use crate::proto::prism_version::ProtoProtocolVersionUpdate;
 
 #[derive(Debug, Clone)]
 pub struct V1Processor {
@@ -77,8 +76,9 @@ impl OperationProcessorOps for V1Processor {
     fn create_did(
         &self,
         state: &DidStateRc,
-        operation: ProtoCreateDid,
         metadata: OperationMetadata,
+        operation: ProtoCreateDID,
+        _prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = CreateDidOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
 
@@ -100,8 +100,9 @@ impl OperationProcessorOps for V1Processor {
     fn update_did(
         &self,
         state: &DidStateRc,
-        operation: ProtoUpdateDid,
         metadata: OperationMetadata,
+        operation: ProtoUpdateDID,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = UpdateDidOperation::parse(&self.parameters, &operation).map_err(DidError::from)?;
         if parsed_operation.prev_operation_hash != *state.prev_operation_hash {
@@ -112,6 +113,7 @@ impl OperationProcessorOps for V1Processor {
         let mut candidate_state = state.clone();
         let prism_operation = PrismOperation {
             operation: Some(Operation::UpdateDid(operation)),
+            special_fields: prism_operation_special_fields,
         };
         candidate_state.with_last_operation_hash(prism_operation.operation_hash());
         for action in parsed_operation.actions {
@@ -125,8 +127,9 @@ impl OperationProcessorOps for V1Processor {
     fn deactivate_did(
         &self,
         state: &DidStateRc,
-        operation: ProtoDeactivateDid,
         metadata: OperationMetadata,
+        operation: ProtoDeactivateDID,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = DeactivateDidOperation::parse(&operation).map_err(DidError::from)?;
         if parsed_operation.prev_operation_hash != *state.prev_operation_hash {
@@ -137,6 +140,7 @@ impl OperationProcessorOps for V1Processor {
         let mut candidate_state = state.clone();
         let prism_operation = PrismOperation {
             operation: Some(Operation::DeactivateDid(operation)),
+            special_fields: prism_operation_special_fields,
         };
         let operation_hash = prism_operation.operation_hash();
         for (id, pk) in &state.public_keys {
@@ -163,8 +167,9 @@ impl OperationProcessorOps for V1Processor {
 
     fn protocol_version_update(
         &self,
-        _: ProtoProtocolVersionUpdate,
         _: OperationMetadata,
+        _: ProtoProtocolVersionUpdate,
+        _: SpecialFields,
     ) -> Result<OperationProcessor, ProcessError> {
         // TODO: add support for protocol version update
         tracing::warn!("Protocol version update is not yet supported");
@@ -174,8 +179,9 @@ impl OperationProcessorOps for V1Processor {
     fn create_storage(
         &self,
         state: &DidStateRc,
-        operation: ProtoCreateStorageEntry,
         metadata: OperationMetadata,
+        operation: ProtoCreateStorageEntry,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = CreateStorageOperation::parse(&operation).map_err(DidError::from)?;
 
@@ -183,6 +189,7 @@ impl OperationProcessorOps for V1Processor {
         let mut candidate_state = state.clone();
         let prism_operation = PrismOperation {
             operation: Some(Operation::CreateStorageEntry(operation)),
+            special_fields: prism_operation_special_fields,
         };
         let operation_hash = prism_operation.operation_hash();
         candidate_state.add_storage(&operation_hash, parsed_operation.data, &metadata)?;
@@ -195,8 +202,9 @@ impl OperationProcessorOps for V1Processor {
     fn update_storage(
         &self,
         state: &DidStateRc,
-        operation: ProtoUpdateStorageEntry,
         _metadata: OperationMetadata,
+        operation: ProtoUpdateStorageEntry,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = UpdateStorageOperation::parse(&operation).map_err(DidError::from)?;
 
@@ -204,6 +212,7 @@ impl OperationProcessorOps for V1Processor {
         let mut candidate_state = state.clone();
         let prism_operation = PrismOperation {
             operation: Some(Operation::UpdateStorageEntry(operation)),
+            special_fields: prism_operation_special_fields,
         };
         let operation_hash = prism_operation.operation_hash();
         candidate_state.update_storage(
@@ -220,8 +229,9 @@ impl OperationProcessorOps for V1Processor {
     fn deactivate_storage(
         &self,
         state: &DidStateRc,
-        operation: ProtoDeactivateStorageEntry,
         metadata: OperationMetadata,
+        operation: ProtoDeactivateStorageEntry,
+        prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError> {
         let parsed_operation = DeactivateStorageOperation::parse(&operation).map_err(DidError::from)?;
 
@@ -229,6 +239,7 @@ impl OperationProcessorOps for V1Processor {
         let mut candidate_state = state.clone();
         let prism_operation = PrismOperation {
             operation: Some(Operation::DeactivateStorageEntry(operation)),
+            special_fields: prism_operation_special_fields,
         };
         let operation_hash = prism_operation.operation_hash();
         candidate_state.revoke_storage(&parsed_operation.prev_operation_hash, &operation_hash, &metadata)?;

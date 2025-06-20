@@ -4,15 +4,15 @@ use std::str::FromStr;
 use identus_apollo::hex::HexStr;
 use identus_did_prism::did::CanonicalPrismDid;
 use identus_did_prism::did::operation::StorageData;
+use identus_did_prism::prelude::*;
 use identus_did_prism::protocol::resolver;
-use identus_did_prism::{proto, test_utils};
-use prost::Message;
+use identus_did_prism::test_utils;
 
 #[test]
 fn input_from_scala_did() {
     let parse_signed_operation = |hex_str: &str| {
         let bytes = HexStr::from_str(hex_str).unwrap();
-        proto::SignedPrismOperation::decode(bytes.to_bytes().as_slice()).unwrap()
+        SignedPrismOperation::decode(bytes.to_bytes().as_slice()).unwrap()
     };
 
     let create_did_op = parse_signed_operation(

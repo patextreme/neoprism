@@ -16,7 +16,7 @@ pub enum Error {
     DbMigration { source: sqlx::migrate::MigrateError },
     #[display("unable to decode to protobuf message into type {target_type} from stored data")]
     ProtobufDecode {
-        source: prost::DecodeError,
+        source: protobuf::Error,
         target_type: &'static str,
     },
     #[from]

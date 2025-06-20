@@ -29,8 +29,8 @@ fn create_did_with_non_master_key() {
     let auth_sk = Secp256k1PrivateKey::from_slice(&[3; 32]).unwrap();
     let options = test_utils::CreateDidOptions {
         public_keys: Some(vec![
-            test_utils::new_public_key("vdr-0", proto::KeyUsage::VdrKey, &vdr_sk),
-            test_utils::new_public_key("auth-0", proto::KeyUsage::AuthenticationKey, &auth_sk),
+            test_utils::new_public_key("vdr-0", proto::prism_ssi::KeyUsage::VDR_KEY, &vdr_sk),
+            test_utils::new_public_key("auth-0", proto::prism_ssi::KeyUsage::AUTHENTICATION_KEY, &auth_sk),
         ]),
         ..Default::default()
     };
