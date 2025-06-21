@@ -5,6 +5,9 @@ pub mod error;
 #[cfg(feature = "oura")]
 pub mod oura;
 
+#[cfg(feature = "dbsync")]
+pub mod dbsync;
+
 #[derive(Debug, Clone, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
 pub enum NetworkIdentifier {
     #[strum(serialize = "mainnet")]
