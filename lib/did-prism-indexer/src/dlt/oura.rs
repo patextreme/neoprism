@@ -11,11 +11,11 @@ use oura::sources::n2n::Config;
 use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
 use oura::utils::{ChainWellKnownInfo, Utils, WithUtils};
 use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::task::JoinHandle;
 
 use super::error::DltError;
 use crate::DltSource;
 use crate::dlt::NetworkIdentifier;
+use crate::dlt::common::CursorPersistWorker;
 use crate::repo::DltCursorRepo;
 
 mod model {
@@ -245,11 +245,7 @@ impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
     fn receiver(self) -> Result<Receiver<PublishedPrismObject>, String> {
         let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedPrismObject>(1024);
 
-        let cursor_persist_worker = CursorPersistWorker {
-            cursor_rx: self.cursor_tx.subscribe(),
-            store: self.store,
-        };
-
+        let cursor_persist_worker = CursorPersistWorker::new(self.store, self.cursor_tx.subscribe());
         let stream_worker = OuraStreamWorker {
             with_utils: self.with_utils,
             cursor_tx: self.cursor_tx,
@@ -389,40 +385,5 @@ impl OuraStreamWorker {
         }
 
         Ok(())
-    }
-}
-
-struct CursorPersistWorker<Store: DltCursorRepo> {
-    cursor_rx: tokio::sync::watch::Receiver<Option<DltCursor>>,
-    store: Store,
-}
-
-impl<Store: DltCursorRepo + Send + 'static> CursorPersistWorker<Store> {
-    fn spawn(mut self) -> JoinHandle<Result<(), DltError>> {
-        const DELAY: tokio::time::Duration = tokio::time::Duration::from_secs(60);
-        tracing::info!("Spawn cursor persist worker with {:?} interval", DELAY);
-        tokio::spawn(async move {
-            loop {
-                let recv_result = self.cursor_rx.changed().await;
-                tokio::time::sleep(DELAY).await;
-
-                if let Err(e) = recv_result {
-                    tracing::error!("Error getting cursor to persist: {}", e);
-                }
-
-                let cursor = self.cursor_rx.borrow_and_update().clone();
-                let Some(cursor) = cursor else { continue };
-                tracing::info!(
-                    "Persisting cursor on slot ({}, {})",
-                    cursor.slot,
-                    HexStr::from(cursor.block_hash.as_slice()).to_string(),
-                );
-
-                let persist_result = self.store.set_cursor(cursor).await;
-                if let Err(e) = persist_result {
-                    tracing::error!("Error persisting cursor: {}", e);
-                }
-            }
-        })
     }
 }
