@@ -20,6 +20,7 @@ oura = { workspace = true, optional = true }
 pallas-primitives = { workspace = true, optional = true }
 protobuf = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+sqlx = { workspace = true, optional = true, features = ["postgres", "chrono"] }
 strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["sync", "time", "rt"] }
 tracing = { workspace = true }
@@ -37,3 +38,4 @@ identus-did-prism = { workspace = true }
 [features]
 default = []
 oura = ["dep:oura", "dep:pallas-primitives"]
+dbsync = ["dep:sqlx"]

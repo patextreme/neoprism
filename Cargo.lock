@@ -1654,6 +1654,7 @@ dependencies = [
  "pallas-primitives",
  "protobuf",
  "serde",
+ "sqlx",
  "strum 0.27.1",
  "tokio",
  "tracing",

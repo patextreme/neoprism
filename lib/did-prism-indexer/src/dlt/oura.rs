@@ -250,13 +250,13 @@ impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
             store: self.store,
         };
 
-        let oura_stream_worker = OuraStreamWorker {
+        let stream_worker = OuraStreamWorker {
             with_utils: self.with_utils,
             cursor_tx: self.cursor_tx,
             event_tx,
         };
 
-        oura_stream_worker.spawn();
+        stream_worker.spawn();
         cursor_persist_worker.spawn();
 
         Ok(rx)
@@ -270,6 +270,7 @@ struct OuraStreamWorker {
 }
 
 impl OuraStreamWorker {
+    /// std thread is used to avoid oura receiver blocking on tokio pool
     fn spawn(self) -> std::thread::JoinHandle<Result<(), DltError>> {
         const RESTART_DELAY: std::time::Duration = std::time::Duration::from_secs(10);
         std::thread::spawn(move || {
