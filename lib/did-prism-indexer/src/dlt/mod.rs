@@ -2,6 +2,9 @@ use strum::VariantArray;
 
 pub mod error;
 
+#[cfg(any(feature = "oura", feature = "dbsync"))]
+mod common;
+
 #[cfg(feature = "oura")]
 pub mod oura;
 
