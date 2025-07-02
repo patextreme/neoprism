@@ -99,7 +99,7 @@ mod model {
         };
 
         // parse prism_block
-        let byte_group = match metadata.metadadum {
+        let byte_group = match metadata.metadatum {
             pallas_primitives::alonzo::Metadatum::Map(kv) => kv
                 .to_vec()
                 .into_iter()

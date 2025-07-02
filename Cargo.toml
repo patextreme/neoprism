@@ -47,7 +47,7 @@ uuid = "1"
 sqlx = "0.8"
 sea-query = "0.32"
 # cardano
-oura = { git = "https://github.com/patextreme/oura.git", rev = "dd10323ecf95dcd7dd45edb46ef566d19af2eff8" }
+oura = { git = "https://github.com/patextreme/oura.git", rev = "3546c03dac9fac8b5173332c1fe5122882e7351e" }
 pallas-primitives = "0.30"
 # proto
 protobuf = "3"
