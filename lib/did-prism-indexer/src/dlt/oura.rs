@@ -10,7 +10,7 @@ use oura::pipelining::{SourceProvider, StageReceiver};
 use oura::sources::n2n::Config;
 use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
 use oura::utils::{ChainWellKnownInfo, Utils, WithUtils};
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::{mpsc, watch};
 
 use super::error::DltError;
 use crate::DltSource;
@@ -165,7 +165,7 @@ impl NetworkIdentifier {
 pub struct OuraN2NSource<Store: DltCursorRepo + Send + 'static> {
     with_utils: WithUtils<Config>,
     store: Store,
-    cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
+    sync_cursor_tx: watch::Sender<Option<DltCursor>>,
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
@@ -228,27 +228,27 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
         };
         let utils = Utils::new(chain.chain_wellknown_info());
         let with_utils = WithUtils::new(config, Arc::new(utils));
-        let (cursor_tx, _) = tokio::sync::watch::channel::<Option<DltCursor>>(None);
+        let (cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
             with_utils,
             store,
-            cursor_tx,
+            sync_cursor_tx: cursor_tx,
         }
-    }
-
-    pub fn cursor_receiver(&self) -> tokio::sync::watch::Receiver<Option<DltCursor>> {
-        self.cursor_tx.subscribe()
     }
 }
 
 impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
-    fn receiver(self) -> Result<Receiver<PublishedPrismObject>, String> {
+    fn sync_cursor(&self) -> watch::Receiver<Option<DltCursor>> {
+        self.sync_cursor_tx.subscribe()
+    }
+
+    fn into_stream(self) -> Result<mpsc::Receiver<PublishedPrismObject>, String> {
         let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedPrismObject>(1024);
 
-        let cursor_persist_worker = CursorPersistWorker::new(self.store, self.cursor_tx.subscribe());
+        let cursor_persist_worker = CursorPersistWorker::new(self.store, self.sync_cursor_tx.subscribe());
         let stream_worker = OuraStreamWorker {
             with_utils: self.with_utils,
-            cursor_tx: self.cursor_tx,
+            sync_cursor_tx: self.sync_cursor_tx,
             event_tx,
         };
 
@@ -261,8 +261,8 @@ impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
 
 struct OuraStreamWorker {
     with_utils: WithUtils<Config>,
-    cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
-    event_tx: Sender<PublishedPrismObject>,
+    sync_cursor_tx: watch::Sender<Option<DltCursor>>,
+    event_tx: mpsc::Sender<PublishedPrismObject>,
 }
 
 impl OuraStreamWorker {
@@ -300,7 +300,7 @@ impl OuraStreamWorker {
     /// Construct WithUtils instance from the last event sent to persist worker.
     fn build_with_util(&self) -> WithUtils<Config> {
         let mut owned_with_utils = self.with_utils.clone();
-        let rx = self.cursor_tx.subscribe();
+        let rx = self.sync_cursor_tx.subscribe();
         let prev_cursor = rx.borrow();
         let prev_intersect = prev_cursor
             .as_ref()
@@ -351,7 +351,7 @@ impl OuraStreamWorker {
             block_hash: block_hash.to_bytes(),
             cbt: Some(timestamp),
         };
-        let _ = self.cursor_tx.send(Some(cursor));
+        let _ = self.sync_cursor_tx.send(Some(cursor));
     }
 
     fn handle_prism_event(&self, event: Event) -> Result<(), DltError> {

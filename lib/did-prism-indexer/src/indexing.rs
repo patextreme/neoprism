@@ -86,7 +86,7 @@ where
     Repo: OperationRepo + Send,
     <Repo as OperationRepo>::Error: Send + Sync + 'static,
 {
-    let mut rx = source.receiver().expect("Unable to create a DLT source");
+    let mut rx = source.into_stream().expect("Unable to create a DLT source");
 
     while let Some(published_prism_object) = rx.recv().await {
         let block = published_prism_object.prism_object.block_content;

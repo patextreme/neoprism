@@ -1,18 +1,34 @@
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
+use identus_did_prism::location;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::{mpsc, watch};
 use tokio::task::JoinHandle;
 
 use crate::DltSource;
 use crate::dlt::common::CursorPersistWorker;
+use crate::dlt::dbsync::model::MetadataProjection;
 use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
+
+mod model {
+    use chrono::{DateTime, Utc};
+    use sqlx::FromRow;
+
+    #[derive(Debug, FromRow)]
+    pub struct MetadataProjection {
+        pub time: DateTime<Utc>,
+        pub slot_no: i64,
+        pub block_no: i64,
+        pub block_hash: Vec<u8>,
+        pub metadata: serde_json::Value,
+    }
+}
 
 pub struct DbSyncSource<Store: DltCursorRepo + Send + 'static> {
     store: Store,
     dbsync_url: String,
-    cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
+    sync_cursor_tx: watch::Sender<Option<DltCursor>>,
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
@@ -21,19 +37,23 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
         Self {
             store,
             dbsync_url: dbsync_url.to_string(),
-            cursor_tx,
+            sync_cursor_tx: cursor_tx,
         }
     }
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DltSource for DbSyncSource<Store> {
-    fn receiver(self) -> Result<Receiver<PublishedPrismObject>, String> {
+    fn sync_cursor(&self) -> watch::Receiver<Option<DltCursor>> {
+        self.sync_cursor_tx.subscribe()
+    }
+
+    fn into_stream(self) -> Result<mpsc::Receiver<PublishedPrismObject>, String> {
         let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedPrismObject>(1024);
 
-        let cursor_persist_worker = CursorPersistWorker::new(self.store, self.cursor_tx.subscribe());
+        let cursor_persist_worker = CursorPersistWorker::new(self.store, self.sync_cursor_tx.subscribe());
         let stream_worker = DbSyncStreamWorker {
             dbsync_url: self.dbsync_url,
-            cursor_tx: self.cursor_tx,
+            sync_cursor_tx: self.sync_cursor_tx,
             event_tx,
         };
 
@@ -46,8 +66,8 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DltSource for DbSyncSo
 
 struct DbSyncStreamWorker {
     dbsync_url: String,
-    cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
-    event_tx: Sender<PublishedPrismObject>,
+    sync_cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
+    event_tx: mpsc::Sender<PublishedPrismObject>,
 }
 
 impl DbSyncStreamWorker {
@@ -77,8 +97,41 @@ impl DbSyncStreamWorker {
         })
     }
 
-    async fn stream_loop(pool: PgPool, event_tx: Sender<PublishedPrismObject>) -> DltError {
-        // TODO: implement dbsync query here ...
-        loop {}
+    async fn stream_loop(pool: PgPool, event_tx: mpsc::Sender<PublishedPrismObject>) -> Result<(), DltError> {
+        let mut slot_cursor = 0; // FIXME: load from last persisted cursor
+        loop {
+            let metadata_rows = Self::fetch_metadata(&pool, slot_cursor).await?;
+            if let Some(latest_slot) = metadata_rows.iter().map(|i| i.slot_no).max() {
+                slot_cursor = latest_slot;
+            }
+            for row in metadata_rows {
+                println!("{:?}", row);
+            }
+        }
+    }
+
+    async fn fetch_metadata(pool: &PgPool, from_slot: i64) -> Result<Vec<MetadataProjection>, DltError> {
+        let rows = sqlx::query_as(
+            r#"
+SELECT
+    b."time",
+    b.slot_no,
+    b.block_no,
+    b.hash AS block_hash,
+    tx_meta.json AS metadata
+FROM tx_metadata AS tx_meta
+LEFT JOIN tx ON txm.tx_id = tx.id
+LEFT JOIN block AS b ON block_id = b.id
+WHERE tx_meta.key = 21325 AND b.slot_no > ? AND b.block_no <= (SELECT max(block_no) - 112 FROM block)
+ORDER BY b.block_no DESC
+LIMIT 1000
+            "#,
+        )
+        .bind(from_slot)
+        .fetch_all(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
+        .map_err(|_| DltError::Disconnected { location: location!() })?;
+        Ok(rows)
     }
 }

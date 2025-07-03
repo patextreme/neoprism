@@ -1,5 +1,7 @@
+use identus_did_prism::dlt::DltCursor;
 use identus_did_prism_indexer::{DltSource, run_indexer_loop, run_sync_loop};
 use indexer_storage::PostgresDb;
+use tokio::sync::watch;
 
 pub struct DltSyncWorker<Src> {
     store: PostgresDb,
@@ -12,6 +14,10 @@ where
 {
     pub fn new(store: PostgresDb, source: Src) -> Self {
         Self { store, source }
+    }
+
+    pub fn sync_cursor(&self) -> watch::Receiver<Option<DltCursor>> {
+        self.source.sync_cursor()
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
