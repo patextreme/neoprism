@@ -10,7 +10,7 @@ use crate::http::features::ui_resolver::models::DidQuery;
 use crate::http::{components, urls};
 
 pub fn index(
-    network: Option<NetworkIdentifier>,
+    network: NetworkIdentifier,
     cursor: Option<DltCursor>,
     dids: Paginated<CanonicalPrismDid>,
 ) -> Markup {

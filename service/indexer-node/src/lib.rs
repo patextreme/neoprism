@@ -20,13 +20,13 @@ mod http;
 struct AppState {
     did_service: DidService,
     cursor_rx: Option<tokio::sync::watch::Receiver<Option<DltCursor>>>,
-    network: Option<NetworkIdentifier>,
+    network: NetworkIdentifier,
 }
 
 pub async fn start_server() -> anyhow::Result<()> {
     let cli = CliArgs::parse();
 
-    let db = PostgresDb::connect(&cli.db)
+    let db = PostgresDb::connect(&cli.db_url)
         .await
         .expect("Unable to connect to database");
 
@@ -42,21 +42,18 @@ pub async fn start_server() -> anyhow::Result<()> {
     // init state
     let did_service = DidService::new(&db);
     let mut cursor_rx = None;
-    let mut network = None;
-    if let Some(address) = &cli.cardano {
-        let network_identifier = cli.network.to_owned();
-
+    let network  = cli.cardano_network;
+    if let Some(address) = &cli.cardano_addr {
         tracing::info!(
             "Starting DLT sync worker on {} from cardano address {}",
-            network_identifier,
+            network,
             address
         );
-        let source = OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, &network_identifier)
+        let source = OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, &network)
             .await
             .expect("Failed to create DLT source");
 
         cursor_rx = Some(source.cursor_receiver());
-        network = Some(network_identifier);
         let sync_worker = DltSyncWorker::new(db.clone(), source);
         let index_worker = DltIndexWorker::new(db.clone());
         tokio::spawn(sync_worker.run());
@@ -70,7 +67,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     };
 
     // start server
-    let router = http::router(&cli.assets)
+    let router = http::router(&cli.assets_path)
         .with_state(state)
         .layer(TraceLayer::new_for_http());
     let bind_addr = format!("{}:{}", cli.address, cli.port);
