@@ -29,12 +29,6 @@ mod model {
     use crate::dlt::error::MetadataReadError;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    pub struct MetadataEvent {
-        pub context: MetadataContext,
-        pub metadata: Metadata,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct MetadataContext {
         pub block_hash: String,
         pub block_number: u64,
@@ -42,18 +36,6 @@ mod model {
         pub timestamp: i64,
         pub tx_hash: String,
         pub tx_idx: u32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    pub struct Metadata {
-        pub label: String,
-        pub map_json: MetadataMapJson,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    pub struct MetadataMapJson {
-        pub c: Vec<String>,
-        pub v: u64,
     }
 
     pub fn parse_oura_timestamp(context: &EventContext) -> Result<DateTime<Utc>, MetadataReadError> {
@@ -71,7 +53,7 @@ mod model {
         })
     }
 
-    pub fn parse_oura_event(
+    pub fn parse_event(
         context: EventContext,
         metadata: MetadataRecord,
     ) -> Result<PublishedPrismObject, MetadataReadError> {
@@ -123,7 +105,7 @@ mod model {
             _ => None,
         }
         .ok_or(MetadataReadError::InvalidMetadataType {
-            source: "Metadata is not a valid type".to_string().into(),
+            source: "metadata is not a valid type".to_string().into(),
             block_hash: block_hash.clone(),
             tx_idx,
         })?;
@@ -172,8 +154,8 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
     pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
         let intersect = match chain {
             NetworkIdentifier::Mainnet => oura::sources::IntersectArg::Point(PointArg(
-                71482683,
-                "f3fd56f7e390d4e45d06bb797d83b7814b1d32c2112bc997779e34de1579fa7d".to_string(),
+                71481015,
+                "2a094a19a6e0c4e12b2fb250b8dfb1034dcc94dc2c47419da3b56eb4aaca4f25".to_string(),
             )),
             NetworkIdentifier::Preprod => oura::sources::IntersectArg::Point(PointArg(
                 10718532,
@@ -228,11 +210,11 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
         };
         let utils = Utils::new(chain.chain_wellknown_info());
         let with_utils = WithUtils::new(config, Arc::new(utils));
-        let (cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
+        let (sync_cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
             with_utils,
             store,
-            sync_cursor_tx: cursor_tx,
+            sync_cursor_tx,
         }
     }
 }
@@ -369,7 +351,7 @@ impl OuraStreamWorker {
             context.block_hash.as_deref().unwrap_or_default(),
         );
 
-        let parsed_prism_object = self::model::parse_oura_event(context, meta);
+        let parsed_prism_object = model::parse_event(context, meta);
         match parsed_prism_object {
             Ok(prism_object) => self
                 .event_tx

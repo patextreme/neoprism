@@ -5,10 +5,9 @@ use app::service::DidService;
 use clap::Parser;
 use cli::CliArgs;
 use identus_did_prism::dlt::DltCursor;
-use identus_did_prism_indexer::DltSource;
+use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
-use identus_did_prism_indexer::dlt::{NetworkIdentifier, dbsync};
 use indexer_storage::PostgresDb;
 use tower_http::trace::TraceLayer;
 

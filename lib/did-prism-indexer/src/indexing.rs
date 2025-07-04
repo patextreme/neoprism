@@ -146,8 +146,8 @@ where
             Some((_, _, signed_operation)) => {
                 match index_from_signed_operation(signed_operation) {
                     Ok(IntermediateIndexedOperation::VdrRoot { did, operation_hash }) => {
-                        return Ok(Some((did, operation_hash)));
-                    } // found root
+                        return Ok(Some((did, operation_hash))); // found root
+                    }
                     Ok(IntermediateIndexedOperation::VdrChild {
                         prev_operation_hash, ..
                     }) => {
