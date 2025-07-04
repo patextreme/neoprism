@@ -1,3 +1,4 @@
+use identus_apollo::hex::HexStr;
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
 use identus_did_prism::location;
 use sqlx::PgPool;
@@ -12,16 +13,86 @@ use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
 
 mod model {
+    use std::str::FromStr;
+
     use chrono::{DateTime, Utc};
+    use identus_apollo::hex::HexStr;
+    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject};
+    use identus_did_prism::proto::MessageExt;
+    use identus_did_prism::proto::prism::PrismObject;
+    use serde::{Deserialize, Serialize};
     use sqlx::FromRow;
 
-    #[derive(Debug, FromRow)]
+    use crate::dlt::error::MetadataReadError;
+
+    #[derive(Debug, Clone, FromRow)]
     pub struct MetadataProjection {
         pub time: DateTime<Utc>,
         pub slot_no: i64,
         pub block_no: i32,
         pub block_hash: Vec<u8>,
+        pub tx_idx: i32,
         pub metadata: serde_json::Value,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    pub struct MetadataMapJson {
+        pub c: Vec<String>,
+        pub v: u64,
+    }
+
+    pub fn parse_row(metadata: MetadataProjection) -> Result<PublishedPrismObject, MetadataReadError> {
+        let block_hash = HexStr::from(&metadata.block_hash).to_string();
+        let block_metadata = BlockMetadata {
+            slot_number: metadata.slot_no as u64,
+            block_number: metadata.block_no as u64,
+            cbt: metadata.time,
+            absn: metadata.tx_idx as u32,
+        };
+        let tx_idx = Some(metadata.tx_idx as usize);
+
+        let metadata_json: MetadataMapJson =
+            serde_json::from_value(metadata.metadata).map_err(|e| MetadataReadError::InvalidMetadataType {
+                source: e.into(),
+                block_hash: Some(block_hash.clone()),
+                tx_idx,
+            })?;
+
+        let byte_group = metadata_json
+            .c
+            .into_iter()
+            .map(|s| {
+                if let Some((prefix, hex_suffix)) = s.split_at_checked(2)
+                    && let Ok(hex_str) = HexStr::from_str(hex_suffix)
+                    && prefix == "0x"
+                {
+                    Ok(hex_str.to_bytes())
+                } else {
+                    Err(MetadataReadError::InvalidMetadataType {
+                        source: "expect metadata byte group to be in hex format".into(),
+                        block_hash: Some(block_hash.clone()),
+                        tx_idx,
+                    })
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let mut bytes = Vec::with_capacity(64 * byte_group.len());
+        for mut b in byte_group.into_iter() {
+            bytes.append(&mut b);
+        }
+
+        let prism_object =
+            PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::PrismBlockProtoDecode {
+                source: e,
+                block_hash: Some(block_hash.clone()),
+                tx_idx,
+            })?;
+
+        Ok(PublishedPrismObject {
+            block_metadata,
+            prism_object,
+        })
     }
 }
 
@@ -66,7 +137,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DltSource for DbSyncSo
 
 struct DbSyncStreamWorker {
     dbsync_url: String,
-    sync_cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
+    sync_cursor_tx: watch::Sender<Option<DltCursor>>,
     event_tx: mpsc::Sender<PublishedPrismObject>,
 }
 
@@ -76,11 +147,14 @@ impl DbSyncStreamWorker {
         tokio::spawn(async move {
             let db_url = self.dbsync_url;
             let event_tx = self.event_tx;
+            let sync_cursor_tx = self.sync_cursor_tx;
             loop {
                 let pool = PgPoolOptions::new().max_connections(1).connect(&db_url).await;
                 match pool {
                     Ok(pool) => {
-                        Self::stream_loop(pool, event_tx.clone()).await;
+                        if let Err(e) = Self::stream_loop(pool, event_tx.clone(), sync_cursor_tx.clone()).await {
+                            tracing::error!("DbSync stream loop termitated with error {}", e);
+                        }
                     }
                     Err(e) => {
                         tracing::error!("Unable to connect to dbsync database: {}", e);
@@ -97,23 +171,71 @@ impl DbSyncStreamWorker {
         })
     }
 
-    async fn stream_loop(pool: PgPool, event_tx: mpsc::Sender<PublishedPrismObject>) -> Result<(), DltError> {
+    async fn stream_loop(
+        pool: PgPool,
+        event_tx: mpsc::Sender<PublishedPrismObject>,
+        sync_cursor_tx: watch::Sender<Option<DltCursor>>,
+    ) -> Result<(), DltError> {
         let mut slot_cursor = 0; // FIXME: load from last persisted cursor
         loop {
             let metadata_rows = Self::fetch_metadata(&pool, slot_cursor).await?;
             if let Some(latest_slot) = metadata_rows.iter().map(|i| i.slot_no).max() {
                 slot_cursor = latest_slot;
             }
-            for row in metadata_rows.iter() {
-                println!("{:?}", row.slot_no);
+            let row_count = metadata_rows.len();
+            for row in metadata_rows {
+                let handle_result = Self::handle_prism_row(row.clone(), &event_tx).await;
+                Self::persist_cursor(row, &sync_cursor_tx);
+                if let Err(e) = handle_result {
+                    tracing::error!("Error handling event from DbSync source");
+                    let report = std::error::Report::new(&e).pretty(true);
+                    tracing::error!("{}", report);
+                    return Err(e);
+                }
             }
-            println!("slot_cursor: {:?}", slot_cursor);
 
             // sleep if we don't find a new block to avoid spamming db sync
-            if metadata_rows.is_empty() {
+            if row_count == 0 {
                 tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
             }
         }
+    }
+
+    async fn handle_prism_row(
+        row: MetadataProjection,
+        event_tx: &mpsc::Sender<PublishedPrismObject>,
+    ) -> Result<(), DltError> {
+        tracing::info!(
+            "Detected a new prism_block on slot ({}, {})",
+            row.slot_no,
+            HexStr::from(&row.block_hash).to_string(),
+        );
+
+        let parsed_prism_object = model::parse_row(row);
+        match parsed_prism_object {
+            Ok(prism_object) => event_tx.send(prism_object).await.map_err(|e| DltError::EventHandling {
+                source: e.to_string().into(),
+                location: location!(),
+            })?,
+            Err(e) => {
+                // TODO: add debug level error report
+                tracing::warn!("Unable to parse dbsync row into PrismObject. ({})", e);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn persist_cursor(row: MetadataProjection, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
+        let slot = row.slot_no as u64;
+        let block_hash = HexStr::from(row.block_hash);
+        let timestamp = row.time;
+        let cursor = DltCursor {
+            slot,
+            block_hash: block_hash.to_bytes(),
+            cbt: Some(timestamp),
+        };
+        let _ = sync_cursor_tx.send(Some(cursor));
     }
 
     async fn fetch_metadata(pool: &PgPool, from_slot: i64) -> Result<Vec<MetadataProjection>, DltError> {
@@ -124,12 +246,13 @@ SELECT
     b.slot_no,
     b.block_no,
     b.hash AS block_hash,
+    tx.block_index AS tx_idx,
     tx_meta.json AS metadata
 FROM tx_metadata AS tx_meta
 LEFT JOIN tx ON tx_meta.tx_id = tx.id
 LEFT JOIN block AS b ON block_id = b.id
 WHERE tx_meta.key = 21325 AND b.slot_no > $1 AND b.block_no <= (SELECT max(block_no) - 112 FROM block)
-ORDER BY b.block_no
+ORDER BY b.block_no, tx.block_index
 LIMIT 200
             "#,
         )

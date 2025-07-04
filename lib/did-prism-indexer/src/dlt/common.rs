@@ -1,12 +1,13 @@
 use identus_apollo::hex::HexStr;
 use identus_did_prism::dlt::DltCursor;
+use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
 
 pub struct CursorPersistWorker<Store: DltCursorRepo> {
-    cursor_rx: tokio::sync::watch::Receiver<Option<DltCursor>>,
+    cursor_rx: watch::Receiver<Option<DltCursor>>,
     store: Store,
 }
 
