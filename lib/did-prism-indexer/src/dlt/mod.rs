@@ -2,10 +2,16 @@ use strum::VariantArray;
 
 pub mod error;
 
+#[cfg(any(feature = "oura", feature = "dbsync"))]
+mod common;
+
 #[cfg(feature = "oura")]
 pub mod oura;
 
-#[derive(Debug, Clone, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
+#[cfg(feature = "dbsync")]
+pub mod dbsync;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
 pub enum NetworkIdentifier {
     #[strum(serialize = "mainnet")]
     Mainnet,
