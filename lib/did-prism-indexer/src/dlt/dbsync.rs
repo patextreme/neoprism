@@ -19,7 +19,7 @@ mod model {
     pub struct MetadataProjection {
         pub time: DateTime<Utc>,
         pub slot_no: i64,
-        pub block_no: i64,
+        pub block_no: i32,
         pub block_hash: Vec<u8>,
         pub metadata: serde_json::Value,
     }
@@ -104,8 +104,14 @@ impl DbSyncStreamWorker {
             if let Some(latest_slot) = metadata_rows.iter().map(|i| i.slot_no).max() {
                 slot_cursor = latest_slot;
             }
-            for row in metadata_rows {
-                println!("{:?}", row);
+            for row in metadata_rows.iter() {
+                println!("{:?}", row.slot_no);
+            }
+            println!("slot_cursor: {:?}", slot_cursor);
+
+            // sleep if we don't find a new block to avoid spamming db sync
+            if metadata_rows.is_empty() {
+                tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
             }
         }
     }
@@ -114,17 +120,17 @@ impl DbSyncStreamWorker {
         let rows = sqlx::query_as(
             r#"
 SELECT
-    b."time",
+    b."time" AT TIME ZONE 'UTC' AS "time",
     b.slot_no,
     b.block_no,
     b.hash AS block_hash,
     tx_meta.json AS metadata
 FROM tx_metadata AS tx_meta
-LEFT JOIN tx ON txm.tx_id = tx.id
+LEFT JOIN tx ON tx_meta.tx_id = tx.id
 LEFT JOIN block AS b ON block_id = b.id
-WHERE tx_meta.key = 21325 AND b.slot_no > ? AND b.block_no <= (SELECT max(block_no) - 112 FROM block)
-ORDER BY b.block_no DESC
-LIMIT 1000
+WHERE tx_meta.key = 21325 AND b.slot_no > $1 AND b.block_no <= (SELECT max(block_no) - 112 FROM block)
+ORDER BY b.block_no
+LIMIT 200
             "#,
         )
         .bind(from_slot)
