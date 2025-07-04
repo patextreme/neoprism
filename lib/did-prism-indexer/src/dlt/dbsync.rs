@@ -104,7 +104,7 @@ pub struct DbSyncSource<Store: DltCursorRepo + Send + 'static> {
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
     pub fn new(store: Store, dbsync_url: &str) -> Self {
-        let (cursor_tx, _) = tokio::sync::watch::channel::<Option<DltCursor>>(None);
+        let (cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
             store,
             dbsync_url: dbsync_url.to_string(),
@@ -119,7 +119,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DltSource for DbSyncSo
     }
 
     fn into_stream(self) -> Result<mpsc::Receiver<PublishedPrismObject>, String> {
-        let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedPrismObject>(1024);
+        let (event_tx, rx) = mpsc::channel::<PublishedPrismObject>(1024);
 
         let cursor_persist_worker = CursorPersistWorker::new(self.store, self.sync_cursor_tx.subscribe());
         let stream_worker = DbSyncStreamWorker {
