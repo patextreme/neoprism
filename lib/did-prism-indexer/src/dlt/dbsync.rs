@@ -169,7 +169,7 @@ struct DbSyncStreamWorker {
 
 impl DbSyncStreamWorker {
     fn spawn(self) -> JoinHandle<Result<(), DltError>> {
-        const RESTART_DELAY: std::time::Duration = std::time::Duration::from_secs(10);
+        const RESTART_DELAY: tokio::time::Duration = tokio::time::Duration::from_secs(10);
         tokio::spawn(async move {
             let db_url = self.dbsync_url;
             let event_tx = self.event_tx;
@@ -194,7 +194,7 @@ impl DbSyncStreamWorker {
                     RESTART_DELAY.as_secs()
                 );
 
-                std::thread::sleep(RESTART_DELAY);
+                tokio::time::sleep(RESTART_DELAY).await;
             }
         })
     }
