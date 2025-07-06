@@ -8,7 +8,7 @@ use tokio::task::JoinHandle;
 
 use crate::DltSource;
 use crate::dlt::common::CursorPersistWorker;
-use crate::dlt::dbsync::model::MetadataProjection;
+use crate::dlt::dbsync::model::{BlockTime, MetadataProjection};
 use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
 
@@ -35,10 +35,27 @@ mod model {
         pub metadata: serde_json::Value,
     }
 
+    #[derive(Debug, Clone, FromRow)]
+    pub struct BlockTime {
+        pub time: DateTime<Utc>,
+        pub slot_no: i64,
+        pub block_hash: Vec<u8>,
+    }
+
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct MetadataMapJson {
         pub c: Vec<String>,
         pub v: u64,
+    }
+
+    impl From<MetadataProjection> for BlockTime {
+        fn from(value: MetadataProjection) -> Self {
+            Self {
+                time: value.time,
+                slot_no: value.slot_no,
+                block_hash: value.block_hash,
+            }
+        }
     }
 
     pub fn parse_row(metadata: MetadataProjection) -> Result<PublishedPrismObject, MetadataReadError> {
@@ -185,7 +202,7 @@ impl DbSyncStreamWorker {
             let row_count = metadata_rows.len();
             for row in metadata_rows {
                 let handle_result = Self::handle_prism_row(row.clone(), &event_tx).await;
-                Self::persist_cursor(row, &sync_cursor_tx);
+                Self::persist_cursor(row.into(), &sync_cursor_tx);
                 if let Err(e) = handle_result {
                     tracing::error!("Error handling event from DbSync source");
                     let report = std::error::Report::new(&e).pretty(true);
@@ -194,8 +211,16 @@ impl DbSyncStreamWorker {
                 }
             }
 
-            // sleep if we don't find a new block to avoid spamming db sync
             if row_count == 0 {
+                // get latest block if we don't find any prism block just to know where we are
+                if let Ok(block_time) = Self::fetch_latest_block(&pool)
+                    .await
+                    .inspect_err(|e| tracing::error!("Unable to get the latest block: {}", e))
+                {
+                    Self::persist_cursor(block_time, &sync_cursor_tx);
+                }
+
+                // sleep if we don't find a new block to avoid spamming db sync
                 tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
             }
         }
@@ -226,16 +251,39 @@ impl DbSyncStreamWorker {
         Ok(())
     }
 
-    fn persist_cursor(row: MetadataProjection, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
-        let slot = row.slot_no as u64;
-        let block_hash = HexStr::from(row.block_hash);
-        let timestamp = row.time;
+    fn persist_cursor(block_time: BlockTime, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
+        let slot = block_time.slot_no as u64;
+        let block_hash = HexStr::from(block_time.block_hash);
+        let timestamp = block_time.time;
         let cursor = DltCursor {
             slot,
             block_hash: block_hash.to_bytes(),
             cbt: Some(timestamp),
         };
         let _ = sync_cursor_tx.send(Some(cursor));
+    }
+
+    async fn fetch_latest_block(pool: &PgPool) -> Result<BlockTime, DltError> {
+        let row = sqlx::query_as(
+            r#"
+SELECT
+    b."time" AT TIME ZONE 'UTC' AS "time",
+    b.slot_no,
+    b.hash AS block_hash
+FROM block AS b
+WHERE b.block_no <= (SELECT max(block_no) - 112 FROM block)
+ORDER BY b.block_no DESC
+LIMIT 1
+            "#,
+        )
+        .fetch_one(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
+        .map_err(|_| DltError::Connection { location: location!() })?;
+
+        tracing::warn!("{:?}", row);
+
+        Ok(row)
     }
 
     async fn fetch_metadata(pool: &PgPool, from_slot: i64) -> Result<Vec<MetadataProjection>, DltError> {
@@ -260,7 +308,7 @@ LIMIT 200
         .fetch_all(pool)
         .await
         .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
-        .map_err(|_| DltError::Disconnected { location: location!() })?;
+        .map_err(|_| DltError::Connection { location: location!() })?;
         Ok(rows)
     }
 }

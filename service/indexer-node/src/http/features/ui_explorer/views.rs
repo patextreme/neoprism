@@ -9,11 +9,7 @@ use crate::http::features::ui_explorer::models::PageQuery;
 use crate::http::features::ui_resolver::models::DidQuery;
 use crate::http::{components, urls};
 
-pub fn index(
-    network: NetworkIdentifier,
-    cursor: Option<DltCursor>,
-    dids: Paginated<CanonicalPrismDid>,
-) -> Markup {
+pub fn index(network: NetworkIdentifier, cursor: Option<DltCursor>, dids: Paginated<CanonicalPrismDid>) -> Markup {
     let body = html! {
         (dlt_cursor_card(cursor))
         (did_list(dids))
