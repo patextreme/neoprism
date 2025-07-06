@@ -87,7 +87,9 @@ async fn start_dlt_source(
         Some(cursor_rx)
     } else if let Some(dbsync_url) = cli.dbsync_url.as_ref() {
         tracing::info!("Starting DLT sync worker on {} from cardano dbsync", network);
-        let source = DbSyncSource::new(db.clone(), dbsync_url);
+        let source = DbSyncSource::since_persisted_cursor(db.clone(), dbsync_url)
+            .await
+            .expect("Failed to create DLT source");
 
         let sync_worker = DltSyncWorker::new(db.clone(), source);
         let index_worker = DltIndexWorker::new(db.clone());

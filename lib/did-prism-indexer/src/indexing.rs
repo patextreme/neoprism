@@ -116,7 +116,7 @@ where
 
         let insert_result = repo.insert_raw_operations(insert_batch).await;
         if let Err(e) = insert_result {
-            tracing::error!("{:?}", e);
+            tracing::error!("Failed to insert operation into database: {:?}", e);
         }
     }
     Ok(())

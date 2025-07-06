@@ -117,15 +117,22 @@ pub struct DbSyncSource<Store: DltCursorRepo + Send + 'static> {
     store: Store,
     dbsync_url: String,
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
+    from_slot: u64,
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
-    pub fn new(store: Store, dbsync_url: &str) -> Self {
+    pub async fn since_persisted_cursor(store: Store, dbsync_url: &str) -> Result<Self, E> {
+        let cursor = store.get_cursor().await?;
+        Ok(Self::new(store, dbsync_url, cursor.map(|i| i.slot).unwrap_or_default()))
+    }
+
+    pub fn new(store: Store, dbsync_url: &str, from_slot: u64) -> Self {
         let (cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
             store,
             dbsync_url: dbsync_url.to_string(),
             sync_cursor_tx: cursor_tx,
+            from_slot,
         }
     }
 }
@@ -142,6 +149,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DltSource for DbSyncSo
         let stream_worker = DbSyncStreamWorker {
             dbsync_url: self.dbsync_url,
             sync_cursor_tx: self.sync_cursor_tx,
+            from_slot: self.from_slot,
             event_tx,
         };
 
@@ -156,6 +164,7 @@ struct DbSyncStreamWorker {
     dbsync_url: String,
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
     event_tx: mpsc::Sender<PublishedPrismObject>,
+    from_slot: u64,
 }
 
 impl DbSyncStreamWorker {
@@ -169,7 +178,9 @@ impl DbSyncStreamWorker {
                 let pool = PgPoolOptions::new().max_connections(1).connect(&db_url).await;
                 match pool {
                     Ok(pool) => {
-                        if let Err(e) = Self::stream_loop(pool, event_tx.clone(), sync_cursor_tx.clone()).await {
+                        if let Err(e) =
+                            Self::stream_loop(pool, event_tx.clone(), sync_cursor_tx.clone(), self.from_slot).await
+                        {
                             tracing::error!("DbSync stream loop termitated with error {}", e);
                         }
                     }
@@ -192,12 +203,18 @@ impl DbSyncStreamWorker {
         pool: PgPool,
         event_tx: mpsc::Sender<PublishedPrismObject>,
         sync_cursor_tx: watch::Sender<Option<DltCursor>>,
+        from_slot: u64,
     ) -> Result<(), DltError> {
-        let mut slot_cursor = 0; // FIXME: load from last persisted cursor
+        let mut sync_cursor = sync_cursor_tx
+            .subscribe()
+            .borrow()
+            .as_ref()
+            .map(|i| i.slot)
+            .unwrap_or(from_slot) as i64;
         loop {
-            let metadata_rows = Self::fetch_metadata(&pool, slot_cursor).await?;
+            let metadata_rows = Self::fetch_metadata(&pool, sync_cursor).await?;
             if let Some(latest_slot) = metadata_rows.iter().map(|i| i.slot_no).max() {
-                slot_cursor = latest_slot;
+                sync_cursor = latest_slot;
             }
             let row_count = metadata_rows.len();
             for row in metadata_rows {
@@ -280,8 +297,6 @@ LIMIT 1
         .await
         .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
         .map_err(|_| DltError::Connection { location: location!() })?;
-
-        tracing::warn!("{:?}", row);
 
         Ok(row)
     }
