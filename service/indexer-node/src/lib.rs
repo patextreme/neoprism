@@ -74,7 +74,7 @@ async fn start_dlt_source(
             network,
             address
         );
-        let source = OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, &network)
+        let source = OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, network)
             .await
             .expect("Failed to create DLT source");
 
