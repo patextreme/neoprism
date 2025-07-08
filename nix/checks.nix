@@ -42,6 +42,7 @@ in
       echo "checking feature gate for identus-did-prism-indexer"
       cargo clippy -p identus-did-prism-indexer --all-targets -- -D warnings
       cargo clippy -p identus-did-prism-indexer --all-targets --features oura -- -D warnings
+      cargo clippy -p identus-did-prism-indexer --all-targets --features dbsync -- -D warnings
     '';
     installPhase = "touch $out";
 
