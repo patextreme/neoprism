@@ -10,12 +10,12 @@ use oura::pipelining::{SourceProvider, StageReceiver};
 use oura::sources::n2n::Config;
 use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
 use oura::utils::{ChainWellKnownInfo, Utils, WithUtils};
-use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::task::JoinHandle;
+use tokio::sync::{mpsc, watch};
 
 use super::error::DltError;
 use crate::DltSource;
 use crate::dlt::NetworkIdentifier;
+use crate::dlt::common::CursorPersistWorker;
 use crate::repo::DltCursorRepo;
 
 mod model {
@@ -29,12 +29,6 @@ mod model {
     use crate::dlt::error::MetadataReadError;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    pub struct MetadataEvent {
-        pub context: MetadataContext,
-        pub metadata: Metadata,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct MetadataContext {
         pub block_hash: String,
         pub block_number: u64,
@@ -42,18 +36,6 @@ mod model {
         pub timestamp: i64,
         pub tx_hash: String,
         pub tx_idx: u32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    pub struct Metadata {
-        pub label: String,
-        pub map_json: MetadataMapJson,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    pub struct MetadataMapJson {
-        pub c: Vec<String>,
-        pub v: u64,
     }
 
     pub fn parse_oura_timestamp(context: &EventContext) -> Result<DateTime<Utc>, MetadataReadError> {
@@ -123,7 +105,7 @@ mod model {
             _ => None,
         }
         .ok_or(MetadataReadError::InvalidMetadataType {
-            source: "Metadata is not a valid type".to_string().into(),
+            source: "metadata is not a valid type".to_string().into(),
             block_hash: block_hash.clone(),
             tx_idx,
         })?;
@@ -165,15 +147,15 @@ impl NetworkIdentifier {
 pub struct OuraN2NSource<Store: DltCursorRepo + Send + 'static> {
     with_utils: WithUtils<Config>,
     store: Store,
-    cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
+    sync_cursor_tx: watch::Sender<Option<DltCursor>>,
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
     pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
         let intersect = match chain {
             NetworkIdentifier::Mainnet => oura::sources::IntersectArg::Point(PointArg(
-                71482683,
-                "f3fd56f7e390d4e45d06bb797d83b7814b1d32c2112bc997779e34de1579fa7d".to_string(),
+                71481015,
+                "2a094a19a6e0c4e12b2fb250b8dfb1034dcc94dc2c47419da3b56eb4aaca4f25".to_string(),
             )),
             NetworkIdentifier::Preprod => oura::sources::IntersectArg::Point(PointArg(
                 10718532,
@@ -228,35 +210,31 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
         };
         let utils = Utils::new(chain.chain_wellknown_info());
         let with_utils = WithUtils::new(config, Arc::new(utils));
-        let (cursor_tx, _) = tokio::sync::watch::channel::<Option<DltCursor>>(None);
+        let (sync_cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
             with_utils,
             store,
-            cursor_tx,
+            sync_cursor_tx,
         }
-    }
-
-    pub fn cursor_receiver(&self) -> tokio::sync::watch::Receiver<Option<DltCursor>> {
-        self.cursor_tx.subscribe()
     }
 }
 
 impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
-    fn receiver(self) -> Result<Receiver<PublishedPrismObject>, String> {
+    fn sync_cursor(&self) -> watch::Receiver<Option<DltCursor>> {
+        self.sync_cursor_tx.subscribe()
+    }
+
+    fn into_stream(self) -> Result<mpsc::Receiver<PublishedPrismObject>, String> {
         let (event_tx, rx) = tokio::sync::mpsc::channel::<PublishedPrismObject>(1024);
 
-        let cursor_persist_worker = CursorPersistWorker {
-            cursor_rx: self.cursor_tx.subscribe(),
-            store: self.store,
-        };
-
-        let oura_stream_worker = OuraStreamWorker {
+        let cursor_persist_worker = CursorPersistWorker::new(self.store, self.sync_cursor_tx.subscribe());
+        let stream_worker = OuraStreamWorker {
             with_utils: self.with_utils,
-            cursor_tx: self.cursor_tx,
+            sync_cursor_tx: self.sync_cursor_tx,
             event_tx,
         };
 
-        oura_stream_worker.spawn();
+        stream_worker.spawn();
         cursor_persist_worker.spawn();
 
         Ok(rx)
@@ -265,11 +243,12 @@ impl<Store: DltCursorRepo + Send> DltSource for OuraN2NSource<Store> {
 
 struct OuraStreamWorker {
     with_utils: WithUtils<Config>,
-    cursor_tx: tokio::sync::watch::Sender<Option<DltCursor>>,
-    event_tx: Sender<PublishedPrismObject>,
+    sync_cursor_tx: watch::Sender<Option<DltCursor>>,
+    event_tx: mpsc::Sender<PublishedPrismObject>,
 }
 
 impl OuraStreamWorker {
+    /// std thread is used to avoid oura receiver blocking on tokio pool
     fn spawn(self) -> std::thread::JoinHandle<Result<(), DltError>> {
         const RESTART_DELAY: std::time::Duration = std::time::Duration::from_secs(10);
         std::thread::spawn(move || {
@@ -303,7 +282,7 @@ impl OuraStreamWorker {
     /// Construct WithUtils instance from the last event sent to persist worker.
     fn build_with_util(&self) -> WithUtils<Config> {
         let mut owned_with_utils = self.with_utils.clone();
-        let rx = self.cursor_tx.subscribe();
+        let rx = self.sync_cursor_tx.subscribe();
         let prev_cursor = rx.borrow();
         let prev_intersect = prev_cursor
             .as_ref()
@@ -325,7 +304,7 @@ impl OuraStreamWorker {
                     handle_result
                 }
                 Err(RecvTimeoutError::Timeout) => Err(DltError::EventRecvTimeout { location: location!() }),
-                Err(RecvTimeoutError::Disconnected) => Err(DltError::Disconnected { location: location!() }),
+                Err(RecvTimeoutError::Disconnected) => Err(DltError::Connection { location: location!() }),
             };
             if let Err(e) = handle_result {
                 tracing::error!("Error handling event from oura source");
@@ -354,7 +333,7 @@ impl OuraStreamWorker {
             block_hash: block_hash.to_bytes(),
             cbt: Some(timestamp),
         };
-        let _ = self.cursor_tx.send(Some(cursor));
+        let _ = self.sync_cursor_tx.send(Some(cursor));
     }
 
     fn handle_prism_event(&self, event: Event) -> Result<(), DltError> {
@@ -372,7 +351,7 @@ impl OuraStreamWorker {
             context.block_hash.as_deref().unwrap_or_default(),
         );
 
-        let parsed_prism_object = self::model::parse_oura_event(context, meta);
+        let parsed_prism_object = model::parse_oura_event(context, meta);
         match parsed_prism_object {
             Ok(prism_object) => self
                 .event_tx
@@ -388,40 +367,5 @@ impl OuraStreamWorker {
         }
 
         Ok(())
-    }
-}
-
-struct CursorPersistWorker<Store: DltCursorRepo> {
-    cursor_rx: tokio::sync::watch::Receiver<Option<DltCursor>>,
-    store: Store,
-}
-
-impl<Store: DltCursorRepo + Send + 'static> CursorPersistWorker<Store> {
-    fn spawn(mut self) -> JoinHandle<Result<(), DltError>> {
-        const DELAY: tokio::time::Duration = tokio::time::Duration::from_secs(60);
-        tracing::info!("Spawn cursor persist worker with {:?} interval", DELAY);
-        tokio::spawn(async move {
-            loop {
-                let recv_result = self.cursor_rx.changed().await;
-                tokio::time::sleep(DELAY).await;
-
-                if let Err(e) = recv_result {
-                    tracing::error!("Error getting cursor to persist: {}", e);
-                }
-
-                let cursor = self.cursor_rx.borrow_and_update().clone();
-                let Some(cursor) = cursor else { continue };
-                tracing::info!(
-                    "Persisting cursor on slot ({}, {})",
-                    cursor.slot,
-                    HexStr::from(cursor.block_hash.as_slice()).to_string(),
-                );
-
-                let persist_result = self.store.set_cursor(cursor).await;
-                if let Err(e) = persist_result {
-                    tracing::error!("Error persisting cursor: {}", e);
-                }
-            }
-        })
     }
 }

@@ -14,13 +14,13 @@ use maud::{Markup, html};
 use crate::app::service::error::ResolutionError;
 use crate::http::{components, urls};
 
-pub fn index(network: Option<NetworkIdentifier>) -> Markup {
+pub fn index(network: NetworkIdentifier) -> Markup {
     let body = search_box(None);
     components::page_layout("Resolver", network, body)
 }
 
 pub fn resolve(
-    network: Option<NetworkIdentifier>,
+    network: NetworkIdentifier,
     did_str: &str,
     did_state: Result<(PrismDid, DidState), ResolutionError>,
     did_debug: Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>,

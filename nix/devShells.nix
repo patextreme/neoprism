@@ -66,7 +66,7 @@
         runNode = pkgs.writeShellScriptBin "runNode" ''
           cd ${rootDir}
           ${buildAssets}/bin/buildAssets
-          ${rust}/bin/cargo run --bin indexer-node -- --db postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
+          ${rust}/bin/cargo run --bin indexer-node -- --db-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
         '';
       };
     in
@@ -90,7 +90,6 @@
           cargo-expand
           cargo-license
           cargo-udeps
-          protobuf
           rust
           wasm-pack
           # node

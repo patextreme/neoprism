@@ -1,4 +1,4 @@
-FROM nixos/nix as builder
+FROM nixos/nix:2.26.4 AS builder
 RUN mkdir -p /etc/nix && \
     echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
 

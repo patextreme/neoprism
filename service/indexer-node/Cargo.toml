@@ -8,7 +8,7 @@ edition.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 axum = { workspace = true }
-clap = { workspace = true, features = ["derive"] }
+clap = { workspace = true, features = ["derive", "env"] }
 chrono = { workspace = true }
 derive_more = { workspace = true, features = [
   "as_ref",
@@ -34,7 +34,7 @@ utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
 identus-apollo = { workspace = true, features = ["hex", "jwk"] }
 identus-did-core = { workspace = true, features = ["openapi"] }
 identus-did-prism = { workspace = true }
-identus-did-prism-indexer = { workspace = true, features = ["oura"] }
+identus-did-prism-indexer = { workspace = true, features = ["oura", "dbsync"] }
 indexer-storage = { workspace = true }
 
 [dev-dependencies]

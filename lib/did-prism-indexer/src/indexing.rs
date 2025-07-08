@@ -86,7 +86,7 @@ where
     Repo: OperationRepo + Send,
     <Repo as OperationRepo>::Error: Send + Sync + 'static,
 {
-    let mut rx = source.receiver().expect("Unable to create a DLT source");
+    let mut rx = source.into_stream().expect("Unable to create a DLT source");
 
     while let Some(published_prism_object) = rx.recv().await {
         let block = published_prism_object.prism_object.block_content;
@@ -116,7 +116,7 @@ where
 
         let insert_result = repo.insert_raw_operations(insert_batch).await;
         if let Err(e) = insert_result {
-            tracing::error!("{:?}", e);
+            tracing::error!("Failed to insert operation into database: {:?}", e);
         }
     }
     Ok(())
@@ -146,8 +146,8 @@ where
             Some((_, _, signed_operation)) => {
                 match index_from_signed_operation(signed_operation) {
                     Ok(IntermediateIndexedOperation::VdrRoot { did, operation_hash }) => {
-                        return Ok(Some((did, operation_hash)));
-                    } // found root
+                        return Ok(Some((did, operation_hash))); // found root
+                    }
                     Ok(IntermediateIndexedOperation::VdrChild {
                         prev_operation_hash, ..
                     }) => {
