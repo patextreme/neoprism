@@ -93,16 +93,16 @@ dbDown
 
 These are commands you can run outside the development shell
 
-| command | description |
-|-|-|
+| command                                                     | description                                                        |
+|-------------------------------------------------------------|--------------------------------------------------------------------|
 | `nix flake check`                                           | Run checks to see if it will pass the CI (CI runs this check)      |
 | `nix build .#indexer-docker`                                | Use nix to build the docker image (output available at `./result`) |
 | `nix build .#indexer-docker && cat ./result \| docker load` | Use nix to build the docker image and load it using docker         |
 
 Assuming you are in the development shell, these are frequently used commands.
 
-| command | description |
-|-|-|
+| command                         | description                                    |
+|---------------------------------|------------------------------------------------|
 | `npm install`                   | Install the npm dependencies (first time only) |
 | `cargo build`                   | Build the cargo workspace                      |
 | `cargo clean`                   | Clean the cargo workspace                      |
@@ -111,8 +111,8 @@ Assuming you are in the development shell, these are frequently used commands.
 
 And these are some scripts provided by the shell to automate local dev workflow
 
-| command | description |
-|-|-|
+| command                         | description                                                        |
+|---------------------------------|--------------------------------------------------------------------|
 | `format`                        | Run formatter on everything                                        |
 | `build`                         | Building the whole project                                         |
 | `buildAssets`                   | Building the WebUI assets (css, javascript, static assets)         |
