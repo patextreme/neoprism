@@ -90,7 +90,6 @@
           cargo-expand
           cargo-license
           cargo-udeps
-          protobuf
           rust
           wasm-pack
           # node
