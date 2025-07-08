@@ -316,7 +316,7 @@ LEFT JOIN tx ON tx_meta.tx_id = tx.id
 LEFT JOIN block AS b ON block_id = b.id
 WHERE tx_meta.key = 21325 AND b.slot_no > $1 AND b.block_no <= (SELECT max(block_no) - 112 FROM block)
 ORDER BY b.block_no, tx.block_index
-LIMIT 200
+LIMIT 1000
             "#,
         )
         .bind(from_slot)
