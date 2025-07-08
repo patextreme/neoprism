@@ -14,31 +14,24 @@
       flake-utils,
       ...
     }:
-    flake-utils.lib.eachDefaultSystem (
+    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-darwin" ] (
       system:
       let
         pkgs = import nixpkgs {
           inherit system;
           config.unfree = true;
-          overlays = [ (import rust-overlay) ];
-        };
-        nightlyVersion = "2025-06-01";
-        rustMinimal = pkgs.rust-bin.nightly.${nightlyVersion}.minimal;
-        rust = pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
-          extensions = [
-            "rust-src"
-            "rust-analyzer"
+          overlays = [
+            (import rust-overlay)
+            (final: prev: {
+              rustUtils = prev.callPackage ./nix/rustUtils.nix { inherit rust-overlay; };
+            })
           ];
-          targets = [ "wasm32-unknown-unknown" ];
         };
       in
       {
-        devShells = import ./nix/devShells.nix { inherit pkgs rust; };
-        checks = import ./nix/checks.nix { inherit pkgs rust; };
-        packages = import ./nix/packages.nix {
-          inherit pkgs;
-          rust = rustMinimal;
-        };
+        checks = import ./nix/checks/default.nix { inherit pkgs; };
+        devShells = import ./nix/devShells/default.nix { inherit pkgs; };
+        packages = import ./nix/packages/default.nix { inherit pkgs; };
       }
     );
 }

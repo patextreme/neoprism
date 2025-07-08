@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. 0.1.0) without the "v"'
+        required: true
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  publish:
+    name: Build indexer docker image
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_ORG: patextreme
+      # DOCKERHUB_ORG: ${{ vars.DOCKERHUB_ORG }}
+      RELEASE_VERSION: 0.1.0-rc.1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          # username: ${{ vars.DOCKERHUB_USERNAME }}
+          # password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: patextreme
+          password: ${{ secrets.DOCKERHUB_TOKEN_PAT }}
+
+      - name: Build image (amd64)
+        run: nix build .#neoprism-docker-linux-amd64 -L -o result-amd64
+
+      - name: Build image (arm64)
+        run: nix build .#neoprism-docker-linux-arm64 -L -o result-arm64
+
+      - name: Load and push docker images
+        run: |
+          docker load < result-amd64
+          docker load < result-arm64
+          docker tag "neoprism:$RELEASE_VERSION-amd64" "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-amd64"
+          docker tag "neoprism:$RELEASE_VERSION-arm64" "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-arm64"
+          docker images
+          docker push "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-amd64"
+          docker push "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-arm64"
+
+          # build multi-arch image
+          docker manifest create  "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION" \
+            "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-amd64" \
+            "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-arm64"
+          docker manifest push "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION"
