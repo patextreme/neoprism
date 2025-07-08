@@ -53,7 +53,7 @@ mod model {
         })
     }
 
-    pub fn parse_event(
+    pub fn parse_oura_event(
         context: EventContext,
         metadata: MetadataRecord,
     ) -> Result<PublishedPrismObject, MetadataReadError> {
@@ -351,7 +351,7 @@ impl OuraStreamWorker {
             context.block_hash.as_deref().unwrap_or_default(),
         );
 
-        let parsed_prism_object = model::parse_event(context, meta);
+        let parsed_prism_object = model::parse_oura_event(context, meta);
         match parsed_prism_object {
             Ok(prism_object) => self
                 .event_tx

@@ -8,7 +8,7 @@ use tokio::task::JoinHandle;
 
 use crate::DltSource;
 use crate::dlt::common::CursorPersistWorker;
-use crate::dlt::dbsync::model::{BlockTime, MetadataProjection};
+use crate::dlt::dbsync::model::{BlockTimeProjection, MetadataProjection};
 use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
 
@@ -36,7 +36,7 @@ mod model {
     }
 
     #[derive(Debug, Clone, FromRow)]
-    pub struct BlockTime {
+    pub struct BlockTimeProjection {
         pub time: DateTime<Utc>,
         pub slot_no: i64,
         pub block_hash: Vec<u8>,
@@ -48,7 +48,7 @@ mod model {
         pub v: u64,
     }
 
-    impl From<MetadataProjection> for BlockTime {
+    impl From<MetadataProjection> for BlockTimeProjection {
         fn from(value: MetadataProjection) -> Self {
             Self {
                 time: value.time,
@@ -58,7 +58,7 @@ mod model {
         }
     }
 
-    pub fn parse_row(metadata: MetadataProjection) -> Result<PublishedPrismObject, MetadataReadError> {
+    pub fn parse_metadata_projection(metadata: MetadataProjection) -> Result<PublishedPrismObject, MetadataReadError> {
         let block_hash = HexStr::from(&metadata.block_hash).to_string();
         let block_metadata = BlockMetadata {
             slot_number: metadata.slot_no as u64,
@@ -253,7 +253,7 @@ impl DbSyncStreamWorker {
             HexStr::from(&row.block_hash).to_string(),
         );
 
-        let parsed_prism_object = model::parse_row(row);
+        let parsed_prism_object = model::parse_metadata_projection(row);
         match parsed_prism_object {
             Ok(prism_object) => event_tx.send(prism_object).await.map_err(|e| DltError::EventHandling {
                 source: e.to_string().into(),
@@ -268,7 +268,7 @@ impl DbSyncStreamWorker {
         Ok(())
     }
 
-    fn persist_cursor(block_time: BlockTime, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
+    fn persist_cursor(block_time: BlockTimeProjection, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
         let slot = block_time.slot_no as u64;
         let block_hash = HexStr::from(block_time.block_hash);
         let timestamp = block_time.time;
@@ -280,7 +280,7 @@ impl DbSyncStreamWorker {
         let _ = sync_cursor_tx.send(Some(cursor));
     }
 
-    async fn fetch_latest_block(pool: &PgPool) -> Result<BlockTime, DltError> {
+    async fn fetch_latest_block(pool: &PgPool) -> Result<BlockTimeProjection, DltError> {
         let row = sqlx::query_as(
             r#"
 SELECT
