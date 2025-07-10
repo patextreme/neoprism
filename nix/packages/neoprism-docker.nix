@@ -14,12 +14,12 @@ dockerTools.buildLayeredImage {
     ui-assets
   ];
   config = {
-    Env = [ "RUST_LOG=info,oura=warn" ];
-    Entrypoint = [ "/bin/indexer-node" ];
-    Cmd = [
-      "--assets"
-      "/assets"
+    Env = [
+      "RUST_LOG=info,oura=warn"
+      "NPRISM_ASSETS_PATH=/assets"
     ];
+    Entrypoint = [ "/bin/indexer-node" ];
+    Cmd = [ ];
     WorkingDir = "/";
   };
 }
