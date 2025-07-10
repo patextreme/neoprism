@@ -9,7 +9,7 @@ on:
 
 jobs:
   publish:
-    name: Build indexer docker image
+    name: Release neoprism artifacts
     runs-on: ubuntu-latest
     env:
       DOCKERHUB_ORG: patextreme
@@ -19,7 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        ref: v${{ env.github.event.inputs.tag }}
+        with:
+          ref: v${{ github.event.inputs.tag }}
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
