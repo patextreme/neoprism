@@ -49,14 +49,14 @@ jobs:
         run: |
           docker load < result-amd64
           docker load < result-arm64
-          docker tag "neoprism:$RELEASE_VERSION-amd64" "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-amd64"
-          docker tag "neoprism:$RELEASE_VERSION-arm64" "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-arm64"
+          docker tag "identus-neoprism:$RELEASE_VERSION-amd64" "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION-amd64"
+          docker tag "identus-neoprism:$RELEASE_VERSION-arm64" "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION-arm64"
           docker images
-          docker push "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-amd64"
-          docker push "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-arm64"
+          docker push "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION-amd64"
+          docker push "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION-arm64"
 
           # build multi-arch image
-          docker manifest create  "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION" \
-            "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-amd64" \
-            "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION-arm64"
-          docker manifest push "$DOCKERHUB_ORG/neoprism:$RELEASE_VERSION"
+          docker manifest create  "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION" \
+            "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION-amd64" \
+            "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION-arm64"
+          docker manifest push "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION"

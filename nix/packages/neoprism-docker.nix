@@ -7,7 +7,7 @@
 }:
 
 dockerTools.buildLayeredImage {
-  name = "neoprism";
+  name = "identus-neoprism";
   tag = "${version}${tagSuffix}";
   contents = [
     neoprism-bin
