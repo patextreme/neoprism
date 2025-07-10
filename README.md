@@ -33,7 +33,7 @@ Start the node and sync block metadata from relay node `backbone.mainnet.cardano
 
 ```bash
 cd docker
-docker-compose up --build
+docker-compose up
 ```
 
 WebUI is available at `http://localhost:8080`

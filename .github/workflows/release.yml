@@ -4,11 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release (e.g. 0.1.0) without the "v"'
+        description: Tag to release (e.g. 0.1.0) without the "v"
         required: true
-  pull_request:
-    branches:
-    - main
 
 jobs:
   publish:
@@ -17,11 +14,12 @@ jobs:
     env:
       DOCKERHUB_ORG: patextreme
       # DOCKERHUB_ORG: ${{ vars.DOCKERHUB_ORG }}
-      RELEASE_VERSION: 0.1.0-rc.1
+      RELEASE_VERSION: ${{ github.event.inputs.tag }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        ref: v${{ env.github.event.inputs.tag }}
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31

@@ -1,8 +1,6 @@
 services:
   indexer-node:
-    build:
-      dockerfile: ./docker/Dockerfile
-      context: ..
+    image: patextreme/neoprism:0.1.0-rc.1
     restart: always
     ports:
       - 8080:8080
