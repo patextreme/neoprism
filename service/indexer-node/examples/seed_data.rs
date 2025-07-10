@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
         "vdr-1",
         &vdr_sk,
         proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
-            previous_operation_hash: op_hash_1_2.to_vec(),
+            previous_event_hash: op_hash_1_2.to_vec(),
             data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
                 4, 5, 6,
             ])),
@@ -51,7 +51,7 @@ async fn main() -> anyhow::Result<()> {
         "vdr-1",
         &vdr_sk,
         proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
-            previous_operation_hash: op_hash_1_3.to_vec(),
+            previous_event_hash: op_hash_1_3.to_vec(),
             data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
                 7, 8, 9,
             ])),

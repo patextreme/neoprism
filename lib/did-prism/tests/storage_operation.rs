@@ -104,7 +104,7 @@ fn update_storage_entry() {
         VDR_KEY_NAME,
         &vdr_sk,
         proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
-            previous_operation_hash: create_storage_op_hash.to_vec(),
+            previous_event_hash: create_storage_op_hash.to_vec(),
             data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
                 4, 5, 6,
             ])),
@@ -141,7 +141,7 @@ fn deactivate_storage_entry() {
         &vdr_sk,
         proto::prism::prism_operation::Operation::DeactivateStorageEntry(
             proto::prism_storage::ProtoDeactivateStorageEntry {
-                previous_operation_hash: create_storage_op_hash.to_vec(),
+                previous_event_hash: create_storage_op_hash.to_vec(),
                 special_fields: Default::default(),
             },
         ),
@@ -176,7 +176,7 @@ fn create_storage_entry_with_non_vdr_key() {
 }
 
 #[test]
-fn update_storage_entry_with_invalid_prev_operation_hash() {
+fn update_storage_entry_with_invalid_prev_event_hash() {
     let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
     let (create_storage_op, _) = test_utils::new_signed_operation(
         VDR_KEY_NAME,
@@ -190,11 +190,22 @@ fn update_storage_entry_with_invalid_prev_operation_hash() {
             special_fields: Default::default(),
         }),
     );
-    let (update_storage_op, _) = test_utils::new_signed_operation(
+    let (update_storage_op_1, update_op_hash_1) = test_utils::new_signed_operation(
         VDR_KEY_NAME,
         &vdr_sk,
         proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
-            previous_operation_hash: [0; 32].to_vec(),
+            previous_event_hash: [0; 32].to_vec(),
+            data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
+                4, 5, 6,
+            ])),
+            special_fields: Default::default(),
+        }),
+    );
+    let (update_storage_op_2, _) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
+            previous_event_hash: update_op_hash_1.to_vec(),
             data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
                 4, 5, 6,
             ])),
@@ -202,7 +213,12 @@ fn update_storage_entry_with_invalid_prev_operation_hash() {
         }),
     );
 
-    let operations = test_utils::populate_metadata(vec![create_did_op, create_storage_op, update_storage_op]);
+    let operations = test_utils::populate_metadata(vec![
+        create_did_op,
+        create_storage_op,
+        update_storage_op_1,
+        update_storage_op_2,
+    ]);
     let state = resolver::resolve_published(operations).0.unwrap();
 
     assert_eq!(state.storage.len(), 1);
@@ -228,7 +244,7 @@ fn update_storage_entry_with_non_vdr_key() {
         "master-0",
         &master_sk,
         proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
-            previous_operation_hash: create_storage_op_hash.to_vec(),
+            previous_event_hash: create_storage_op_hash.to_vec(),
             data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
                 4, 5, 6,
             ])),
@@ -280,7 +296,7 @@ fn update_storage_entry_with_revoked_key() {
         VDR_KEY_NAME,
         &vdr_sk,
         proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
-            previous_operation_hash: revoke_key_op_hash.to_vec(),
+            previous_event_hash: revoke_key_op_hash.to_vec(),
             data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
                 4, 5, 6,
             ])),
@@ -357,7 +373,7 @@ fn deactivate_storage_entry_with_invalid_prev_operation_hash() {
         &vdr_sk,
         proto::prism::prism_operation::Operation::DeactivateStorageEntry(
             proto::prism_storage::ProtoDeactivateStorageEntry {
-                previous_operation_hash: [0; 32].to_vec(),
+                previous_event_hash: [0; 32].to_vec(),
                 special_fields: Default::default(),
             },
         ),

@@ -76,13 +76,13 @@ impl CreateStorageOperation {
 
 #[derive(Debug, Clone)]
 pub struct UpdateStorageOperation {
-    pub prev_operation_hash: Sha256Digest,
+    pub prev_event_hash: Sha256Digest,
     pub data: StorageData,
 }
 
 impl UpdateStorageOperation {
     pub fn parse(operation: &ProtoUpdateStorageEntry) -> Result<Self, UpdateStorageOperationError> {
-        let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
+        let prev_event_hash = Sha256Digest::from_bytes(&operation.previous_event_hash)
             .map_err(|e| UpdateStorageOperationError::InvalidPreviousOperationHash { source: e })?;
         let data = operation
             .data
@@ -90,10 +90,7 @@ impl UpdateStorageOperation {
             .ok_or(UpdateStorageOperationError::EmptyStorageData)?
             .into();
 
-        Ok(Self {
-            prev_operation_hash,
-            data,
-        })
+        Ok(Self { prev_event_hash, data })
     }
 }
 
@@ -104,8 +101,10 @@ pub struct DeactivateStorageOperation {
 
 impl DeactivateStorageOperation {
     pub fn parse(operation: &ProtoDeactivateStorageEntry) -> Result<Self, DeactivateStorageOperationError> {
-        let prev_operation_hash = Sha256Digest::from_bytes(&operation.previous_operation_hash)
+        let prev_event_hash = Sha256Digest::from_bytes(&operation.previous_event_hash)
             .map_err(|e| DeactivateStorageOperationError::InvalidPreviousOperationHash { source: e })?;
-        Ok(Self { prev_operation_hash })
+        Ok(Self {
+            prev_operation_hash: prev_event_hash,
+        })
     }
 }

@@ -190,11 +190,11 @@ fn index_from_operation(prism_operation: PrismOperation) -> anyhow::Result<Inter
         }),
         Some(Operation::UpdateStorageEntry(op)) => Ok(IntermediateIndexedOperation::VdrChild {
             operation_hash: operation_hash.to_vec(),
-            prev_operation_hash: op.previous_operation_hash,
+            prev_operation_hash: op.previous_event_hash,
         }),
         Some(Operation::DeactivateStorageEntry(op)) => Ok(IntermediateIndexedOperation::VdrChild {
             operation_hash: operation_hash.to_vec(),
-            prev_operation_hash: op.previous_operation_hash,
+            prev_operation_hash: op.previous_event_hash,
         }),
         None => Err(anyhow::anyhow!("operation does not exist in PrismOperation")),
         Some(_) => {

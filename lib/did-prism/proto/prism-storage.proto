@@ -8,78 +8,62 @@ package proto;
  * - 2) The DID needs not to be Deactivate
  */
 message ProtoCreateStorageEntry {
+  reserved 2; // Only used by ProtoUpdateStorageEntry & ProtoDeactivateStorageEntry
+  reserved 3 to 49; // Those field will be used for validation the Storage Events in the future
   bytes did_prism_hash = 1; // The specificId of the did:prism.
-  bytes nonce = 2; // Used to generate reference diferents hash for the reference of the name
+  bytes nonce = 50; // Used to generate different reference hash (to make different entries with the same initial data possible)
   oneof data {
-    bytes bytes = 10;
-    string ipfs = 11; // CID
-    StatusListEntry statusListEntry = 12;
-    // BitstringStatusList bitstring_status_list = 4;
-    // StatusListToken status_list_token = 5;
-
-    // Token Status List https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/:
-    // https://datatracker.ietf.org/doc/draft-ietf-oauth-status-list/06/
-
-    // bytes status_list_jwt = 4;
-    // (size of list, size of state) status_list_sdjwt = 5;
-    // string ipfs = 6; // Link to IPFS. This is static data
-    // ??? what about IPNS? https://docs.ipfs.tech/concepts/ipns/ is there a use case for this?
+    // Nothing // The data field can be missing representing ANY type
+    bytes bytes = 100;
+    string ipfs = 101; // CID
+    // string ipns = ??; // https://docs.ipfs.tech/concepts/ipns/
+    StatusListEntry statusListEntry = 102;
   }
 }
+
 /** StorageEventUpdateEntry
  * To be valid, this operation needs to be signed by an issuing key of the DID:
  * - 1) The issuing key need to be valid at the Event/Operation momment
  * - 2) The DID needs not to be Deactivate
  */
 message ProtoUpdateStorageEntry {
-  bytes previous_operation_hash = 1; // The hash of the most recent operation that was used to create or update the VDR Entry.
-  oneof data {
-    bytes bytes = 10; //replace the bytes
-    string ipfs = 11; // Update/replace the data with a CID to IPFS. This is static data
-    StatusListEntry statusListEntry = 12;
-
-    // array[int] =  // update is to filt bytes
-    // ??? what about IPNS? https://docs.ipfs.tech/concepts/ipns/ is there a use case for this?
+  reserved 1, 50; // Only used by ProtoCreateStorageEntry
+  reserved 3 to 49; // Those field will be used for validation the Storage Events in the future
+  bytes previous_event_hash = 2; // The hash of the most recent event that was used to create or update the VDR Entry.
+  oneof data { // The data field can be missing
+    // Nothing // The data field can be missing representing ANY type
+    bytes bytes = 100; // Replace the bytes
+    string ipfs = 101; // Update/replace the data with a CID to IPFS. This is static data
+    StatusListEntry statusListEntry = 102; // compliments the previous state with just the change (similar to a diff)
   }
 }
 
-/** Status List entry */
+message ProtoDeactivateStorageEntry{
+  reserved 1, 50; // Only used by ProtoCreateStorageEntry
+  reserved 3 to 49; // Those field will be used for validation the Storage Events in the future
+  bytes previous_event_hash = 2; // The hash of the most recent event that was used to create or update the VDR Entry.
+}
+
+// ******************
+// *** DATA TYPES ***
+// ******************
+
+/** TODO WIP Status List entry
+ *
+ * This is to be inspired on the following specs (Token Status List & BitstringStatusList):
+ * - Token Status List:
+ *   - https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/:
+ *   - https://datatracker.ietf.org/doc/draft-ietf-oauth-status-list/06/
+ * - BitstringStatusList:
+ *   - https://www.w3.org/TR/vc-bitstring-status-list/#bitstringstatuslist
+ *   - https://datatracker.ietf.org/doc/draft-ietf-oauth-status-list/10/
+ */
 message StatusListEntry {
   int64 state = 1;
   string name = 2; // optional
   string details = 3; // optional
-}
 
-message ProtoDeactivateStorageEntry{
-  bytes previous_operation_hash = 1; // The hash of the most recent operation that was used to create or update the DID.
-}
-
-// /** BitstringStatusList is used for JWT VC ______ LINK!
-//  *
-//  * This is implementation of https://www.w3.org/TR/vc-bitstring-status-list/#bitstringstatuslist
-//  */
-// message BitstringStatusList {
-//   bytes bytes = 1;
-// }
-
-// /** StatusListToken
-//  * This is implementation of https://datatracker.ietf.org/doc/draft-ietf-oauth-status-list/10/
-//  */
-// message CreateStatusListTokenJWT {
-//   // static // typ: REQUIRED.  The JWT type MUST be statuslist+jwt.
-//   bytes sub = 1; // sub: REQUIRED.  As generally defined in [RFC7519].  The sub (subject) claim MUST specify the URI of the Status List Token. The value MUST be equal to that of the uri claim contained in the status_list claim of the Referenced Token.
-//   bytes iat = 2; // iat: REQUIRED.  As generally defined in [RFC7519].  The iat (issued at) claim MUST specify the time at which the Status List Token was issued.
-//   bytes ttl = 3; // ttl: OPTIONAL.  The ttl (time to live) claim, if present, MUST specify the maximum amount of time, in seconds, that the Status List Token can be cached by a consumer before a fresh copy SHOULD be retrieved.  The value of the claim MUST be a positive number encoded in JSON as a number.
-//   bytes status_list = 4; // status_list: REQUIRED.  The status_list (status list) claim MUST specify the Status List conforming to the rules outlined in Section 4.2.// exp: OPTIONAL.  As generally defined in [RFC7519].  The exp (expiration time) claim, if present, MUST specify the time at which the Status List Token is considered expired by the Status Issuer.
-//   bytes jwt_sign =5;
-// }
-
-/** TokenStatusList is used for JWT VC ______ LINK!
- *
- * This is implementation of https://www.w3.org/TR/vc-bitstring-status-list/#bitstringstatuslist
- */
-message TokenStatusList {
-  uint32 listSize = 1;
-  uint32 statusSize = 2;
-  bytes intStatus = 3;
+  // uint32 listSize = 1;
+  // uint32 statusSize = 2;
+  // bytes intStatus = 3;
 }
