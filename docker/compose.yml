@@ -1,18 +1,14 @@
 services:
   indexer-node:
-    build:
-      dockerfile: ./docker/Dockerfile
-      context: ..
+    image: patextreme/neoprism:0.1.0-rc.1
     restart: always
     ports:
       - 8080:8080
     environment:
-      RUST_LOG: oura=warn,prism_core=debug,prism_node=debug,tracing::span=warn,info
+      RUST_LOG: oura=warn,tracing::span=warn,info
       NPRISM_CARDANO_NETWORK: mainnet
       NPRISM_CARDANO_ADDR: backbone.mainnet.cardanofoundation.org:3001
-      NPRISM_ASSETS_PATH: /app/assets
       NPRISM_DB_URL: postgres://postgres:postgres@db:5432/postgres
-    entrypoint: /app/bin/indexer-node
     depends_on:
       - db
 
