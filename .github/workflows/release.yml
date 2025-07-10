@@ -9,7 +9,7 @@ on:
 
 jobs:
   publish:
-    name: Build indexer docker image
+    name: Release neoprism artifacts
     runs-on: ubuntu-latest
     env:
       DOCKERHUB_ORG: patextreme
