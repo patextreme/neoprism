@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Tag to release (e.g. 0.1.0) without the "v"
+        description: Tag to release (e.g. 0.1.0 without the "v")
         required: true
 
 jobs:
@@ -12,8 +12,7 @@ jobs:
     name: Release neoprism artifacts
     runs-on: ubuntu-latest
     env:
-      DOCKERHUB_ORG: patextreme
-      # DOCKERHUB_ORG: ${{ vars.DOCKERHUB_ORG }}
+      DOCKERHUB_ORG: ${{ vars.DOCKERHUB_ORG }}
       RELEASE_VERSION: ${{ github.event.inputs.tag }}
 
     steps:
@@ -34,10 +33,8 @@ jobs:
       - name: Login to Container Registry
         uses: docker/login-action@v3
         with:
-          # username: ${{ vars.DOCKERHUB_USERNAME }}
-          # password: ${{ secrets.DOCKERHUB_TOKEN }}
-          username: patextreme
-          password: ${{ secrets.DOCKERHUB_TOKEN_PAT }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build image (amd64)
         run: nix build .#neoprism-docker-linux-amd64 -L -o result-amd64
@@ -55,7 +52,7 @@ jobs:
           docker push "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION-amd64"
           docker push "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION-arm64"
 
-          # build multi-arch image
+          # create multi-arch image
           docker manifest create  "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION" \
             "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION-amd64" \
             "$DOCKERHUB_ORG/identus-neoprism:$RELEASE_VERSION-arm64"

@@ -1,6 +1,6 @@
 services:
   indexer-node:
-    image: patextreme/neoprism:0.1.0-rc.1
+    image: hyperledgeridentus/identus-neoprism:0.1.0-rc.2
     restart: always
     ports:
       - 8080:8080
