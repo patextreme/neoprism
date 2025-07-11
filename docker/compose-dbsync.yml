@@ -7,7 +7,7 @@ services:
     depends_on:
       - db
     environment:
-      NPRISM_CARDANO_ADDR: backbone.mainnet.cardanofoundation.org:3001
+      NPRISM_DBSYNC_URL: <DBSYNC_URL>
       RUST_LOG: oura=warn,tracing::span=warn,info
       NPRISM_DB_URL: postgres://postgres:postgres@db:5432/postgres
       NPRISM_CARDANO_NETWORK: mainnet
