@@ -216,7 +216,7 @@ impl OperationProcessorOps for V1Processor {
         };
         let operation_hash = prism_operation.operation_hash();
         candidate_state.update_storage(
-            &parsed_operation.prev_operation_hash,
+            &parsed_operation.prev_event_hash,
             &operation_hash,
             parsed_operation.data,
         )?;
