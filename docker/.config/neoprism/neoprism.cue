@@ -1,8 +1,8 @@
-package services
+package neoprism
 
 _#NeoprismVersion: "0.1.0"
 
-_#NeoprismBaseService: {
+_#BaseService: {
 	image:   "hyperledgeridentus/identus-neoprism:\(_#NeoprismVersion)"
 	restart: "always"
 	ports: ["8080:8080"]
@@ -15,7 +15,7 @@ _#NeoprismBaseService: {
 	}
 }
 
-#NeoprismServiceBuilder: {
+#ServiceBuilder: {
 	in: {source: "oura" | "dbsync"}
 
 	_extraEnvs: {
@@ -27,7 +27,7 @@ _#NeoprismBaseService: {
 		}
 	}
 
-	out: _#NeoprismBaseService & {
+	out: _#BaseService & {
 		environment: _extraEnvs
 	}
 }

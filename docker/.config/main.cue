@@ -1,17 +1,20 @@
 package main
 
-import Svc "org.hyperledger.identus.neoprism/services"
+import (
+	Pg "org.hyperledger.identus.neoprism/postgres"
+	N "org.hyperledger.identus.neoprism/neoprism"
+)
 
 basic: {
 	services: {
-		"indexer-node": (Svc.#NeoprismServiceBuilder & {in: {source: "oura"}}).out
-		"db": Svc.#PostgresServiceBuilder.out
+		"indexer-node": (N.#ServiceBuilder & {in: {source: "oura"}}).out
+		"db": Pg.#ServiceBuilder.out
 	}
 }
 
 dbsync: {
 	services: {
-		"indexer-node": (Svc.#NeoprismServiceBuilder & {in: {source: "dbsync"}}).out
-		"db": Svc.#PostgresServiceBuilder.out
+		"indexer-node": (N.#ServiceBuilder & {in: {source: "dbsync"}}).out
+		"db": Pg.#ServiceBuilder.out
 	}
 }

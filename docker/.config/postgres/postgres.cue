@@ -1,8 +1,8 @@
-package services
+package postgres
 
 _#PostgresVersion: "16"
 
-_#PostgresBaseService: {
+_#BaseService: {
 	image:   "postgres:\(_#PostgresVersion)"
 	restart: "always"
 	ports: ["5432:5432"]
@@ -13,7 +13,7 @@ _#PostgresBaseService: {
 	}
 }
 
-#PostgresServiceBuilder: {
+#ServiceBuilder: {
 	in: {}
-	out: _#PostgresBaseService
+	out: _#BaseService
 }
