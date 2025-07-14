@@ -9,18 +9,20 @@ let
   scripts = {
     build = writeShellApplication {
       name = "build";
+      runtimeInputs = with pkgs; [ dhall dhall-json ];
       text = ''
         cd "${rootDir}/docker/.config"
-        ${pkgs.cue}/bin/cue export main.cue -e basic -f -o ../compose.yml
-        ${pkgs.cue}/bin/cue export main.cue -e dbsync -f -o ../compose-dbsync.yml
+        dhall-to-yaml <<< "(./main.dhall).basic" > "${rootDir}/docker/compose.yml"
+        dhall-to-yaml <<< "(./main.dhall).dbsync" > "${rootDir}/docker/compose-dbsync.yml"
       '';
     };
 
     format = writeShellApplication {
       name = "format";
+      runtimeInputs = with pkgs; [ dhall ];
       text = ''
         cd "${rootDir}/docker/.config"
-        find . | grep '\.cue$' | xargs -I _ bash -c "echo running cue fmt on _ && ${pkgs.cue}/bin/cue fmt _"
+        find . | grep '\.dhall$' | xargs -I _ bash -c "echo running dhall format on _ && dhall format _"
       '';
     };
   };
@@ -29,9 +31,9 @@ mkShell {
   packages =
     with pkgs;
     [
-      # cue
-      cue
-      cuelsp
+      dhall
+      dhall-json
+      dhall-lsp-server
     ]
     ++ (builtins.attrValues scripts);
 
