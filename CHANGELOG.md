@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2025-07-15
+
+### 🐛 Bug Fixes
+
+- Update the new VDR protobufs (#61)
+
+### 💼 Other
+
+- Generate docker configs from single source of truth (#62)
+
+### ⚙️ Miscellaneous Tasks
+
+- Update version in docker compose
+
 ## [0.1.0] - 2025-07-10
 
 ### ⚙️ Miscellaneous Tasks
