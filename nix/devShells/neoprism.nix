@@ -18,15 +18,13 @@ let
     format = writeShellApplication {
       name = "format";
       runtimeInputs = with pkgs; [
-        sqlfluff
         nixfmt-rfc-style
         taplo
-        dhall
       ];
       text = ''
         cd "${rootDir}"
-        find . | grep '\.nix$' | xargs -I _ bash -c "echo running nixfmt on _ && ${pkgs.nixfmt-rfc-style}/bin/nixfmt _"
-        find . | grep '\.toml$' | xargs -I _ bash -c "echo running taplo on _ && ${pkgs.taplo}/bin/taplo format _"
+        find . | grep '\.nix$' | xargs -I _ bash -c "echo running nixfmt on _ && nixfmt _"
+        find . | grep '\.toml$' | xargs -I _ bash -c "echo running taplo on _ && taplo format _"
 
         cd "${rootDir}/lib/indexer-storage/migrations"
         sqlfluff fix .
@@ -36,7 +34,7 @@ let
         find . | grep '\.dhall$' | xargs -I _ bash -c "echo running dhall format on _ && dhall format _"
 
         cd "${rootDir}"
-        ${rust}/bin/cargo fmt
+        cargo fmt
       '';
     };
 
@@ -44,16 +42,12 @@ let
       name = "buildAssets";
       text = ''
         cd "${rootDir}/service/indexer-node"
-        ${pkgs.tailwindcss_4}/bin/tailwindcss -i tailwind.css -o ./assets/styles.css
+        tailwindcss -i tailwind.css -o ./assets/styles.css
       '';
     };
 
     buildConfig = writeShellApplication {
       name = "buildConfig";
-      runtimeInputs = with pkgs; [
-        dhall
-        dhall-json
-      ];
       text = ''
         cd "${rootDir}/docker/.config"
         dhall-to-yaml <<< "(./main.dhall).basic" > "${rootDir}/docker/compose.yml"
@@ -67,7 +61,7 @@ let
         cd "${rootDir}"
         ${buildAssets}/bin/buildAssets
         ${buildConfig}/bin/buildConfig
-        ${rust}/bin/cargo build --all-features
+        cargo build --all-features
       '';
     };
 
@@ -75,14 +69,14 @@ let
       name = "clean";
       text = ''
         cd "${rootDir}"
-        ${rust}/bin/cargo clean
+        cargo clean
       '';
     };
 
     dbUp = writeShellApplication {
       name = "dbUp";
       text = ''
-        ${pkgs.docker}/bin/docker run \
+        docker run \
           -d --rm \
           --name prism-db \
           -e POSTGRES_DB=${localDb.dbName} \
@@ -95,25 +89,27 @@ let
     dbDown = writeShellApplication {
       name = "dbDown";
       text = ''
-        ${pkgs.docker}/bin/docker stop prism-db
+        docker stop prism-db
       '';
     };
 
     pgDump = writeShellApplication {
       name = "pgDump";
+      runtimeInputs = with pkgs; [ postgresql_16 ];
       text = ''
         cd "${rootDir}"
         export PGPASSWORD=${localDb.password}
-        ${pkgs.postgresql_16}/bin/pg_dump -h localhost -p ${toString localDb.port} -U ${localDb.username} -w -d ${localDb.dbName} -Fc > postgres.dump
+        pg_dump -h localhost -p ${toString localDb.port} -U ${localDb.username} -w -d ${localDb.dbName} -Fc > postgres.dump
       '';
     };
 
     pgRestore = writeShellApplication {
       name = "pgRestore";
+      runtimeInputs = with pkgs; [ postgresql_16 ];
       text = ''
         cd "${rootDir}"
         export PGPASSWORD=${localDb.password}
-        ${pkgs.postgresql_16}/bin/pg_restore -h localhost -p ${toString localDb.port} -U ${localDb.username} -w -d ${localDb.dbName} postgres.dump
+        pg_restore -h localhost -p ${toString localDb.port} -U ${localDb.username} -w -d ${localDb.dbName} postgres.dump
       '';
     };
 
@@ -122,7 +118,7 @@ let
       text = ''
         cd "${rootDir}"
         ${buildAssets}/bin/buildAssets
-        ${rust}/bin/cargo run --bin indexer-node -- --db-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
+        cargo run --bin indexer-node -- --db-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
       '';
     };
 
@@ -143,6 +139,7 @@ let
         echo "Setting new version to $NEW_VERSION"
         echo "$NEW_VERSION" > version
         ${rust}/bin/cargo set-version "$NEW_VERSION"
+        ${buildConfig}/bin/buildConfig
         ${pkgs.git-cliff}/bin/git-cliff -t "$NEW_VERSION" > CHANGELOG.md
       '';
     };

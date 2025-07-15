@@ -1,5 +1,7 @@
 let Prelude = (./prelude.dhall).Prelude
 
+let version = (./prelude.dhall).neoPrismVersion
+
 let IndexerNodeService =
       { Type =
           { image : Text
@@ -9,7 +11,7 @@ let IndexerNodeService =
           , environment : Prelude.Map.Type Text Text
           }
       , default =
-        { image = "hyperledgeridentus/identus-neoprism:0.1.0"
+        { image = "hyperledgeridentus/identus-neoprism:${version}"
         , restart = "always"
         , ports = [ "8080:8080" ]
         , depends_on = [] : List Text
