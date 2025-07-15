@@ -9,6 +9,8 @@ use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use indexer_storage::PostgresDb;
+use tower::ServiceBuilder;
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
@@ -52,9 +54,10 @@ pub async fn start_server() -> anyhow::Result<()> {
     };
 
     // start server
-    let router = http::router(&cli.assets_path)
-        .with_state(state)
-        .layer(TraceLayer::new_for_http());
+    let layer = ServiceBuilder::new()
+        .layer(TraceLayer::new_for_http())
+        .option_layer(Some(CorsLayer::permissive()).filter(|_| cli.cors_enabled));
+    let router = http::router(&cli.assets_path).with_state(state).layer(layer);
     let bind_addr = format!("{}:{}", cli.address, cli.port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     tracing::info!("Server is listening on {}", bind_addr);
