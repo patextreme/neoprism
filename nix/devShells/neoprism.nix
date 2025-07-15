@@ -17,16 +17,26 @@ let
   scripts = rec {
     format = writeShellApplication {
       name = "format";
+      runtimeInputs = with pkgs; [
+        sqlfluff
+        nixfmt-rfc-style
+        taplo
+        dhall
+      ];
       text = ''
         cd "${rootDir}"
         find . | grep '\.nix$' | xargs -I _ bash -c "echo running nixfmt on _ && ${pkgs.nixfmt-rfc-style}/bin/nixfmt _"
         find . | grep '\.toml$' | xargs -I _ bash -c "echo running taplo on _ && ${pkgs.taplo}/bin/taplo format _"
 
-        ${rust}/bin/cargo fmt
-
         cd "${rootDir}/lib/indexer-storage/migrations"
-        ${pkgs.sqlfluff}/bin/sqlfluff fix .
-        ${pkgs.sqlfluff}/bin/sqlfluff lint .
+        sqlfluff fix .
+        sqlfluff lint .
+
+        cd "${rootDir}/docker/.config"
+        find . | grep '\.dhall$' | xargs -I _ bash -c "echo running dhall format on _ && dhall format _"
+
+        cd "${rootDir}"
+        ${rust}/bin/cargo fmt
       '';
     };
 
@@ -38,11 +48,25 @@ let
       '';
     };
 
+    buildConfig = writeShellApplication {
+      name = "buildConfig";
+      runtimeInputs = with pkgs; [
+        dhall
+        dhall-json
+      ];
+      text = ''
+        cd "${rootDir}/docker/.config"
+        dhall-to-yaml <<< "(./main.dhall).basic" > "${rootDir}/docker/compose.yml"
+        dhall-to-yaml <<< "(./main.dhall).dbsync" > "${rootDir}/docker/compose-dbsync.yml"
+      '';
+    };
+
     build = writeShellApplication {
       name = "build";
       text = ''
         cd "${rootDir}"
         ${buildAssets}/bin/buildAssets
+        ${buildConfig}/bin/buildConfig
         ${rust}/bin/cargo build --all-features
       '';
     };
@@ -137,6 +161,9 @@ mkShell {
       protobuf
       watchexec
       which
+      # config
+      dhall
+      dhall-json
       # db
       sqlfluff
       sqlx-cli
