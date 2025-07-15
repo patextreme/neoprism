@@ -45,6 +45,6 @@ in  { Options
           }
       }
     , dbSyncOption = Options::{
-      , extraEnvs = toMap { NPRISM_DBSYNC_URL = "<DBSYNC_URL>" }
+      , extraEnvs = toMap { NPRISM_DBSYNC_URL = "<TODO>" }
       }
     }
