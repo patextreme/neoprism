@@ -60,7 +60,6 @@ let
       text = ''
         cd "${rootDir}"
         ${buildAssets}/bin/buildAssets
-        ${buildConfig}/bin/buildConfig
         cargo build --all-features
       '';
     };

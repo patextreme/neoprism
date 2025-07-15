@@ -116,6 +116,7 @@ And these are some scripts provided by the shell to automate local dev workflow
 | `format`                        | Run formatter on everything                                        |
 | `build`                         | Building the whole project                                         |
 | `buildAssets`                   | Building the WebUI assets (css, javascript, static assets)         |
+| `buildConfig`                   | Building the generated config                                      |
 | `dbUp`                          | Spin up the local database                                         |
 | `dbDown`                        | Tear down the local database                                       |
 | `pgDump`                        | Dump the local database to `postgres.dump` file                    |
