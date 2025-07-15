@@ -35,7 +35,7 @@ pub struct CliArgs {
     #[arg(long, env = "NPRISM_ASSETS_PATH", default_value = "./service/indexer-node/assets")]
     pub assets_path: PathBuf,
     /// Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive)
-    #[arg(long, env = "NPRISM_CORS_ENABLE")]
+    #[arg(long, env = "NPRISM_CORS_ENABLED")]
     pub cors_enabled: bool,
 }
 
