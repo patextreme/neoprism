@@ -25,16 +25,12 @@ let
         cd "${rootDir}"
         find . | grep '\.nix$' | xargs -I _ bash -c "echo running nixfmt on _ && nixfmt _"
         find . | grep '\.toml$' | xargs -I _ bash -c "echo running taplo on _ && taplo format _"
+        find . | grep '\.dhall$' | xargs -I _ bash -c "echo running dhall format on _ && dhall format _"
+        cargo fmt
 
         cd "${rootDir}/lib/indexer-storage/migrations"
         sqlfluff fix .
         sqlfluff lint .
-
-        cd "${rootDir}/docker/.config"
-        find . | grep '\.dhall$' | xargs -I _ bash -c "echo running dhall format on _ && dhall format _"
-
-        cd "${rootDir}"
-        cargo fmt
       '';
     };
 
