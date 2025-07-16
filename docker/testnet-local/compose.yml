@@ -20,29 +20,28 @@ services:
       CARDANO_NODE_SOCKET_PATH: /node/testnet/socket/node1/sock
       CARDANO_NODE_NETWORK_ID: "42"
 
-  # bootstrap-wallet:
-  #   image: cardano-testnet:latest
-  #   volumes:
-  #   - node-ipc:/node/socket
-  #   - node-genesis:/node/genesis
-  #   command:
-  #   - bash
-  #   - -c
-  #   - |
-  #     sleep 3600
-  #     transactGenesis
-  #   environment:
-  #     CARDANO_NODE_SOCKET_PATH: /node/socket/node-bp.socket
-  #     CARDANO_NODE_NETWORK_ID: "42"
-  #   depends_on:
-  #     cardano-node-bp:
-  #       condition: service_healthy
+  bootstrap-wallet:
+    image: cardano-testnet:latest
+    volumes:
+    - node-testnet:/node/testnet
+    command:
+    - bash
+    - -c
+    - |
+      transactGenesis
+      sleep 3600
+    environment:
+      CARDANO_NODE_SOCKET_PATH: /node/testnet/socket/node1/sock
+      CARDANO_NODE_NETWORK_ID: "42"
+    depends_on:
+      cardano-node-bp:
+        condition: service_healthy
 
   cardano-wallet:
     image: cardanofoundation/cardano-wallet:2025.3.31
     restart: always
     ports:
-      - 8090:8090
+    - 8090:8090
     volumes:
     - node-testnet:/node/testnet
     entrypoint: []
