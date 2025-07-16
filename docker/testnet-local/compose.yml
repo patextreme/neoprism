@@ -4,24 +4,12 @@ services:
     ports:
     - 3001:3001
     volumes:
-    - node-ipc:/node/socket
-    - node-genesis:/node/genesis
-    - ./node-config:/node/config
+    - node-testnet:/node/testnet
     command:
     - bash
     - -c 
     - |
       initTestnet
-      cardano-node run \
-        --database-path /node/db \
-        --socket-path /node/socket/node-bp.socket \
-        --topology /node/config/topology.json \
-        --config /node/genesis/node-config.json \
-        --shelley-kes-key /node/testnet/pools-keys/pool1/kes.skey \
-        --shelley-vrf-key /node/testnet/pools-keys/pool1/vrf.skey \
-        --shelley-operational-certificate /node/testnet/pools-keys/pool1/opcert.cert \
-        --host-addr 0.0.0.0 \
-        --port 3001
     healthcheck:
       test: [ "CMD-SHELL", "cardano-cli query tip" ]
       interval: 5s
@@ -29,7 +17,7 @@ services:
       timeout: 2s
       retries: 10
     environment:
-      CARDANO_NODE_SOCKET_PATH: /node/socket/node-bp.socket
+      CARDANO_NODE_SOCKET_PATH: /node/testnet/socket/node1/sock
       CARDANO_NODE_NETWORK_ID: "42"
 
   # bootstrap-wallet:
@@ -50,28 +38,26 @@ services:
   #     cardano-node-bp:
   #       condition: service_healthy
 
-  # cardano-wallet:
-  #   image: cardanofoundation/cardano-wallet:2025.3.31
-  #   restart: always
-  #   ports:
-  #     - 8090:8090
-  #   volumes:
-  #   - node-ipc:/node/socket
-  #   - node-genesis:/node/genesis
-  #   entrypoint: []
-  #   command:
-  #   - bash
-  #   - -c
-  #   - |
-  #     cardano-wallet serve \
-  #       --database /wallet/db \
-  #       --node-socket /node/socket/node-bp.socket \
-  #       --testnet /node/genesis/byron-genesis.json \
-  #       --listen-address 0.0.0.0
-  #   depends_on:
-  #     cardano-node-bp:
-  #       condition: service_healthy
+  cardano-wallet:
+    image: cardanofoundation/cardano-wallet:2025.3.31
+    restart: always
+    ports:
+      - 8090:8090
+    volumes:
+    - node-testnet:/node/testnet
+    entrypoint: []
+    command:
+    - bash
+    - -c
+    - |
+      cardano-wallet serve \
+        --database /wallet/db \
+        --node-socket /node/testnet/socket/node1/sock \
+        --testnet /node/testnet/byron-genesis.json \
+        --listen-address 0.0.0.0
+    depends_on:
+      cardano-node-bp:
+        condition: service_healthy
 
 volumes:
-  node-ipc: {}
-  node-genesis: {}
+  node-testnet: {}
