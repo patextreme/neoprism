@@ -1,7 +1,6 @@
 {
   pkgs,
   mkShell,
-  cardano-testnet,
   cardano-cli,
   cardano-node,
   cardano-wallet,
@@ -12,7 +11,6 @@ let
 in
 mkShell {
   packages = [
-    cardano-testnet
     cardano-node
     cardano-cli
     cardano-wallet

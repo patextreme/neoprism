@@ -5,8 +5,6 @@
   coreutils,
   cardano-cli,
   cardano-node,
-  cardano-testnet,
-  cardano-tracer,
 }:
 
 let
@@ -25,8 +23,6 @@ dockerTools.buildLayeredImage {
     coreutils
     cardano-cli
     cardano-node
-    cardano-testnet
-    cardano-tracer
   ];
   config = {
     Env = [ ];

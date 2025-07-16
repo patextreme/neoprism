@@ -4,7 +4,7 @@ services:
     ports:
     - 3001:3001
     volumes:
-    - node-socket:/node/socket
+    - node-ipc:/node/socket
     - ./testnet-local:/node/config
     command:
     - bash
@@ -29,7 +29,7 @@ services:
     ports:
       - 8090:8090
     volumes:
-    - node-socket:/wallet/socket
+    - node-ipc:/wallet/socket
     - ./testnet-local:/node/config
     entrypoint: []
     command:
@@ -43,4 +43,4 @@ services:
         --listen-address 0.0.0.0
 
 volumes:
-  node-socket: {}
+  node-ipc: {}

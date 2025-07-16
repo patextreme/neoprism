@@ -30,8 +30,6 @@
               rustUtils = prev.callPackage ./nix/rustUtils.nix { inherit rust-overlay; };
               cardano-cli = cardano-node.packages.${system}.cardano-cli;
               cardano-node = cardano-node.packages.${system}.cardano-node;
-              cardano-testnet = cardano-node.packages.${system}.cardano-testnet;
-              cardano-tracer = cardano-node.packages.${system}.cardano-tracer;
               cardano-wallet = cardano-wallet.packages.${system}.cardano-wallet;
             })
           ];
