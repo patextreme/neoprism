@@ -1,16 +1,15 @@
 {
   pkgs,
   mkShell,
-  cardano-cli,
-  cardano-node,
-  cardano-wallet,
 }:
 
 let
   rootDir = "$ROOT_DIR";
 in
 mkShell {
-  packages = [
+  packages = with pkgs; [
+    jq
+    hurl
     cardano-node
     cardano-cli
     cardano-wallet

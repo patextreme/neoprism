@@ -18,7 +18,7 @@ let
         --genesis-dir genesis \
         --gen-genesis-keys 1 \
         --gen-utxo-keys 1 \
-        --start-time "$(date -u -d "now + 15 seconds" +%FT%Tz)" \
+        --start-time "$(date -u -d "now + 10 seconds" +%FT%Tz)" \
         --supply 1000000000 \
         --conway-era \
         --alonzo-template config/template/alonzo.json \
@@ -27,7 +27,6 @@ let
         --shelley-template config/template/shelley.json \
         --node-config-template config/template/config.json
 
-      # make genesis payment
       cardano-cli address build \
         --payment-verification-key-file ./genesis/utxo-keys/shelley.000.vkey \
         --out-file ./genesis/utxo-keys/shelley.000.addr
