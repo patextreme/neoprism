@@ -13,6 +13,7 @@ mkShell {
     cardano-node
     cardano-cli
     cardano-wallet
+    cardano-testnet
   ];
 
   shellHook = ''
@@ -20,4 +21,7 @@ mkShell {
     ${pkgs.cowsay}/bin/cowsay "Working on project root directory: ${rootDir}"
     cd "${rootDir}"
   '';
+
+  CARDANO_CLI = "${pkgs.cardano-cli}/bin/cardano-cli";
+  CARDANO_NODE = "${pkgs.cardano-node}/bin/cardano-node";
 }

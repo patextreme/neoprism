@@ -1,0 +1,102 @@
+{
+    "AlonzoGenesisFile": "alonzo-genesis.json",
+    "AlonzoGenesisHash": "a4844d02149b2c12da7195fdcb82fefc13641d8e78fe5d964d054bf48dee0f1a",
+    "ByronGenesisFile": "byron-genesis.json",
+    "ByronGenesisHash": "f44f123c7e3d200b3a84214f84f17dbade98336850f8a7d9eb115aca8801b208",
+    "ConwayGenesisFile": "conway-genesis.json",
+    "ConwayGenesisHash": "ca773aa943fd78bf37be6687bf9bc0e4669750945dd731053f9e7c9190258e15",
+    "EnableLogMetrics": false,
+    "EnableLogging": true,
+    "EnableP2P": true,
+    "ExperimentalHardForksEnabled": true,
+    "ExperimentalProtocolsEnabled": true,
+    "LastKnownBlockVersion-Alt": 0,
+    "LastKnownBlockVersion-Major": 9,
+    "LastKnownBlockVersion-Minor": 0,
+    "MaxConcurrencyBulkSync": 1,
+    "MaxConcurrencyDeadline": 2,
+    "PBftSignatureThreshold": 0.6,
+    "Protocol": "Cardano",
+    "RequiresNetworkMagic": "RequiresMagic",
+    "ShelleyGenesisFile": "shelley-genesis.json",
+    "ShelleyGenesisHash": "37710c02a3d26e6289972dc49e9e400db68f1671740d2d57b5c0368a0da39323",
+    "SocketPath": "db/node.socket",
+    "TestAllegraHardForkAtEpoch": 0,
+    "TestAlonzoHardForkAtEpoch": 0,
+    "TestBabbageHardForkAtEpoch": 0,
+    "TestConwayHardForkAtEpoch": 0,
+    "TestMaryHardForkAtEpoch": 0,
+    "TestShelleyHardForkAtEpoch": 0,
+    "TraceBlockFetchClient": false,
+    "TraceBlockFetchDecisions": false,
+    "TraceBlockFetchProtocol": false,
+    "TraceBlockFetchProtocolSerialised": false,
+    "TraceBlockFetchServer": false,
+    "TraceBlockchainTime": true,
+    "TraceChainDb": true,
+    "TraceChainSyncBlockServer": false,
+    "TraceChainSyncClient": false,
+    "TraceChainSyncHeaderServer": false,
+    "TraceChainSyncProtocol": false,
+    "TraceConnectionManager": true,
+    "TraceDnsResolver": true,
+    "TraceDnsSubscription": true,
+    "TraceErrorPolicy": true,
+    "TraceForge": true,
+    "TraceHandshake": false,
+    "TraceIpSubscription": true,
+    "TraceLocalChainSyncProtocol": false,
+    "TraceLocalConnectionManager": false,
+    "TraceLocalErrorPolicy": true,
+    "TraceLocalHandshake": false,
+    "TraceLocalRootPeers": true,
+    "TraceLocalServer": false,
+    "TraceLocalTxSubmissionProtocol": false,
+    "TraceLocalTxSubmissionServer": false,
+    "TraceMempool": true,
+    "TraceMux": false,
+    "TraceOptions": {},
+    "TracePeerSelection": true,
+    "TracePeerSelectionActions": true,
+    "TracePublicRootPeers": true,
+    "TraceServer": true,
+    "TraceTxInbound": false,
+    "TraceTxOutbound": false,
+    "TraceTxSubmissionProtocol": false,
+    "TurnOnLogMetrics": false,
+    "defaultBackends": [
+        "KatipBK"
+    ],
+    "defaultScribes": [
+        [
+            "FileSK",
+            "logs/mainnet.log"
+        ],
+        [
+            "StdoutSK",
+            "stdout"
+        ]
+    ],
+    "minSeverity": "Debug",
+    "options": {},
+    "rotation": {
+        "rpKeepFilesNum": 3,
+        "rpLogLimitBytes": 5000000,
+        "rpMaxAgeHours": 24
+    },
+    "setupBackends": [
+        "KatipBK"
+    ],
+    "setupScribes": [
+        {
+            "scFormat": "ScJson",
+            "scKind": "FileSK",
+            "scName": "logs/node.log"
+        },
+        {
+            "scFormat": "ScJson",
+            "scKind": "StdoutSK",
+            "scName": "stdout"
+        }
+    ]
+}

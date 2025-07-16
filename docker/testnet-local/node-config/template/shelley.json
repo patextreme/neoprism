@@ -3,7 +3,7 @@
   "protocolParams": {
     "protocolVersion": {
       "minor": 0,
-      "major": 6
+      "major": 2
     },
     "decentralisationParam": 1,
     "eMax": 18,
