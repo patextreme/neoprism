@@ -21,7 +21,4 @@ mkShell {
     ${pkgs.cowsay}/bin/cowsay "Working on project root directory: ${rootDir}"
     cd "${rootDir}"
   '';
-
-  CARDANO_CLI = "${cardano-cli}/bin/cardano-cli";
-  CARDANO_NODE = "${cardano-node}/bin/cardano-node";
 }

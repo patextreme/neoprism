@@ -5,19 +5,21 @@ services:
     - 3001:3001
     volumes:
     - node-ipc:/node/socket
-    - ./testnet-local:/node/config
+    - node-genesis:/node/genesis
+    - ./node-config:/node/config
     command:
     - bash
     - -c 
     - |
+      initTestnet
       cardano-node run \
         --database-path /node/db \
         --socket-path /node/socket/node-bp.socket \
-        --topology /node/config/topology-relay.json \
-        --config /node/config/configuration.yaml \
-        --shelley-kes-key /node/config/pools-keys/pool1/kes.skey \
-        --shelley-vrf-key /node/config/pools-keys/pool1/vrf.skey \
-        --shelley-operational-certificate /node/config/pools-keys/pool1/opcert.cert \
+        --topology /node/config/topology.json \
+        --config /node/genesis/node-config.json \
+        --shelley-kes-key /node/genesis/delegate-keys/shelley.000.kes.skey \
+        --shelley-vrf-key /node/genesis/delegate-keys/shelley.000.vrf.skey \
+        --shelley-operational-certificate /node/genesis/delegate-keys/shelley.000.opcert.json \
         --host-addr 0.0.0.0 \
         --port 3001
     environment:
@@ -29,18 +31,19 @@ services:
     ports:
       - 8090:8090
     volumes:
-    - node-ipc:/wallet/socket
-    - ./testnet-local:/node/config
+    - node-ipc:/node/socket
+    - node-genesis:/node/genesis
     entrypoint: []
     command:
     - bash
     - -c
     - |
       cardano-wallet serve \
-        --node-socket /wallet/socket/node-bp.socket \
         --database /wallet/db \
-        --testnet /node/config/byron-genesis.json \
+        --node-socket /node/socket/node-bp.socket \
+        --testnet /node/genesis/byron-genesis.json \
         --listen-address 0.0.0.0
 
 volumes:
   node-ipc: {}
+  node-genesis: {}

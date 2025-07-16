@@ -1,6 +1,7 @@
 {
   pkgs,
   dockerTools,
+  writeShellApplication,
   bash,
   coreutils,
   cardano-cli,
@@ -8,6 +9,31 @@
 }:
 
 let
+  initTestnet = writeShellApplication {
+    name = "initTestnet";
+    text = ''
+      # create configurations
+      cardano-cli legacy genesis create-cardano \
+        --testnet-magic 42 \
+        --genesis-dir genesis \
+        --gen-genesis-keys 1 \
+        --gen-utxo-keys 1 \
+        --start-time "$(date -u -d "now + 15 seconds" +%FT%Tz)" \
+        --supply 1000000000 \
+        --conway-era \
+        --alonzo-template config/template/alonzo.json \
+        --byron-template config/template/byron.json \
+        --conway-template config/template/conway.json \
+        --shelley-template config/template/shelley.json \
+        --node-config-template config/template/config.json
+
+      # make genesis payment
+      cardano-cli address build \
+        --payment-verification-key-file ./genesis/utxo-keys/shelley.000.vkey \
+        --out-file ./genesis/utxo-keys/shelley.000.addr
+    '';
+  };
+
   debugPackages = with pkgs; [
     helix
     jq
@@ -23,9 +49,13 @@ dockerTools.buildLayeredImage {
     coreutils
     cardano-cli
     cardano-node
+    initTestnet
   ];
   config = {
-    Env = [ ];
+    Env = [
+      "VISUAL=hx"
+      "EDITOR=hx"
+    ];
     Entrypoint = [ ];
     Cmd = [ ];
     WorkingDir = "/node";
