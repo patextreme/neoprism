@@ -1,0 +1,10 @@
+services:
+  cardano-node:
+    image: cardano-testnet:latest
+    command:
+    - bash
+    - -c
+    - |
+      mkdir /tmp
+      cardano-testnet cardano --testnet-magic 42 --conway-era
+

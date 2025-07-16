@@ -5,6 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
+    cardano-node.url = "github:IntersectMBO/cardano-node?ref=10.4.1";
   };
 
   outputs =
@@ -12,6 +13,7 @@
       nixpkgs,
       rust-overlay,
       flake-utils,
+      cardano-node,
       ...
     }:
     flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-darwin" ] (
@@ -24,6 +26,9 @@
             (import rust-overlay)
             (final: prev: {
               rustUtils = prev.callPackage ./nix/rustUtils.nix { inherit rust-overlay; };
+              cardano-cli = cardano-node.packages.${system}.cardano-cli;
+              cardano-node = cardano-node.packages.${system}.cardano-node;
+              cardano-testnet = cardano-node.packages.${system}.cardano-testnet;
             })
           ];
         };
