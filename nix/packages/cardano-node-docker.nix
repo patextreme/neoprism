@@ -7,7 +7,7 @@
 }:
 
 dockerTools.buildLayeredImage {
-  name = "cardano-testnet";
+  name = "cardano-node";
   tag = "latest";
   contents = [
     bash

@@ -1,10 +1,18 @@
 services:
-  cardano-node:
-    image: cardano-testnet:latest
+  cardano-node-relay:
+    image: cardano-node:latest
+    ports:
+    - 3001:3001
+    volumes:
+    - ./testnet-local:/node/config
     command:
     - bash
-    - -c
+    - -c 
     - |
-      mkdir /tmp
-      cardano-testnet cardano --testnet-magic 42 --conway-era
+      cardano-node run \
+        --config /node/config/configuration.yaml \
+        --topology /node/config/topology-relay.json \
+        --database-path /cardano-data \
+        --host-addr 0.0.0.0 \
+        --port 3001
 
