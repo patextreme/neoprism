@@ -1,6 +1,6 @@
 services:
   cardano-node-relay:
-    image: cardano-node:latest
+    image: cardano-testnet:latest
     ports:
     - 3001:3001
     volumes:
@@ -12,7 +12,10 @@ services:
       cardano-node run \
         --config /node/config/configuration.yaml \
         --topology /node/config/topology-relay.json \
-        --database-path /cardano-data \
+        --database-path /node/db \
+        --socket-path /node/socket \
         --host-addr 0.0.0.0 \
         --port 3001
-
+    environment:
+      CARDANO_NODE_SOCKET_PATH: /node/socket
+      CARDANO_NODE_NETWORK_ID: "42"

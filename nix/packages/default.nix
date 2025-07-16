@@ -16,7 +16,7 @@ let
 in
 rec {
   # native
-  cardano-node-docker = pkgs.callPackage ./cardano-node-docker.nix { };
+  cardano-testnet-docker = pkgs.callPackage ./cardano-testnet-docker.nix { inherit pkgs; };
   ui-assets = pkgs.callPackage ./ui-assets.nix { };
 
   # neoprism binaries

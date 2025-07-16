@@ -2,26 +2,26 @@
     "activeSlotsCoeff": 5.0e-2,
     "epochLength": 500,
     "genDelegs": {
-        "0f139c3a8b271fb4d7f5bddff22dd11ef319e2dc17ed30c796bb9010": {
-            "delegate": "0b261dc84b8e243fa4cf988c02a6a493349dd8245a0f2a894b29352c",
-            "vrf": "69c12836ec9760ec46fcd71bb285f27c445db476e702c4945d49c77dd998da41"
+        "8b6fa9a36f8194bb7f2d87c9d50d306cfbcb394670b37b6be034573f": {
+            "delegate": "b6ee9cfb190e374ea97f3370d3181abde8d37cd904961ba744dca03e",
+            "vrf": "0e081200ffd433f786068720879a03009d3cc84b79a50cb78ad4bc59c61acc15"
         },
-        "20f281b387af9e5bce6216048500cb9c4f49839ae55102b5430ba7df": {
-            "delegate": "96e3e08deb1fabee035324da5b758c51549236efee4e616fa9342375",
-            "vrf": "be737a95d7fb71aed04a6fc97be6dcf9014bc6d61dcc3bdc9eb0ef52ca3d5c13"
+        "aed70de84b643de800ba1eb2f8d468e6987740b14ab1ac00baac3d10": {
+            "delegate": "0bf438252f40269a68ad48560f90b4988cab08e0af9c4ef1a8fad461",
+            "vrf": "3318fcf2263e92b7d884984fbd78e7c55fca59ca4c51cb9e8fb929e85d11f828"
         },
-        "93c819318527c724d75e199006eb6e3ede165d1025394be8acb132f3": {
-            "delegate": "be0e88a624cd4af4caf1ea2f6bc11a1a6892c7ff48de61f3381bfea1",
-            "vrf": "f7117f3dba75469ade95eabc7b28a336481453fdd40c6939165cd640641bfd37"
+        "e647da5f536ee9f36e59987b390551b229f8ab626c68cecbe9417e44": {
+            "delegate": "1f085392da984f14d4e79e79dc57778f222230abb6c8b2dbd6911eb7",
+            "vrf": "c01b284ae35de282e536efe8983c9b40dfaadb17a1ac527d220834785d54b353"
         }
     },
     "initialFunds": {
-        "0048c2006b76a7aaf1a5b8dce9773daf55561d50b8b05e396823bcf0e7dbbdac633f2d671e882ea6e2da657644010a397e273d1d8aa846f3fa": 15000003000000,
-        "0071760a70e4ee5c56b33965f724f48c2dfa9ec1037f6cdf365c874484116f85362b4b2204f4dca25d0b2931a147680f8b4bbba2c23a229293": 15000003000000,
-        "00884ec9e38a1f800dc3ecec92c165e1934b38703ec2363274eddcd7c0511d3098d84eb70d47e893fb62d3f25b2d9b300c2d4e2f2ed8fab4f7": 15000003000000,
-        "600006f15f8502a14235b9e710a20cf34731da8b784d2b3a7a13c5856f": 15000003000000,
-        "605e8b20e312e998c150f5946f8463343182d33d533e066a97f8a5865a": 15000003000000,
-        "60c1d3a4aecd4f143b6836b938f0db2f8fb681d62d8583c3171f39bf2e": 15000003000000
+        "0050291bba49ffb3e4aa5dc9355d03d681da743f84212705fad3e5ce38df993e33f5ffb305e42ef22a9b6a559b504edf40546495d766551da8": 15000003000000,
+        "005a0859ba7234a9b9dea4b7ad9ba3a4f1790c1de23343fe102247e14b3a9487efec6294430a60e67ee27a9490ff9f00d67b4be65a8c13005c": 15000003000000,
+        "00841704e6d7e154c5dd2a1de273b4146aab37c2b7dc0480a123e7671a082d7d3ec9097f3a1771501da97a6837e40a0cf0e3c383a3971cf92c": 15000003000000,
+        "607ea6982de5390824e6bb73f38b7045f6acd1792ab47e796861038536": 15000003000000,
+        "6080d05773e9415229278d99d23517c99d37126367d4e1f48de51465cc": 15000003000000,
+        "609f4cc2c98b54f6aefb4db69763f54cda1b39658cac41971b11ad3184": 15000003000000
     },
     "maxKESEvolutions": 60,
     "maxLovelaceSupply": 100000020000000,
@@ -56,29 +56,29 @@
     "slotsPerKESPeriod": 129600,
     "staking": {
         "pools": {
-            "195c855a7586f7da3602030b2753db52bfea6173ce9ddd017fd4551a": {
+            "05325092ade4f75e3bfbb6b68780332e87f0352fa704eac00cce2eb0": {
                 "cost": 0,
                 "margin": 0,
                 "metadata": null,
                 "owners": [],
                 "pledge": 0,
-                "publicKey": "195c855a7586f7da3602030b2753db52bfea6173ce9ddd017fd4551a",
+                "publicKey": "05325092ade4f75e3bfbb6b68780332e87f0352fa704eac00cce2eb0",
                 "relays": [],
                 "rewardAccount": {
                     "credential": {
-                        "keyHash": "a085912b2858f59020f2e472f0f0ea0265068f66a31878e194cc51d5"
+                        "keyHash": "c71cb5fa50759069500d934d9d7992e0541b6674715f40bafa53d18e"
                     },
                     "network": "Testnet"
                 },
-                "vrf": "1670108969bb408b44905627c03622fc2195a235a36bbdc93746d43efc5b7522"
+                "vrf": "d5285635943912ccf8914536a28cf352c8d51ae93b76e412af452b6be078c0cc"
             }
         },
         "stake": {
-            "116f85362b4b2204f4dca25d0b2931a147680f8b4bbba2c23a229293": "195c855a7586f7da3602030b2753db52bfea6173ce9ddd017fd4551a",
-            "511d3098d84eb70d47e893fb62d3f25b2d9b300c2d4e2f2ed8fab4f7": "195c855a7586f7da3602030b2753db52bfea6173ce9ddd017fd4551a",
-            "dbbdac633f2d671e882ea6e2da657644010a397e273d1d8aa846f3fa": "195c855a7586f7da3602030b2753db52bfea6173ce9ddd017fd4551a"
+            "082d7d3ec9097f3a1771501da97a6837e40a0cf0e3c383a3971cf92c": "05325092ade4f75e3bfbb6b68780332e87f0352fa704eac00cce2eb0",
+            "3a9487efec6294430a60e67ee27a9490ff9f00d67b4be65a8c13005c": "05325092ade4f75e3bfbb6b68780332e87f0352fa704eac00cce2eb0",
+            "df993e33f5ffb305e42ef22a9b6a559b504edf40546495d766551da8": "05325092ade4f75e3bfbb6b68780332e87f0352fa704eac00cce2eb0"
         }
     },
-    "systemStart": "2025-07-16T02:14:23Z",
+    "systemStart": "2025-07-16T04:39:02Z",
     "updateQuorum": 2
 }
