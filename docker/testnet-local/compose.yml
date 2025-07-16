@@ -6,10 +6,7 @@ services:
     volumes:
     - node-testnet:/node/testnet
     command:
-    - bash
-    - -c 
-    - |
-      initTestnet
+    - initTestnet
     healthcheck:
       test: [ "CMD-SHELL", "cardano-cli query tip" ]
       interval: 5s
@@ -25,11 +22,7 @@ services:
     volumes:
     - node-testnet:/node/testnet
     command:
-    - bash
-    - -c
-    - |
-      transactGenesis
-      sleep 3600
+    - transactGenesis
     environment:
       CARDANO_NODE_SOCKET_PATH: /node/testnet/socket/node1/sock
       CARDANO_NODE_NETWORK_ID: "42"
@@ -42,6 +35,7 @@ services:
     restart: always
     ports:
     - 8090:8090
+    - 8091:8091
     volumes:
     - node-testnet:/node/testnet
     entrypoint: []
@@ -53,6 +47,7 @@ services:
         --database /wallet/db \
         --node-socket /node/testnet/socket/node1/sock \
         --testnet /node/testnet/byron-genesis.json \
+        --ui-port 8091 \
         --listen-address 0.0.0.0
     depends_on:
       cardano-node-bp:
