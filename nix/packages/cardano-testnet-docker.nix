@@ -6,6 +6,7 @@
   cardano-cli,
   cardano-node,
   cardano-testnet,
+  cardano-tracer,
 }:
 
 let
@@ -19,13 +20,14 @@ in
 dockerTools.buildLayeredImage {
   name = "cardano-testnet";
   tag = "latest";
-  contents = [
+  contents = debugPackages ++ [
     bash
     coreutils
     cardano-cli
     cardano-node
     cardano-testnet
-  ] ++ debugPackages;
+    cardano-tracer
+  ];
   config = {
     Env = [ ];
     Entrypoint = [ ];

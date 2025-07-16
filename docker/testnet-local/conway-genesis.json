@@ -26,33 +26,33 @@
         "updateToConstitution": 0
     },
     "delegs": {
-        "keyHash-082d7d3ec9097f3a1771501da97a6837e40a0cf0e3c383a3971cf92c": {
-            "dRep": "drep-keyHash-36c60de1425c12ac20e8eddf8d0dd17a037298811611193040a510e5",
+        "keyHash-0217900ccbddbc9a3436675a6d4d82a379e6117fb4cf50029d5be332": {
+            "dRep": "drep-keyHash-47d248e6352eefdf77c0d054880127753d62de07f7f7a3faac1b3b86",
             "kind": "DelegVote"
         },
-        "keyHash-3a9487efec6294430a60e67ee27a9490ff9f00d67b4be65a8c13005c": {
-            "dRep": "drep-keyHash-30e5ed1cf9fe2c7e456993748a212bd48ea20310251bb8e11a785485",
+        "keyHash-b9d8158d3c028d5bc585c9ea7c4f90dbaba366ace9a79f151247925b": {
+            "dRep": "drep-keyHash-920c898b3d29e12e4fe0c713f2b3308a860edb6c01e7cec55bff2c8d",
             "kind": "DelegVote"
         },
-        "keyHash-df993e33f5ffb305e42ef22a9b6a559b504edf40546495d766551da8": {
-            "dRep": "drep-keyHash-07626c3e2300abcf68dd6a5d077a84b558b229e334411eeda2c24d30",
+        "keyHash-dd4bf80442dd7ad8dd1b7a8384e348295d1a11f8a9b56a14b4bfe386": {
+            "dRep": "drep-keyHash-04989220cb5af7ef178c39dbc1eaa7def4c063e4b4067b57a92d6f96",
             "kind": "DelegVote"
         }
     },
     "govActionDeposit": 1000000,
     "govActionLifetime": 1,
     "initialDReps": {
-        "keyHash-07626c3e2300abcf68dd6a5d077a84b558b229e334411eeda2c24d30": {
+        "keyHash-04989220cb5af7ef178c39dbc1eaa7def4c063e4b4067b57a92d6f96": {
             "delegators": [],
             "deposit": 1000000,
             "expiry": 1000
         },
-        "keyHash-30e5ed1cf9fe2c7e456993748a212bd48ea20310251bb8e11a785485": {
+        "keyHash-47d248e6352eefdf77c0d054880127753d62de07f7f7a3faac1b3b86": {
             "delegators": [],
             "deposit": 1000000,
             "expiry": 1000
         },
-        "keyHash-36c60de1425c12ac20e8eddf8d0dd17a037298811611193040a510e5": {
+        "keyHash-920c898b3d29e12e4fe0c713f2b3308a860edb6c01e7cec55bff2c8d": {
             "delegators": [],
             "deposit": 1000000,
             "expiry": 1000

@@ -1,21 +1,46 @@
 services:
-  cardano-node-relay:
+  cardano-node-bp:
     image: cardano-testnet:latest
     ports:
     - 3001:3001
     volumes:
+    - node-socket:/node/socket
     - ./testnet-local:/node/config
     command:
     - bash
     - -c 
     - |
       cardano-node run \
-        --config /node/config/configuration.yaml \
-        --topology /node/config/topology-relay.json \
         --database-path /node/db \
-        --socket-path /node/socket \
+        --socket-path /node/socket/node-bp.socket \
+        --topology /node/config/topology-relay.json \
+        --config /node/config/configuration.yaml \
+        --shelley-kes-key /node/config/pools-keys/pool1/kes.skey \
+        --shelley-vrf-key /node/config/pools-keys/pool1/vrf.skey \
+        --shelley-operational-certificate /node/config/pools-keys/pool1/opcert.cert \
         --host-addr 0.0.0.0 \
         --port 3001
     environment:
-      CARDANO_NODE_SOCKET_PATH: /node/socket
+      CARDANO_NODE_SOCKET_PATH: /node/socket/node-bp.socket
       CARDANO_NODE_NETWORK_ID: "42"
+
+  cardano-wallet:
+    image: cardanofoundation/cardano-wallet:2025.3.31
+    ports:
+      - 8090:8090
+    volumes:
+    - node-socket:/wallet/socket
+    - ./testnet-local:/node/config
+    entrypoint: []
+    command:
+    - bash
+    - -c
+    - |
+      cardano-wallet serve \
+        --node-socket /wallet/socket/node-bp.socket \
+        --database /wallet/db \
+        --testnet /node/config/byron-genesis.json \
+        --listen-address 0.0.0.0
+
+volumes:
+  node-socket: {}

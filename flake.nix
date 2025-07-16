@@ -6,6 +6,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     cardano-node.url = "github:IntersectMBO/cardano-node?ref=10.4.1";
+    cardano-wallet.url = "github:cardano-foundation/cardano-wallet?ref=v2025-03-31";
   };
 
   outputs =
@@ -14,6 +15,7 @@
       rust-overlay,
       flake-utils,
       cardano-node,
+      cardano-wallet,
       ...
     }:
     flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-darwin" ] (
@@ -29,6 +31,8 @@
               cardano-cli = cardano-node.packages.${system}.cardano-cli;
               cardano-node = cardano-node.packages.${system}.cardano-node;
               cardano-testnet = cardano-node.packages.${system}.cardano-testnet;
+              cardano-tracer = cardano-node.packages.${system}.cardano-tracer;
+              cardano-wallet = cardano-wallet.packages.${system}.cardano-wallet;
             })
           ];
         };

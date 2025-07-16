@@ -4,6 +4,7 @@
   cardano-testnet,
   cardano-cli,
   cardano-node,
+  cardano-wallet,
 }:
 
 let
@@ -14,6 +15,7 @@ mkShell {
     cardano-testnet
     cardano-node
     cardano-cli
+    cardano-wallet
   ];
 
   shellHook = ''
