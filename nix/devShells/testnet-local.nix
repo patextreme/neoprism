@@ -14,6 +14,7 @@ mkShell {
     cardano-cli
     cardano-wallet
     cardano-testnet
+    cardano-db-sync
   ];
 
   shellHook = ''

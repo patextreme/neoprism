@@ -18,7 +18,7 @@ NodeConfigFile: /node/testnet/configuration.yaml
 # Logging configuration follows.
 
 # global filter; messages must have at least this severity to pass:
-minSeverity: Debug
+minSeverity: Info
 
 # global file rotation settings:
 rotation:
