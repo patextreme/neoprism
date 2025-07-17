@@ -1,5 +1,5 @@
 services:
-  cardano-node-bp:
+  cardano-node:
     image: cardano-testnet:latest
     ports:
     - 3001:3001
@@ -16,19 +16,6 @@ services:
     environment:
       CARDANO_NODE_SOCKET_PATH: /node/testnet/socket/node1/sock
       CARDANO_NODE_NETWORK_ID: "42"
-
-  bootstrap-wallet:
-    image: cardano-testnet:latest
-    volumes:
-    - node-testnet:/node/testnet
-    command:
-    - transactGenesis
-    environment:
-      CARDANO_NODE_SOCKET_PATH: /node/testnet/socket/node1/sock
-      CARDANO_NODE_NETWORK_ID: "42"
-    depends_on:
-      cardano-node-bp:
-        condition: service_healthy
 
   cardano-wallet:
     image: cardanofoundation/cardano-wallet:2025.3.31
@@ -48,8 +35,62 @@ services:
         --testnet /node/testnet/byron-genesis.json \
         --listen-address 0.0.0.0
     depends_on:
-      cardano-node-bp:
+      cardano-node:
         condition: service_healthy
+
+  bootstrap-wallet:
+    image: cardano-testnet:latest
+    volumes:
+    - node-testnet:/node/testnet
+    command:
+    - transactGenesis
+    environment:
+      CARDANO_NODE_SOCKET_PATH: /node/testnet/socket/node1/sock
+      CARDANO_NODE_NETWORK_ID: "42"
+    depends_on:
+      cardano-node:
+        condition: service_healthy
+
+  cardano-db-sync:
+    image: ghcr.io/intersectmbo/cardano-db-sync:13.6.0.5
+    restart: always
+    environment:
+      POSTGRES_HOST: postgres-dbsync
+      POSTGRES_DB: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    command:
+    - --config
+    - /config/dbsync-config.yaml
+    - --socket-path
+    - /node/testnet/socket/node1/sock
+    depends_on:
+      cardano-node:
+        condition: service_healthy
+      postgres-dbsync:
+        condition: service_healthy
+    volumes:
+      - node-testnet:/node/testnet
+      - ./dbsync-config.yaml:/config/dbsync-config.yaml
+
+  postgres-dbsync:
+    image: postgres:17
+    restart: always
+    ports:
+    - 5432:5432
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+    - data-dbsync:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   node-testnet: {}
+  data-dbsync: {}
