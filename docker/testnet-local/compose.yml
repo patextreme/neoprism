@@ -60,7 +60,7 @@ services:
   # DB Sync
   ################################
 
-  cardano-db-sync:
+  cardano-dbsync:
     image: ghcr.io/intersectmbo/cardano-db-sync:13.6.0.5
     restart: always
     environment:
@@ -74,6 +74,7 @@ services:
     - /config/dbsync-config.yaml
     - --socket-path
     - /node/testnet/socket/node1/sock
+    - --force-indexes
     volumes:
       - node-testnet:/node/testnet
       - ./dbsync-config.yaml:/config/dbsync-config.yaml
@@ -93,9 +94,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     command: [
-        "-c", "log_statement=all",
-        "-c", "log_lock_waits=on",
-        "-c", "log_min_messages=INFO",
+        # "-c", "log_statement=all",
+        # "-c", "log_lock_waits=on",
         "-c", "maintenance_work_mem=1GB" ,
         "-c", "max_parallel_maintenance_workers=4"
       ]
