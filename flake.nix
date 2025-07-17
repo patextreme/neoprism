@@ -1,6 +1,11 @@
 {
   description = "A rust implementation of PRISM node";
 
+  nixConfig = {
+    extra-substituters = ["https://cache.iog.io"];
+    extra-trusted-public-keys = ["hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="];
+  };
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
