@@ -35,7 +35,6 @@ services:
     restart: always
     ports:
     - 8090:8090
-    - 8091:8091
     volumes:
     - node-testnet:/node/testnet
     entrypoint: []
@@ -47,7 +46,6 @@ services:
         --database /wallet/db \
         --node-socket /node/testnet/socket/node1/sock \
         --testnet /node/testnet/byron-genesis.json \
-        --ui-port 8091 \
         --listen-address 0.0.0.0
     depends_on:
       cardano-node-bp:
