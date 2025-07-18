@@ -42,12 +42,25 @@ let
         cardano-cli conway transaction submit --tx-file transactions/tx.signed
       '';
     };
+    initWallet =
+      let
+        hurlScript = pkgs.writeText "init.hurl" (
+          builtins.readFile ../../docker/testnet-local/hurl/init.hurl
+        );
+      in
+      writeShellApplication {
+        name = "initWallet";
+        text = ''
+          hurl ${hurlScript}
+        '';
+      };
   };
   basePackages = with pkgs; [
     bash
     coreutils
     gawk
     gnugrep
+    hurl
     jq
   ];
   cardanoPackages = with pkgs; [

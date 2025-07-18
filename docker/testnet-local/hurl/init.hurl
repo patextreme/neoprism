@@ -1,4 +1,11 @@
-POST http://localhost:8090/v2/wallets
+# wait until wallet is up
+GET {{ WALLET_BASE_URL }}/v2/wallets
+[Options]
+delay: 5
+retry: 10
+HTTP 200
+
+POST {{ WALLET_BASE_URL }}/v2/wallets
 {
   "name": "Test wallet",
   "mnemonic_sentence": [
@@ -33,9 +40,7 @@ HTTP 201
 [Captures]
 wallet_id: jsonpath "$.id"
 
-GET http://localhost:8090/v2/wallets/{{ wallet_id }}/addresses
-[Options]
-verbose: true
+GET {{ WALLET_BASE_URL }}/v2/wallets/{{ wallet_id }}/addresses
 HTTP 200
 [Captures]
 address: jsonpath "$[0].id"
