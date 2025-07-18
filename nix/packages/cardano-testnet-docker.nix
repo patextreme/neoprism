@@ -1,7 +1,16 @@
 {
-  pkgs,
+  tagSuffix ? "",
   dockerTools,
   writeShellApplication,
+  bash,
+  coreutils,
+  gawk,
+  gnugrep,
+  hurl,
+  jq,
+  cardano-node,
+  cardano-cli,
+  cardano-testnet,
 }:
 
 let
@@ -43,7 +52,7 @@ let
       '';
     };
   };
-  basePackages = with pkgs; [
+  basePackages = [
     bash
     coreutils
     gawk
@@ -51,7 +60,7 @@ let
     hurl
     jq
   ];
-  cardanoPackages = with pkgs; [
+  cardanoPackages = [
     cardano-node
     cardano-cli
     cardano-testnet
@@ -59,12 +68,12 @@ let
 in
 dockerTools.buildLayeredImage {
   name = "cardano-testnet";
-  tag = "latest";
+  tag = "latest${tagSuffix}";
   contents = basePackages ++ cardanoPackages ++ (builtins.attrValues scripts);
   config = {
     Env = [
-      "CARDANO_CLI=${pkgs.cardano-cli}/bin/cardano-cli"
-      "CARDANO_NODE=${pkgs.cardano-node}/bin/cardano-node"
+      "CARDANO_CLI=${cardano-cli}/bin/cardano-cli"
+      "CARDANO_NODE=${cardano-node}/bin/cardano-node"
     ];
     Entrypoint = [ ];
     Cmd = [ ];

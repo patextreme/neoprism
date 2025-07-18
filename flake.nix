@@ -57,10 +57,24 @@
                 ];
                 text = ''
                   TAG=$(date +"%Y%m%d-%H%M%S")
-                  nix build .#cardano-testnet-docker
-                  docker load < ./result
-                  docker tag cardano-testnet:latest "patextreme/cardano-testnet:$TAG"
-                  docker push "patextreme/cardano-testnet:$TAG"
+                  nix build .#cardano-testnet-docker-linux-amd64 -o result-amd64
+                  nix build .#cardano-testnet-docker-linux-arm64 -o result-arm64
+                  docker load < ./result-amd64
+                  docker load < ./result-arm64
+                  docker tag cardano-testnet:latest-amd64 "patextreme/cardano-testnet:$TAG-amd64"
+                  docker tag cardano-testnet:latest-arm64 "patextreme/cardano-testnet:$TAG-arm64"
+
+                  rm -rf ./result-amd64
+                  rm -rf ./result-arm64
+
+                  docker push "patextreme/cardano-testnet:$TAG-amd64"
+                  docker push "patextreme/cardano-testnet:$TAG-arm64"
+
+                  # create multi-arch image
+                  docker manifest create  "patextreme/cardano-testnet:$TAG" \
+                    "patextreme/cardano-testnet:$TAG-amd64" \
+                    "patextreme/cardano-testnet:$TAG-arm64"
+                  docker manifest push "patextreme/cardano-testnet:$TAG"
                 '';
               }).outPath
               + "/bin/publish";
