@@ -7,21 +7,35 @@ let IndexerNodeService =
           { image : Text
           , restart : Text
           , ports : List Text
-          , depends_on : List Text
+          , depends_on : Prelude.Map.Type Text { condition : Text }
           , environment : Prelude.Map.Type Text Text
           }
       , default =
         { image = "hyperledgeridentus/identus-neoprism:${version}"
         , restart = "always"
         , ports = [ "8080:8080" ]
-        , depends_on = [] : List Text
+        , depends_on = [] : Prelude.Map.Type Text { condition : Text }
         , environment = [] : Prelude.Map.Type Text Text
         }
       }
 
 let Options =
-      { Type = { extraEnvs : Prelude.Map.Type Text Text, dbHost : Text }
-      , default = { dbHost = "db", extraEnvs = [] : Prelude.Map.Type Text Text }
+      { Type =
+          { extraEnvs : Prelude.Map.Type Text Text
+          , dbHost : Text
+          , dbName : Text
+          , dbPort : Natural
+          , dbUser : Text
+          , dbPassword : Text
+          }
+      , default =
+        { dbHost = "db"
+        , dbPort = 5432
+        , dbName = "postgres"
+        , dbUser = "postgres"
+        , dbPassword = "postgres"
+        , extraEnvs = [] : Prelude.Map.Type Text Text
+        }
       }
 
 let makeIndexerNodeService =
@@ -36,7 +50,11 @@ let makeIndexerNodeService =
 
         in  IndexerNodeService::{
             , environment = mandatoryIndexerNodeEnvs # options.extraEnvs
-            , depends_on = [ options.dbHost ]
+            , depends_on =
+              [ { mapKey = options.dbHost
+                , mapValue.condition = "service_healthy"
+                }
+              ]
             }
 
 in  { Options

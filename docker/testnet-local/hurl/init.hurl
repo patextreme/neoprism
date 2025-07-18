@@ -34,7 +34,7 @@ POST {{ WALLET_BASE_URL }}/v2/wallets
     "practice",
     "fossil"
   ],
-  "passphrase": "super_secret"
+  "passphrase": "{{ WALLET_PASSPHRASE }}"
 }
 HTTP 201
 [Captures]

@@ -1,0 +1,216 @@
+services:
+
+  ################################
+  # Cardano
+  ################################
+
+  cardano-node:
+    image: cardano-testnet:latest
+    ports:
+    - 3001:3001
+    volumes:
+    - node-testnet:/node/testnet
+    command:
+    - initTestnet
+    healthcheck:
+      test: [ "CMD-SHELL", "cardano-cli query tip" ]
+      interval: 5s
+      start_period: 5s
+      timeout: 2s
+      retries: 10
+    environment:
+      CARDANO_NODE_SOCKET_PATH: /node/testnet/socket/node1/sock
+      CARDANO_NODE_NETWORK_ID: "42"
+
+  cardano-wallet:
+    image: cardanofoundation/cardano-wallet:2025.3.31
+    restart: always
+    ports:
+    - 8090:8090
+    volumes:
+    - node-testnet:/node/testnet
+    entrypoint: []
+    command:
+    - bash
+    - -c
+    - |
+      cardano-wallet serve \
+        --database /wallet/db \
+        --node-socket /node/testnet/socket/node1/sock \
+        --testnet /node/testnet/byron-genesis.json \
+        --listen-address 0.0.0.0
+    depends_on:
+      cardano-node:
+        condition: service_healthy
+
+  bootstrap-testnet:
+    image: cardano-testnet:latest
+    volumes:
+    - node-testnet:/node/testnet
+    command:
+    - bash
+    - -c
+    - |
+      transactGenesis
+      initWallet
+    environment:
+      CARDANO_NODE_SOCKET_PATH: /node/testnet/socket/node1/sock
+      CARDANO_NODE_NETWORK_ID: "42"
+      HURL_WALLET_BASE_URL: http://cardano-wallet:8090
+    depends_on:
+      cardano-node:
+        condition: service_healthy
+
+  ################################
+  # DB Sync
+  ################################
+
+  cardano-dbsync:
+    image: ghcr.io/intersectmbo/cardano-db-sync:13.6.0.5
+    restart: always
+    environment:
+      POSTGRES_HOST: postgres-dbsync
+      POSTGRES_DB: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    command:
+    - --config
+    - /config/dbsync-config.yaml
+    - --socket-path
+    - /node/testnet/socket/node1/sock
+    - --force-indexes
+    volumes:
+      - node-testnet:/node/testnet
+      - ./dbsync-config.yaml:/config/dbsync-config.yaml
+    depends_on:
+      cardano-node:
+        condition: service_healthy
+      postgres-dbsync:
+        condition: service_healthy
+
+  postgres-dbsync:
+    image: postgres:17
+    restart: always
+    ports:
+    - 5432:5432
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    command: [
+        # "-c", "log_statement=all",
+        # "-c", "log_lock_waits=on",
+        "-c", "maintenance_work_mem=1GB" ,
+        "-c", "max_parallel_maintenance_workers=4"
+      ]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ################################
+  # PRISM Node
+  ################################
+
+  identus-prism-node:
+    image: ghcr.io/input-output-hk/prism-node:2.6.0
+    restart: always
+    environment:
+      NODE_PSQL_HOST: postgres-prism-node:5432
+      NODE_PSQL_DATABASE: postgres
+      NODE_PSQL_USERNAME: postgres
+      NODE_PSQL_PASSWORD: postgres
+      NODE_LEDGER: cardano
+      NODE_CARDANO_CONFIRMATION_BLOCKS: "3"
+      NODE_REFRESH_AND_SUBMIT_PERIOD: 5s
+      NODE_MOVE_SCHEDULED_TO_PENDING_PERIOD: 5s
+      NODE_CARDANO_NETWORK: testnet
+      NODE_CARDANO_WALLET_PASSPHRASE: super_secret
+      NODE_CARDANO_WALLET_ID: 9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d
+      NODE_CARDANO_PAYMENT_ADDRESS: addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3
+      NODE_CARDANO_WALLET_API_HOST: cardano-wallet
+      NODE_CARDANO_WALLET_API_PORT: "8090"
+      NODE_CARDANO_PRISM_GENESIS_BLOCK: 0
+      NODE_CARDANO_DB_SYNC_HOST: postgres-dbsync:5432
+      NODE_CARDANO_DB_SYNC_DATABASE: postgres
+      NODE_CARDANO_DB_SYNC_USERNAME: postgres
+      NODE_CARDANO_DB_SYNC_PASSWORD: postgres
+    depends_on:
+      postgres-prism-node:
+        condition: service_healthy
+      postgres-dbsync:
+        condition: service_healthy
+      bootstrap-testnet:
+        condition: service_completed_successfully
+
+  postgres-prism-node:
+    image: postgres:17
+    restart: always
+    ports:
+    - 5433:5432
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ################################
+  # Cloud Agent
+  ################################
+
+  identus-cloud-agent:
+    image: hyperledgeridentus/identus-cloud-agent:2.0.0
+    ports:
+    - 8085:8085
+    environment:
+      ADMIN_TOKEN: admin
+      AGENT_DB_HOST: postgres-cloud-agent
+      AGENT_DB_NAME: agent
+      AGENT_DB_PASSWORD: postgres
+      AGENT_DB_PORT: '5432'
+      AGENT_DB_USER: postgres
+      API_KEY_ENABLED: 'false'
+      CONNECT_DB_HOST: postgres-cloud-agent
+      CONNECT_DB_NAME: connect
+      CONNECT_DB_PASSWORD: postgres
+      CONNECT_DB_PORT: '5432'
+      CONNECT_DB_USER: postgres
+      DIDCOMM_SERVICE_URL: http://example.com/didcomm
+      POLLUX_DB_HOST: postgres-cloud-agent
+      POLLUX_DB_NAME: pollux
+      POLLUX_DB_PASSWORD: postgres
+      POLLUX_DB_PORT: '5432'
+      POLLUX_DB_USER: postgres
+      POLLUX_STATUS_LIST_REGISTRY_PUBLIC_URL: http://example.com/cloud-agent
+      PRISM_NODE_HOST: identus-prism-node
+      PRISM_NODE_PORT: '50053'
+      REST_SERVICE_URL: http://example.com/cloud-agent
+      SECRET_STORAGE_BACKEND: postgres
+    depends_on:
+      postgres-cloud-agent:
+        condition: service_healthy
+
+  postgres-cloud-agent:
+    image: postgres:16
+    restart: always
+    volumes:
+    - ./postgres/init_script.sh:/docker-entrypoint-initdb.d/init-script.sh
+    - ./postgres/max_conns.sql:/docker-entrypoint-initdb.d/max_conns.sql
+    environment:
+      POSTGRES_MULTIPLE_DATABASES: pollux,connect,agent
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  node-testnet: {}

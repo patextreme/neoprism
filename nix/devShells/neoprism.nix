@@ -46,8 +46,9 @@ let
       name = "buildConfig";
       text = ''
         cd "${rootDir}/docker/.config"
-        dhall-to-yaml <<< "(./main.dhall).basic" > "${rootDir}/docker/compose.yml"
-        dhall-to-yaml <<< "(./main.dhall).dbsync" > "${rootDir}/docker/compose-dbsync.yml"
+        dhall-to-yaml <<< "(./main.dhall).mainnet-relay" > "${rootDir}/docker/mainnet-relay/compose.yml"
+        dhall-to-yaml <<< "(./main.dhall).mainnet-dbsync" > "${rootDir}/docker/mainnet-dbsync/compose.yml"
+        dhall-to-yaml <<< "(./main.dhall).testnet-local" > "${rootDir}/docker/testnet-local/compose.yml"
       '';
     };
 

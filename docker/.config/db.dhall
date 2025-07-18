@@ -4,13 +4,25 @@ let DbService =
       { Type =
           { image : Text
           , restart : Text
-          , ports : List Text
+          , ports : Optional (List Text)
           , environment : Prelude.Map.Type Text Text
+          , healthcheck :
+              { test : List Text
+              , interval : Text
+              , timeout : Text
+              , retries : Natural
+              }
           }
       , default =
         { image = "postgres:16"
         , restart = "always"
-        , ports = [ "5432:5432" ]
+        , ports = None (List Text)
+        , healthcheck =
+          { test = [ "CMD-SHELL", "pg_isready -U postgres" ]
+          , interval = "5s"
+          , timeout = "5s"
+          , retries = 10
+          }
         , environment = toMap
             { POSTGRES_DB = "postgres"
             , POSTGRES_PASSWORD = "postgres"
@@ -19,8 +31,20 @@ let DbService =
         }
       }
 
-let Options = { Type = {}, default = {=} }
+let Options =
+      { Type = { hostPort : Optional Natural }
+      , default.hostPort = None Natural
+      }
 
-let makeDbService = \(options : Options.Type) -> DbService::{=}
+let makeDbService =
+      \(options : Options.Type) ->
+        DbService::{
+        , ports =
+            Prelude.Optional.map
+              Natural
+              (List Text)
+              (\(p : Natural) -> [ "${Prelude.Natural.show p}:5432" ])
+              options.hostPort
+        }
 
 in  { makeDbService, Options }
