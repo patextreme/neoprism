@@ -96,9 +96,11 @@ in  { mainnet-relay.services
                     , dbHost = "db-cloud-agent"
                     , prismNodeHost = "identus-prism-node"
                     }
-              , db-dbsync = db.makeDbService db.Options::{=}
               , db-prism-node = db.makeDbService db.Options::{=}
-              , db-neoprism = db.makeDbService db.Options::{=}
+              , db-neoprism =
+                  db.makeDbService db.Options::{ hostPort = Some 5432 }
+              , db-dbsync =
+                  db.makeDbService db.Options::{ hostPort = Some 5433 }
               , db-cloud-agent =
                       db.makeDbService db.Options::{=}
                   //  { environment = toMap

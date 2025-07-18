@@ -45,6 +45,28 @@
         };
       in
       {
+        apps = {
+          publish-testnet-image = {
+            type = "app";
+            program =
+              (pkgs.writeShellApplication {
+                name = "publish";
+                runtimeInputs = with pkgs; [
+                  nix
+                  docker
+                ];
+                text = ''
+                  TAG=$(date +"%Y%m%d-%H%M%S")
+                  nix build .#cardano-testnet-docker
+                  docker load < ./result
+                  docker tag cardano-testnet:latest "patextreme/cardano-testnet:$TAG"
+                  docker push "patextreme/cardano-testnet:$TAG"
+                '';
+              }).outPath
+              + "/bin/publish";
+          };
+        };
+
         checks = import ./nix/checks/default.nix { inherit pkgs; };
         devShells = import ./nix/devShells/default.nix { inherit pkgs; };
         packages = import ./nix/packages/default.nix { inherit pkgs; };
