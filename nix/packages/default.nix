@@ -48,15 +48,13 @@ rec {
       };
 
   # cardano testnet image
-  cardano-testnet-docker = pkgs.callPackage ./cardano-testnet-docker.nix { inherit pkgs; };
+  cardano-testnet-docker = pkgs.callPackage ./cardano-testnet-docker.nix { };
   cardano-testnet-docker-linux-amd64 = pkgs.pkgsCross.gnu64.callPackage ./cardano-testnet-docker.nix {
-    inherit pkgs;
     tagSuffix = "-amd64";
   };
   cardano-testnet-docker-linux-arm64 =
     pkgs.pkgsCross.aarch64-multiplatform.callPackage ./cardano-testnet-docker.nix
       {
-        inherit pkgs;
         tagSuffix = "-arm64";
       };
 }

@@ -63,6 +63,10 @@
                   docker load < ./result-arm64
                   docker tag cardano-testnet:latest-amd64 "patextreme/cardano-testnet:$TAG-amd64"
                   docker tag cardano-testnet:latest-arm64 "patextreme/cardano-testnet:$TAG-arm64"
+
+                  rm -rf ./result-amd64
+                  rm -rf ./result-arm64
+
                   docker push "patextreme/cardano-testnet:$TAG-amd64"
                   docker push "patextreme/cardano-testnet:$TAG-arm64"
 
