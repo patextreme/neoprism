@@ -2,5 +2,5 @@
 
 {
   default = pkgs.callPackage ./neoprism.nix { inherit pkgs; };
-  testnet-local = pkgs.callPackage ./testnet-local.nix { inherit pkgs; };
+  cardano = pkgs.callPackage ./cardano.nix { inherit pkgs; };
 }

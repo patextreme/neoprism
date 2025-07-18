@@ -48,6 +48,8 @@ let BootstrapOptions =
           , cardanoNodeHost : Text
           , walletBaseUrl : Text
           , walletPassphrase : Text
+          , walletPaymentAddress : Text
+          , initWalletHurlFile : Text
           }
       , default = {=}
       }
@@ -55,18 +57,22 @@ let BootstrapOptions =
 let makeBootstrapService =
       \(options : BootstrapOptions.Type) ->
         { image = imageName
-        , volumes = [ "${options.testnetVolume}:/node/testnet" ]
+        , volumes =
+          [ "${options.testnetVolume}:/node/testnet"
+          , "${options.initWalletHurlFile}:/node/init-wallet.hurl"
+          ]
         , command =
           [ "bash"
           , "-c"
           , ''
             transactGenesis
-            initWallet
+            hurl ./init-wallet.hurl
             ''
           ]
         , environment = toMap
             { HURL_WALLET_BASE_URL = options.walletBaseUrl
             , HURL_WALLET_PASSPHRASE = options.walletPassphrase
+            , GENESIS_PAYMENT_ADDR = options.walletPaymentAddress
             , CARDANO_NODE_SOCKET_PATH = "/node/testnet/socket/node1/sock"
             , CARDANO_NODE_NETWORK_ID =
                 Prelude.Natural.show options.networkMagic

@@ -8,6 +8,7 @@ let
 in
 mkShell {
   packages = with pkgs; [
+    nix
     jq
     hurl
     cardano-node

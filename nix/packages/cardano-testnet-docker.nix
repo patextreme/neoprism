@@ -28,8 +28,8 @@ let
         echo "Drafting transaction"
         cardano-cli conway transaction build \
           --tx-in "$TX_IN" \
-          --tx-out 'addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3+100000000000' \
-          --change-address addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3 \
+          --tx-out "$GENESIS_PAYMENT_ADDR+100000000000" \
+          --change-address "$GENESIS_PAYMENT_ADDR" \
           --out-file transactions/tx.raw
 
         echo "Signing transaction"
@@ -42,18 +42,6 @@ let
         cardano-cli conway transaction submit --tx-file transactions/tx.signed
       '';
     };
-    initWallet =
-      let
-        hurlScript = pkgs.writeText "init.hurl" (
-          builtins.readFile ../../docker/testnet-local/hurl/init.hurl
-        );
-      in
-      writeShellApplication {
-        name = "initWallet";
-        text = ''
-          hurl ${hurlScript}
-        '';
-      };
   };
   basePackages = with pkgs; [
     bash

@@ -16,7 +16,7 @@ let cloudAgent = ./cloud-agent.dhall
 
 in  { mainnet-relay.services
       =
-      { db = db.makeDbService db.Options::{=}
+      { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
           neoprism.makeIndexerNodeService
             neoprism.Options::{
@@ -28,7 +28,7 @@ in  { mainnet-relay.services
       }
     , mainnet-dbsync.services
       =
-      { db = db.makeDbService db.Options::{=}
+      { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
           neoprism.makeIndexerNodeService
             neoprism.Options::{
@@ -57,6 +57,9 @@ in  { mainnet-relay.services
                     , cardanoNodeHost
                     , walletBaseUrl = "http://cardano-wallet:8090"
                     , walletPassphrase = "super_secret"
+                    , walletPaymentAddress =
+                        "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
+                    , initWalletHurlFile = "./init-wallet.hurl"
                     }
               , cardano-dbsync =
                   dbSync.makeDbSyncService
