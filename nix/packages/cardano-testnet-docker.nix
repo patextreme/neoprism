@@ -2,6 +2,7 @@
   pkgs,
   dockerTools,
   writeShellApplication,
+  tagSuffix ? "",
 }:
 
 let
@@ -59,7 +60,7 @@ let
 in
 dockerTools.buildLayeredImage {
   name = "cardano-testnet";
-  tag = "latest";
+  tag = "latest${tagSuffix}";
   contents = basePackages ++ cardanoPackages ++ (builtins.attrValues scripts);
   config = {
     Env = [

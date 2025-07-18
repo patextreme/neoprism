@@ -1,6 +1,6 @@
 let Prelude = (./prelude.dhall).Prelude
 
-let imageName = "patextreme/cardano-testnet:20250719-002830"
+let imageName = "patextreme/cardano-testnet:20250719-011830"
 
 let CardanoNodeService =
       { Type =
