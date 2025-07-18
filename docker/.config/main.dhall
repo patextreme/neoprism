@@ -16,13 +16,24 @@ let cloudAgent = ./cloud-agent.dhall
 
 in  { mainnet-relay.services
       =
-      { indexer-node = neoprism.makeIndexerNodeService neoprism.ouraOption
-      , db = db.makeDbService db.Options::{=}
+      { db = db.makeDbService db.Options::{=}
+      , neoprism-indexer =
+          neoprism.makeIndexerNodeService
+            neoprism.Options::{
+            , extraEnvs = toMap
+                { NPRISM_CARDANO_ADDR =
+                    "backbone.mainnet.cardanofoundation.org:3001"
+                }
+            }
       }
     , mainnet-dbsync.services
       =
-      { indexer-node = neoprism.makeIndexerNodeService neoprism.dbSyncOption
-      , db = db.makeDbService db.Options::{=}
+      { db = db.makeDbService db.Options::{=}
+      , neoprism-indexer =
+          neoprism.makeIndexerNodeService
+            neoprism.Options::{
+            , extraEnvs = toMap { NPRISM_DBSYNC_URL = "<TODO>" }
+            }
       }
     , testnet-local =
         let networkMagic = 42
@@ -55,6 +66,15 @@ in  { mainnet-relay.services
                     , dbHost = "db-dbsync"
                     , configFile = "./dbsync-config.yaml"
                     }
+              , neoprism-indexer =
+                  neoprism.makeIndexerNodeService
+                    neoprism.Options::{
+                    , dbHost = "db-neoprism"
+                    , extraEnvs = toMap
+                        { NPRISM_DBSYNC_URL =
+                            "postgresql://postgres:postgres@db-dbsync:5432/postgres"
+                        }
+                    }
               , identus-prism-node =
                   prismNode.makePrismNodeService
                     prismNode.Options::{
@@ -73,10 +93,9 @@ in  { mainnet-relay.services
                     , dbHost = "db-cloud-agent"
                     , prismNodeHost = "identus-prism-node"
                     }
-              , db-dbsync =
-                  db.makeDbService db.Options::{ hostPort = Some 5432 }
-              , db-prism-node =
-                  db.makeDbService db.Options::{ hostPort = Some 5433 }
+              , db-dbsync = db.makeDbService db.Options::{=}
+              , db-prism-node = db.makeDbService db.Options::{=}
+              , db-neoprism = db.makeDbService db.Options::{=}
               , db-cloud-agent =
                       db.makeDbService db.Options::{=}
                   //  { environment = toMap

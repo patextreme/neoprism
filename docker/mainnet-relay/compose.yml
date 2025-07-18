@@ -13,7 +13,7 @@ services:
       timeout: "5s"
     image: postgres:16
     restart: always
-  indexer-node:
+  neoprism-indexer:
     depends_on:
       db:
         condition: service_healthy

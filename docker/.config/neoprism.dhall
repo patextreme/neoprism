@@ -13,7 +13,6 @@ let IndexerNodeService =
       , default =
         { image = "hyperledgeridentus/identus-neoprism:${version}"
         , restart = "always"
-        , ports = [ "8080:8080" ]
         , depends_on = [] : Prelude.Map.Type Text { condition : Text }
         , environment = [] : Prelude.Map.Type Text Text
         }
@@ -22,18 +21,12 @@ let IndexerNodeService =
 let Options =
       { Type =
           { extraEnvs : Prelude.Map.Type Text Text
+          , hostPort : Natural
           , dbHost : Text
-          , dbName : Text
-          , dbPort : Natural
-          , dbUser : Text
-          , dbPassword : Text
           }
       , default =
-        { dbHost = "db"
-        , dbPort = 5432
-        , dbName = "postgres"
-        , dbUser = "postgres"
-        , dbPassword = "postgres"
+        { hostPort = 8080
+        , dbHost = "db"
         , extraEnvs = [] : Prelude.Map.Type Text Text
         }
       }
@@ -44,11 +37,12 @@ let makeIndexerNodeService =
               toMap
                 { RUST_LOG = "oura=warn,tracing::span=warn,info"
                 , NPRISM_DB_URL =
-                    "postgres://postgres:postgres@db:5432/postgres"
+                    "postgres://postgres:postgres@${options.dbHost}:5432/postgres"
                 , NPRISM_CARDANO_NETWORK = "mainnet"
                 }
 
         in  IndexerNodeService::{
+            , ports = [ "${Prelude.Natural.show options.hostPort}:8080" ]
             , environment = mandatoryIndexerNodeEnvs # options.extraEnvs
             , depends_on =
               [ { mapKey = options.dbHost
@@ -57,14 +51,4 @@ let makeIndexerNodeService =
               ]
             }
 
-in  { Options
-    , makeIndexerNodeService
-    , ouraOption = Options::{
-      , extraEnvs = toMap
-          { NPRISM_CARDANO_ADDR = "backbone.mainnet.cardanofoundation.org:3001"
-          }
-      }
-    , dbSyncOption = Options::{
-      , extraEnvs = toMap { NPRISM_DBSYNC_URL = "<TODO>" }
-      }
-    }
+in  { Options, makeIndexerNodeService }
