@@ -32,7 +32,7 @@ A public preprod instance is also available at [https://neoprism-preprod.patlo.d
 Start the node and sync block metadata from relay node `backbone.mainnet.cardanofoundation.org:3001`
 
 ```bash
-cd docker
+cd docker/mainnet-relay
 docker-compose up
 ```
 
@@ -95,7 +95,6 @@ These are commands you can run outside the development shell
 
 | command                                                      | description                                                        |
 |--------------------------------------------------------------|--------------------------------------------------------------------|
-| `nix flake check`                                            | Run checks to see if it will pass the CI (CI runs this check)      |
 | `nix build .#neoprism-docker`                                | Use nix to build the docker image (output available at `./result`) |
 | `nix build .#neoprism-docker && cat ./result \| docker load` | Use nix to build the docker image and load it using docker         |
 

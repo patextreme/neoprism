@@ -7,21 +7,28 @@ let IndexerNodeService =
           { image : Text
           , restart : Text
           , ports : List Text
-          , depends_on : List Text
+          , depends_on : Prelude.Map.Type Text { condition : Text }
           , environment : Prelude.Map.Type Text Text
           }
       , default =
         { image = "hyperledgeridentus/identus-neoprism:${version}"
         , restart = "always"
-        , ports = [ "8080:8080" ]
-        , depends_on = [] : List Text
+        , depends_on = [] : Prelude.Map.Type Text { condition : Text }
         , environment = [] : Prelude.Map.Type Text Text
         }
       }
 
 let Options =
-      { Type = { extraEnvs : Prelude.Map.Type Text Text, dbHost : Text }
-      , default = { dbHost = "db", extraEnvs = [] : Prelude.Map.Type Text Text }
+      { Type =
+          { extraEnvs : Prelude.Map.Type Text Text
+          , hostPort : Natural
+          , dbHost : Text
+          }
+      , default =
+        { hostPort = 8080
+        , dbHost = "db"
+        , extraEnvs = [] : Prelude.Map.Type Text Text
+        }
       }
 
 let makeIndexerNodeService =
@@ -30,23 +37,18 @@ let makeIndexerNodeService =
               toMap
                 { RUST_LOG = "oura=warn,tracing::span=warn,info"
                 , NPRISM_DB_URL =
-                    "postgres://postgres:postgres@db:5432/postgres"
+                    "postgres://postgres:postgres@${options.dbHost}:5432/postgres"
                 , NPRISM_CARDANO_NETWORK = "mainnet"
                 }
 
         in  IndexerNodeService::{
+            , ports = [ "${Prelude.Natural.show options.hostPort}:8080" ]
             , environment = mandatoryIndexerNodeEnvs # options.extraEnvs
-            , depends_on = [ options.dbHost ]
+            , depends_on =
+              [ { mapKey = options.dbHost
+                , mapValue.condition = "service_healthy"
+                }
+              ]
             }
 
-in  { Options
-    , makeIndexerNodeService
-    , ouraOption = Options::{
-      , extraEnvs = toMap
-          { NPRISM_CARDANO_ADDR = "backbone.mainnet.cardanofoundation.org:3001"
-          }
-      }
-    , dbSyncOption = Options::{
-      , extraEnvs = toMap { NPRISM_DBSYNC_URL = "<TODO>" }
-      }
-    }
+in  { Options, makeIndexerNodeService }

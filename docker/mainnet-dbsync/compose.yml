@@ -4,16 +4,24 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
+    healthcheck:
+      interval: "5s"
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres
+      timeout: "5s"
     image: postgres:16
     ports:
       - "5432:5432"
     restart: always
-  indexer-node:
+  neoprism-indexer:
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      NPRISM_CARDANO_ADDR: backbone.mainnet.cardanofoundation.org:3001
       NPRISM_CARDANO_NETWORK: mainnet
+      NPRISM_DBSYNC_URL: "<TODO>"
       NPRISM_DB_URL: "postgres://postgres:postgres@db:5432/postgres"
       RUST_LOG: "oura=warn,tracing::span=warn,info"
     image: hyperledgeridentus/identus-neoprism:0.1.1
