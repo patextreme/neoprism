@@ -7,10 +7,10 @@ use identus_did_prism::did::PrismDidOps;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::AppState;
 use crate::app::service::error::ResolutionError;
 use crate::http::features::api::models::BuildMeta;
 use crate::http::urls;
+use crate::{AppState, VERSION};
 
 mod models;
 
@@ -51,9 +51,9 @@ async fn health() -> &'static str {
         (status = OK, description = "Healthy", body = String, example = "Ok"),
     )
 )]
-async fn build_meta(State(state): State<AppState>) -> Json<BuildMeta> {
+async fn build_meta() -> Json<BuildMeta> {
     Json(BuildMeta {
-        version: state.app_version.to_string(),
+        version: VERSION.to_string(),
     })
 }
 

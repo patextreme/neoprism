@@ -19,9 +19,10 @@ mod app;
 mod cli;
 mod http;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[derive(Clone)]
 struct AppState {
-    app_version: &'static str,
     did_service: DidService,
     cursor_rx: Option<tokio::sync::watch::Receiver<Option<DltCursor>>>,
     network: NetworkIdentifier,
@@ -44,13 +45,11 @@ pub async fn start_server() -> anyhow::Result<()> {
     }
 
     // init state
-    let app_version = env!("CARGO_PKG_VERSION");
     let did_service = DidService::new(&db);
     let network = cli.cardano_network;
     let cursor_rx = start_dlt_source(&cli, &network, &db).await;
 
     let state = AppState {
-        app_version,
         did_service,
         cursor_rx,
         network,
