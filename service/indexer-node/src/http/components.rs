@@ -1,6 +1,7 @@
 use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use maud::{DOCTYPE, Markup, html};
 
+use crate::VERSION;
 use crate::http::urls;
 
 pub fn page_layout(title: &str, network: NetworkIdentifier, body: Markup) -> Markup {
@@ -10,7 +11,7 @@ pub fn page_layout(title: &str, network: NetworkIdentifier, body: Markup) -> Mar
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
-                title { "NeoPRISM UI" }
+                title { (format!("NeoPRISM - v{}", VERSION)) }
                 link rel="stylesheet" href=(urls::AssetStyleSheet::new_uri());
                 script
                     src="https://unpkg.com/htmx.org@2.0.4"
