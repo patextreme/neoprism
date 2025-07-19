@@ -76,6 +76,7 @@ in  { mainnet-relay.services
                     , extraEnvs = toMap
                         { NPRISM_DBSYNC_URL =
                             "postgresql://postgres:postgres@db-dbsync:5432/postgres"
+                        , NPRISM_CONFIRMATION_BLOCKS = "1"
                         }
                     }
               , identus-prism-node =

@@ -151,7 +151,12 @@ pub struct OuraN2NSource<Store: DltCursorRepo + Send + 'static> {
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
-    pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier) -> Self {
+    pub fn since_genesis(
+        store: Store,
+        remote_addr: &str,
+        chain: &NetworkIdentifier,
+        confirmation_blocks: usize,
+    ) -> Self {
         let intersect = match chain {
             NetworkIdentifier::Mainnet => oura::sources::IntersectArg::Point(PointArg(
                 71481015,
@@ -163,13 +168,14 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
             )),
             _ => oura::sources::IntersectArg::Origin,
         };
-        Self::new(store, remote_addr, chain, intersect)
+        Self::new(store, remote_addr, chain, intersect, confirmation_blocks)
     }
 
     pub async fn since_persisted_cursor_or_genesis(
         store: Store,
         remote_addr: &str,
         chain: &NetworkIdentifier,
+        confirmation_blocks: usize,
     ) -> Result<Self, E> {
         let cursor = store.get_cursor().await?;
         match cursor {
@@ -181,16 +187,22 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
                     blockhash_hex
                 );
                 let intersect = oura::sources::IntersectArg::Point(PointArg(cursor.slot, blockhash_hex));
-                Ok(Self::new(store, remote_addr, chain, intersect))
+                Ok(Self::new(store, remote_addr, chain, intersect, confirmation_blocks))
             }
             None => {
                 tracing::info!("Persisted cursor not found, staring syncing from PRISM genesis slot");
-                Ok(Self::since_genesis(store, remote_addr, chain))
+                Ok(Self::since_genesis(store, remote_addr, chain, confirmation_blocks))
             }
         }
     }
 
-    pub fn new(store: Store, remote_addr: &str, chain: &NetworkIdentifier, intersect: IntersectArg) -> Self {
+    pub fn new(
+        store: Store,
+        remote_addr: &str,
+        chain: &NetworkIdentifier,
+        intersect: IntersectArg,
+        confirmation_blocks: usize,
+    ) -> Self {
         #[allow(deprecated)]
         let config = Config {
             address: AddressArg(oura::sources::BearerKind::Tcp, remote_addr.to_string()),
@@ -199,7 +211,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
             intersect: Some(intersect),
             well_known: None,
             mapper: Default::default(),
-            min_depth: 112,
+            min_depth: confirmation_blocks,
             retry_policy: Some(oura::sources::RetryPolicy {
                 chainsync_max_retries: 0,
                 chainsync_max_backoff: 60,

@@ -47,7 +47,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     // init state
     let did_service = DidService::new(&db);
     let network = cli.cardano_network;
-    let cursor_rx = start_dlt_source(&cli, &network, &db).await;
+    let cursor_rx = start_dlt_source(&cli, &network, &db, cli.confirmation_blocks).await;
 
     let state = AppState {
         did_service,
@@ -72,6 +72,7 @@ async fn start_dlt_source(
     cli: &CliArgs,
     network: &NetworkIdentifier,
     db: &PostgresDb,
+    confirmation_blocks: usize,
 ) -> Option<tokio::sync::watch::Receiver<Option<DltCursor>>> {
     if let Some(address) = &cli.cardano_addr {
         tracing::info!(
@@ -79,9 +80,10 @@ async fn start_dlt_source(
             network,
             address
         );
-        let source = OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, network)
-            .await
-            .expect("Failed to create DLT source");
+        let source =
+            OuraN2NSource::since_persisted_cursor_or_genesis(db.clone(), address, network, confirmation_blocks)
+                .await
+                .expect("Failed to create DLT source");
 
         let sync_worker = DltSyncWorker::new(db.clone(), source);
         let index_worker = DltIndexWorker::new(db.clone());
@@ -92,7 +94,7 @@ async fn start_dlt_source(
         Some(cursor_rx)
     } else if let Some(dbsync_url) = cli.dbsync_url.as_ref() {
         tracing::info!("Starting DLT sync worker on {} from cardano dbsync", network);
-        let source = DbSyncSource::since_persisted_cursor(db.clone(), dbsync_url)
+        let source = DbSyncSource::since_persisted_cursor(db.clone(), dbsync_url, confirmation_blocks)
             .await
             .expect("Failed to create DLT source");
 
