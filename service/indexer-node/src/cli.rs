@@ -38,6 +38,9 @@ pub struct CliArgs {
     /// Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive)
     #[arg(long, env = "NPRISM_CORS_ENABLED")]
     pub cors_enabled: bool,
+    /// Number of confirmation blocks to wait before considering the block valid.
+    #[arg(long, env = "NPRISM_CONFIRMATION_BLOCKS", default_value_t = 112)]
+    pub confirmation_blocks: usize,
 }
 
 mod parser {
