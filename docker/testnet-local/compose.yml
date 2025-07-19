@@ -180,7 +180,7 @@ services:
       db-prism-node:
         condition: service_healthy
     environment:
-      NODE_CARDANO_CONFIRMATION_BLOCKS: '3'
+      NODE_CARDANO_CONFIRMATION_BLOCKS: '1'
       NODE_CARDANO_DB_SYNC_DATABASE: postgres
       NODE_CARDANO_DB_SYNC_HOST: db-dbsync:5432
       NODE_CARDANO_DB_SYNC_PASSWORD: postgres
@@ -207,6 +207,7 @@ services:
         condition: service_healthy
     environment:
       NPRISM_CARDANO_NETWORK: mainnet
+      NPRISM_CONFIRMATION_BLOCKS: '1'
       NPRISM_DBSYNC_URL: "postgresql://postgres:postgres@db-dbsync:5432/postgres"
       NPRISM_DB_URL: "postgres://postgres:postgres@db-neoprism:5432/postgres"
       RUST_LOG: "oura=warn,tracing::span=warn,info"

@@ -340,7 +340,8 @@ ORDER BY b.block_no, tx.block_index
 LIMIT 1000
             "#,
         )
-        .bind([from_slot, confirmation_blocks as i64])
+        .bind(from_slot)
+        .bind(confirmation_blocks as i64)
         .fetch_all(pool)
         .await
         .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
