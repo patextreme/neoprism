@@ -11,7 +11,7 @@ pub fn page_layout(title: &str, network: NetworkIdentifier, body: Markup) -> Mar
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
-                title { (format!("NeoPRISM - v{}", VERSION)) }
+                title { "NeoPRISM UI" }
                 link rel="stylesheet" href=(urls::AssetStyleSheet::new_uri());
                 script
                     src="https://unpkg.com/htmx.org@2.0.4"
@@ -52,6 +52,7 @@ fn navbar(title: &str, network: NetworkIdentifier) -> Markup {
             div class="navbar-end" {
                 div class="mr-4" {
                     span class="text-sm text-success" { (network) }
+                    div class="text-right text-sm text-base-content/50" { (format!("(v{})", VERSION)) }
                 }
             }
         }
