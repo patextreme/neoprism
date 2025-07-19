@@ -17,8 +17,8 @@ mod models;
 #[derive(OpenApi)]
 #[openapi(servers(
     (url = "http://localhost:8080", description = "Local"),
-    (url = "https://neoprism.patlo.dev:8080", description = "Public - mainnet"),
-    (url = "https://neoprism-preprod.patlo.dev:8080", description = "Public - preprod")
+    (url = "https://neoprism.patlo.dev", description = "Public - mainnet"),
+    (url = "https://neoprism-preprod.patlo.dev", description = "Public - preprod")
 ), paths(resolve_did, health, build_meta))]
 struct OpenApiDoc;
 
