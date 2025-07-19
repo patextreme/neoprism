@@ -1,6 +1,7 @@
 use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use maud::{DOCTYPE, Markup, html};
 
+use crate::VERSION;
 use crate::http::urls;
 
 pub fn page_layout(title: &str, network: NetworkIdentifier, body: Markup) -> Markup {
@@ -51,6 +52,7 @@ fn navbar(title: &str, network: NetworkIdentifier) -> Markup {
             div class="navbar-end" {
                 div class="mr-4" {
                     span class="text-sm text-success" { (network) }
+                    div class="text-right text-sm text-base-content/50" { (format!("(v{})", VERSION)) }
                 }
             }
         }

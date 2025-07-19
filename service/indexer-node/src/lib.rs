@@ -19,6 +19,8 @@ mod app;
 mod cli;
 mod http;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[derive(Clone)]
 struct AppState {
     did_service: DidService,

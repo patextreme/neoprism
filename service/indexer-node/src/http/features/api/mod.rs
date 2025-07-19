@@ -7,12 +7,19 @@ use identus_did_prism::did::PrismDidOps;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::AppState;
 use crate::app::service::error::ResolutionError;
+use crate::http::features::api::models::BuildMeta;
 use crate::http::urls;
+use crate::{AppState, VERSION};
+
+mod models;
 
 #[derive(OpenApi)]
-#[openapi(servers((url = "http://localhost:8080", description = "Local")), paths(resolve_did))]
+#[openapi(servers(
+    (url = "http://localhost:8080", description = "Local"),
+    (url = "https://neoprism.patlo.dev", description = "Public - mainnet"),
+    (url = "https://neoprism-preprod.patlo.dev", description = "Public - preprod")
+), paths(resolve_did, health, build_meta))]
 struct OpenApiDoc;
 
 pub fn router() -> Router<AppState> {
@@ -20,6 +27,34 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", openapi))
         .route(urls::ApiDid::AXUM_PATH, get(resolve_did))
+        .route(urls::ApiHealth::AXUM_PATH, get(health))
+        .route(urls::ApiBuildMeta::AXUM_PATH, get(build_meta))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/_system/health",
+    tags = ["System"],
+    responses(
+        (status = OK, description = "Healthy", body = String, example = "Ok"),
+    )
+)]
+async fn health() -> &'static str {
+    "Ok"
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/_system/build",
+    tags = ["System"],
+    responses(
+        (status = OK, description = "Healthy", body = String, example = "Ok"),
+    )
+)]
+async fn build_meta() -> Json<BuildMeta> {
+    Json(BuildMeta {
+        version: VERSION.to_string(),
+    })
 }
 
 #[utoipa::path(

@@ -5,6 +5,7 @@ use clap::Parser;
 use identus_did_prism_indexer::dlt::NetworkIdentifier;
 
 #[derive(Parser)]
+#[command(version)]
 pub struct CliArgs {
     /// Database URL (e.g. postgres://user:pass@host:5432/db)
     #[arg(long, env = "NPRISM_DB_URL")]
