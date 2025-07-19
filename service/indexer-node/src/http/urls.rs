@@ -10,7 +10,13 @@ typed_uri!(AssetStyleSheet, "assets" / "styles.css");
 // misc
 typed_uri!(Home, "");
 typed_uri!(Swagger, "swagger-ui");
+
+// api
 typed_uri!(ApiDid, "api" / "dids" / (did: String));
+typed_uri!(ApiHealth, "api" / "_system" / "health");
+typed_uri!(ApiBuildMeta, "api" / "_system" / "build");
+
+// resolver
 typed_uri!(Resolver, "resolver" ? Option<DidQuery>);
 
 // explorer

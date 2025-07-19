@@ -12,7 +12,10 @@ use crate::app::service::error::ResolutionError;
 use crate::http::urls;
 
 #[derive(OpenApi)]
-#[openapi(servers((url = "http://localhost:8080", description = "Local")), paths(resolve_did))]
+#[openapi(servers(
+    (url = "http://localhost:8080", description = "Local"),
+    (url = "https://neoprism.patlo.dev:8080", description = "Public")
+), paths(resolve_did, health))]
 struct OpenApiDoc;
 
 pub fn router() -> Router<AppState> {
@@ -20,6 +23,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", openapi))
         .route(urls::ApiDid::AXUM_PATH, get(resolve_did))
+        .route(urls::ApiHealth::AXUM_PATH, get(health))
 }
 
 #[utoipa::path(
@@ -44,4 +48,16 @@ async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>) -> 
         Err(ResolutionError::InternalError { .. }) => Err(StatusCode::INTERNAL_SERVER_ERROR),
         Ok((did, did_state)) => Ok(Json(did_state.to_did_document(&did.to_did()))),
     }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/_system/health",
+    tags = ["System"],
+    responses(
+        (status = OK, description = "Healthy", body = String, example = "Ok"),
+    )
+)]
+async fn health() -> &'static str {
+    "Ok"
 }
