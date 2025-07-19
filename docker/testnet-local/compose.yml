@@ -211,7 +211,7 @@ services:
       NPRISM_DBSYNC_URL: "postgresql://postgres:postgres@db-dbsync:5432/postgres"
       NPRISM_DB_URL: "postgres://postgres:postgres@db-neoprism:5432/postgres"
       RUST_LOG: "oura=warn,tracing::span=warn,info"
-    image: hyperledgeridentus/identus-neoprism:0.1.1
+    image: hyperledgeridentus/identus-neoprism:0.2.0
     ports:
       - "8080:8080"
     restart: always

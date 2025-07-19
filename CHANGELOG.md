@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2025-07-19
+
+### 🚀 Features
+
+- Enable CORS (#64)
+- Add healthcheck and build metadata endpoint (#68)
+- Configurable confirmation blocks (#69)
+
+### 💼 Other
+
+- Support multi-arch testnet image (#67)
+
+### 🧪 Testing
+
+- Add local testnet infrastructure (#66)
+
 ## [0.1.1] - 2025-07-15
 
 ### 🐛 Bug Fixes
