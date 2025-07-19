@@ -9,13 +9,17 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use crate::AppState;
 use crate::app::service::error::ResolutionError;
+use crate::http::features::api::models::BuildMeta;
 use crate::http::urls;
+
+mod models;
 
 #[derive(OpenApi)]
 #[openapi(servers(
     (url = "http://localhost:8080", description = "Local"),
-    (url = "https://neoprism.patlo.dev:8080", description = "Public")
-), paths(resolve_did, health))]
+    (url = "https://neoprism.patlo.dev:8080", description = "Public - mainnet"),
+    (url = "https://neoprism-preprod.patlo.dev:8080", description = "Public - preprod")
+), paths(resolve_did, health, build_meta))]
 struct OpenApiDoc;
 
 pub fn router() -> Router<AppState> {
@@ -24,6 +28,33 @@ pub fn router() -> Router<AppState> {
         .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", openapi))
         .route(urls::ApiDid::AXUM_PATH, get(resolve_did))
         .route(urls::ApiHealth::AXUM_PATH, get(health))
+        .route(urls::ApiBuildMeta::AXUM_PATH, get(build_meta))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/_system/health",
+    tags = ["System"],
+    responses(
+        (status = OK, description = "Healthy", body = String, example = "Ok"),
+    )
+)]
+async fn health() -> &'static str {
+    "Ok"
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/_system/build",
+    tags = ["System"],
+    responses(
+        (status = OK, description = "Healthy", body = String, example = "Ok"),
+    )
+)]
+async fn build_meta(State(state): State<AppState>) -> Json<BuildMeta> {
+    Json(BuildMeta {
+        version: state.app_version.to_string(),
+    })
 }
 
 #[utoipa::path(
@@ -48,16 +79,4 @@ async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>) -> 
         Err(ResolutionError::InternalError { .. }) => Err(StatusCode::INTERNAL_SERVER_ERROR),
         Ok((did, did_state)) => Ok(Json(did_state.to_did_document(&did.to_did()))),
     }
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/_system/health",
-    tags = ["System"],
-    responses(
-        (status = OK, description = "Healthy", body = String, example = "Ok"),
-    )
-)]
-async fn health() -> &'static str {
-    "Ok"
 }
