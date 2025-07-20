@@ -4,6 +4,7 @@ let
   rootDir = "$ROOT_DIR";
   buildConfig = pkgs.writeShellApplication {
     name = "buildConfig";
+    runtimeConfig = with pkgs; [ dhall-json ];
     text = ''
       cd "${rootDir}/docker/.config"
       dhall-to-yaml <<< "(./main.dhall).mainnet-relay" > "${rootDir}/docker/mainnet-relay/compose.yml"
