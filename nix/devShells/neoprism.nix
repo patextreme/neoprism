@@ -1,4 +1,4 @@
-{ pkgs }:
+{ pkgs, buildConfig }:
 
 let
   rootDir = "$ROOT_DIR";
@@ -10,6 +10,8 @@ let
     dbName = "postgres";
   };
   scripts = rec {
+    inherit buildConfig;
+
     format = pkgs.writeShellApplication {
       name = "format";
       runtimeInputs = with pkgs; [
@@ -34,16 +36,6 @@ let
       text = ''
         cd "${rootDir}/service/indexer-node"
         tailwindcss -i tailwind.css -o ./assets/styles.css
-      '';
-    };
-
-    buildConfig = pkgs.writeShellApplication {
-      name = "buildConfig";
-      text = ''
-        cd "${rootDir}/docker/.config"
-        dhall-to-yaml <<< "(./main.dhall).mainnet-relay" > "${rootDir}/docker/mainnet-relay/compose.yml"
-        dhall-to-yaml <<< "(./main.dhall).mainnet-dbsync" > "${rootDir}/docker/mainnet-dbsync/compose.yml"
-        dhall-to-yaml <<< "(./main.dhall).testnet-local" > "${rootDir}/docker/testnet-local/compose.yml"
       '';
     };
 
@@ -110,28 +102,6 @@ let
         cd "${rootDir}"
         ${buildAssets}/bin/buildAssets
         cargo run --bin indexer-node -- --db-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
-      '';
-    };
-
-    bumpVersion = pkgs.writeShellApplication {
-      name = "bumpVersion";
-      text = ''
-        cd "${rootDir}"
-        NEW_VERSION=$(${pkgs.git-cliff}/bin/git-cliff --bump --context | ${pkgs.jq}/bin/jq -r .[0].version | sed s/^v//)
-        ${setVersion}/bin/setVersion "$NEW_VERSION"
-      '';
-    };
-
-    setVersion = pkgs.writeShellApplication {
-      name = "setVersion";
-      text = ''
-        cd "${rootDir}"
-        NEW_VERSION=$1
-        echo "Setting new version to $NEW_VERSION"
-        echo "$NEW_VERSION" > version
-        ${rust}/bin/cargo set-version "$NEW_VERSION"
-        ${buildConfig}/bin/buildConfig
-        ${pkgs.git-cliff}/bin/git-cliff -t "$NEW_VERSION" > CHANGELOG.md
       '';
     };
   };
