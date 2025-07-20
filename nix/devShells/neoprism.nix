@@ -1,13 +1,8 @@
-{
-  pkgs,
-  rustUtils,
-  mkShell,
-  writeShellApplication,
-}:
+{ pkgs }:
 
 let
   rootDir = "$ROOT_DIR";
-  rust = rustUtils.rust;
+  rust = pkgs.rustUtils.rust;
   localDb = {
     port = 5432;
     username = "postgres";
@@ -15,7 +10,7 @@ let
     dbName = "postgres";
   };
   scripts = rec {
-    format = writeShellApplication {
+    format = pkgs.writeShellApplication {
       name = "format";
       runtimeInputs = with pkgs; [
         nixfmt-rfc-style
@@ -34,7 +29,7 @@ let
       '';
     };
 
-    buildAssets = writeShellApplication {
+    buildAssets = pkgs.writeShellApplication {
       name = "buildAssets";
       text = ''
         cd "${rootDir}/service/indexer-node"
@@ -42,7 +37,7 @@ let
       '';
     };
 
-    buildConfig = writeShellApplication {
+    buildConfig = pkgs.writeShellApplication {
       name = "buildConfig";
       text = ''
         cd "${rootDir}/docker/.config"
@@ -52,7 +47,7 @@ let
       '';
     };
 
-    build = writeShellApplication {
+    build = pkgs.writeShellApplication {
       name = "build";
       text = ''
         cd "${rootDir}"
@@ -61,7 +56,7 @@ let
       '';
     };
 
-    clean = writeShellApplication {
+    clean = pkgs.writeShellApplication {
       name = "clean";
       text = ''
         cd "${rootDir}"
@@ -69,7 +64,7 @@ let
       '';
     };
 
-    dbUp = writeShellApplication {
+    dbUp = pkgs.writeShellApplication {
       name = "dbUp";
       text = ''
         docker run \
@@ -82,14 +77,14 @@ let
       '';
     };
 
-    dbDown = writeShellApplication {
+    dbDown = pkgs.writeShellApplication {
       name = "dbDown";
       text = ''
         docker stop prism-db
       '';
     };
 
-    pgDump = writeShellApplication {
+    pgDump = pkgs.writeShellApplication {
       name = "pgDump";
       runtimeInputs = with pkgs; [ postgresql_16 ];
       text = ''
@@ -99,7 +94,7 @@ let
       '';
     };
 
-    pgRestore = writeShellApplication {
+    pgRestore = pkgs.writeShellApplication {
       name = "pgRestore";
       runtimeInputs = with pkgs; [ postgresql_16 ];
       text = ''
@@ -109,7 +104,7 @@ let
       '';
     };
 
-    runNode = writeShellApplication {
+    runNode = pkgs.writeShellApplication {
       name = "runNode";
       text = ''
         cd "${rootDir}"
@@ -118,7 +113,7 @@ let
       '';
     };
 
-    bumpVersion = writeShellApplication {
+    bumpVersion = pkgs.writeShellApplication {
       name = "bumpVersion";
       text = ''
         cd "${rootDir}"
@@ -127,7 +122,7 @@ let
       '';
     };
 
-    setVersion = writeShellApplication {
+    setVersion = pkgs.writeShellApplication {
       name = "setVersion";
       text = ''
         cd "${rootDir}"
@@ -141,7 +136,7 @@ let
     };
   };
 in
-mkShell {
+pkgs.mkShell {
   packages =
     with pkgs;
     [

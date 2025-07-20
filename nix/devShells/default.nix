@@ -1,6 +1,6 @@
 { pkgs }:
 
 {
-  default = pkgs.callPackage ./neoprism.nix { inherit pkgs; };
-  cardano = pkgs.callPackage ./cardano.nix { inherit pkgs; };
+  default = import ./neoprism.nix { inherit pkgs; };
+  cardano = import ./cardano.nix { inherit pkgs; };
 }
