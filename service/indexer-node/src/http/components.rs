@@ -52,7 +52,7 @@ fn navbar(title: &str, network: NetworkIdentifier) -> Markup {
             div class="navbar-end" {
                 div class="mr-4" {
                     span class="text-sm text-success" { (network) }
-                    div class="text-right text-sm text-base-content/50" { (format!("(v{})", VERSION)) }
+                    div class="text-right text-xs text-base-content/50" { (format!("(v{})", VERSION)) }
                 }
             }
         }

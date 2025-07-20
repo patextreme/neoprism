@@ -48,7 +48,7 @@ async fn health() -> &'static str {
     path = "/api/_system/build",
     tags = ["System"],
     responses(
-        (status = OK, description = "Healthy", body = String, example = "Ok"),
+        (status = OK, description = "Healthy", body = BuildMeta),
     )
 )]
 async fn build_meta() -> Json<BuildMeta> {
