@@ -8,7 +8,10 @@ let
 
     bumpVersion = pkgs.writeShellApplication {
       name = "bumpVersion";
-      runtimeInputs = with pkgs; [ git-cliff jq ];
+      runtimeInputs = with pkgs; [
+        git-cliff
+        jq
+      ];
       text = ''
         cd "${rootDir}"
         NEW_VERSION=$(git-cliff --bump --context | jq -r .[0].version | sed s/^v//)
@@ -18,7 +21,10 @@ let
 
     setVersion = pkgs.writeShellApplication {
       name = "setVersion";
-      runtimeInputs = with pkgs; [ rust cargo-edit ];
+      runtimeInputs = with pkgs; [
+        rust
+        cargo-edit
+      ];
       text = ''
         cd "${rootDir}"
         NEW_VERSION=$1
