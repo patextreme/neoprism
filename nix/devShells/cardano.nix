@@ -1,12 +1,9 @@
-{
-  pkgs,
-  mkShell,
-}:
+{ pkgs }:
 
 let
   rootDir = "$ROOT_DIR";
 in
-mkShell {
+pkgs.mkShell {
   packages = with pkgs; [
     nix
     jq

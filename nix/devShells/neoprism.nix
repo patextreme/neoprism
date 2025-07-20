@@ -1,13 +1,8 @@
-{
-  pkgs,
-  rustUtils,
-  mkShell,
-  writeShellApplication,
-}:
+{ pkgs, buildConfig }:
 
 let
   rootDir = "$ROOT_DIR";
-  rust = rustUtils.rust;
+  rust = pkgs.rustUtils.rust;
   localDb = {
     port = 5432;
     username = "postgres";
@@ -15,7 +10,9 @@ let
     dbName = "postgres";
   };
   scripts = rec {
-    format = writeShellApplication {
+    inherit buildConfig;
+
+    format = pkgs.writeShellApplication {
       name = "format";
       runtimeInputs = with pkgs; [
         nixfmt-rfc-style
@@ -34,7 +31,7 @@ let
       '';
     };
 
-    buildAssets = writeShellApplication {
+    buildAssets = pkgs.writeShellApplication {
       name = "buildAssets";
       text = ''
         cd "${rootDir}/service/indexer-node"
@@ -42,17 +39,7 @@ let
       '';
     };
 
-    buildConfig = writeShellApplication {
-      name = "buildConfig";
-      text = ''
-        cd "${rootDir}/docker/.config"
-        dhall-to-yaml <<< "(./main.dhall).mainnet-relay" > "${rootDir}/docker/mainnet-relay/compose.yml"
-        dhall-to-yaml <<< "(./main.dhall).mainnet-dbsync" > "${rootDir}/docker/mainnet-dbsync/compose.yml"
-        dhall-to-yaml <<< "(./main.dhall).testnet-local" > "${rootDir}/docker/testnet-local/compose.yml"
-      '';
-    };
-
-    build = writeShellApplication {
+    build = pkgs.writeShellApplication {
       name = "build";
       text = ''
         cd "${rootDir}"
@@ -61,7 +48,7 @@ let
       '';
     };
 
-    clean = writeShellApplication {
+    clean = pkgs.writeShellApplication {
       name = "clean";
       text = ''
         cd "${rootDir}"
@@ -69,7 +56,7 @@ let
       '';
     };
 
-    dbUp = writeShellApplication {
+    dbUp = pkgs.writeShellApplication {
       name = "dbUp";
       text = ''
         docker run \
@@ -82,14 +69,14 @@ let
       '';
     };
 
-    dbDown = writeShellApplication {
+    dbDown = pkgs.writeShellApplication {
       name = "dbDown";
       text = ''
         docker stop prism-db
       '';
     };
 
-    pgDump = writeShellApplication {
+    pgDump = pkgs.writeShellApplication {
       name = "pgDump";
       runtimeInputs = with pkgs; [ postgresql_16 ];
       text = ''
@@ -99,7 +86,7 @@ let
       '';
     };
 
-    pgRestore = writeShellApplication {
+    pgRestore = pkgs.writeShellApplication {
       name = "pgRestore";
       runtimeInputs = with pkgs; [ postgresql_16 ];
       text = ''
@@ -109,7 +96,7 @@ let
       '';
     };
 
-    runNode = writeShellApplication {
+    runNode = pkgs.writeShellApplication {
       name = "runNode";
       text = ''
         cd "${rootDir}"
@@ -117,31 +104,9 @@ let
         cargo run --bin indexer-node -- --db-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
       '';
     };
-
-    bumpVersion = writeShellApplication {
-      name = "bumpVersion";
-      text = ''
-        cd "${rootDir}"
-        NEW_VERSION=$(${pkgs.git-cliff}/bin/git-cliff --bump --context | ${pkgs.jq}/bin/jq -r .[0].version | sed s/^v//)
-        ${setVersion}/bin/setVersion "$NEW_VERSION"
-      '';
-    };
-
-    setVersion = writeShellApplication {
-      name = "setVersion";
-      text = ''
-        cd "${rootDir}"
-        NEW_VERSION=$1
-        echo "Setting new version to $NEW_VERSION"
-        echo "$NEW_VERSION" > version
-        ${rust}/bin/cargo set-version "$NEW_VERSION"
-        ${buildConfig}/bin/buildConfig
-        ${pkgs.git-cliff}/bin/git-cliff -t "$NEW_VERSION" > CHANGELOG.md
-      '';
-    };
   };
 in
-mkShell {
+pkgs.mkShell {
   packages =
     with pkgs;
     [
