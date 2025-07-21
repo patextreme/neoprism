@@ -45,9 +45,9 @@
               cardano-testnet = cardano-node.packages.${system}.cardano-testnet;
               cardano-wallet = cardano-wallet.packages.${system}.cardano-wallet;
               cardano-db-sync = cardano-db-sync.packages.${system}.default;
-              # prism-cli = prev.callPackage ./nix/external/scala-did.nix {
-              #   mkSbtDerivation = sbt.lib.mkSbtDerivation.${system};
-              # };
+              prism-cli = pkgs.callPackage ./nix/external/scala-did.nix {
+                mkSbtDerivation = sbt.mkSbtDerivation.${system};
+              };
             })
           ];
         };
@@ -56,9 +56,7 @@
         checks = import ./nix/checks/default.nix { inherit pkgs; };
         devShells = import ./nix/devShells/default.nix { inherit pkgs; };
         packages = (import ./nix/packages/default.nix { inherit pkgs; }) // {
-          prism-cli = pkgs.callPackage ./nix/external/scala-did.nix {
-            mkSbtDerivation = sbt.mkSbtDerivation.${system};
-          };
+          prism-cli = pkgs.prism-cli;
         };
       }
     );
