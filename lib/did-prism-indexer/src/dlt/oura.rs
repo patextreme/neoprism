@@ -159,12 +159,12 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
     ) -> Self {
         let intersect = match chain {
             NetworkIdentifier::Mainnet => oura::sources::IntersectArg::Point(PointArg(
-                71481015,
-                "2a094a19a6e0c4e12b2fb250b8dfb1034dcc94dc2c47419da3b56eb4aaca4f25".to_string(),
+                71482583,
+                "4df807a0246569860bbfe70642b9931a5dffbab7f56319a32bbef378dfddaf30".to_string(),
             )),
             NetworkIdentifier::Preprod => oura::sources::IntersectArg::Point(PointArg(
-                10715154,
-                "c4cf1b24fb4bdefc3827b4e21bb0cf71e798b360405ebd53b277c61f1a778078".to_string(),
+                10718513,
+                "de0b6bbb233c646ab6bfc98932349f8ca43003ef32b0941b5dca71e40f6d8c3c".to_string(),
             )),
             _ => oura::sources::IntersectArg::Origin,
         };
