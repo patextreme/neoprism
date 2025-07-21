@@ -9,6 +9,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    sbt = {
+      url = "github:zaninime/sbt-derivation";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-utils.url = "github:numtide/flake-utils";
     cardano-node.url = "github:IntersectMBO/cardano-node?ref=10.4.1";
     cardano-db-sync.url = "github:IntersectMBO/cardano-db-sync?ref=13.6.0.5";
@@ -19,6 +23,7 @@
     {
       nixpkgs,
       rust-overlay,
+      sbt,
       flake-utils,
       cardano-node,
       cardano-db-sync,
@@ -40,6 +45,9 @@
               cardano-testnet = cardano-node.packages.${system}.cardano-testnet;
               cardano-wallet = cardano-wallet.packages.${system}.cardano-wallet;
               cardano-db-sync = cardano-db-sync.packages.${system}.default;
+              # prism-cli = prev.callPackage ./nix/external/scala-did.nix {
+              #   mkSbtDerivation = sbt.lib.mkSbtDerivation.${system};
+              # };
             })
           ];
         };
@@ -47,7 +55,11 @@
       {
         checks = import ./nix/checks/default.nix { inherit pkgs; };
         devShells = import ./nix/devShells/default.nix { inherit pkgs; };
-        packages = import ./nix/packages/default.nix { inherit pkgs; };
+        packages = (import ./nix/packages/default.nix { inherit pkgs; }) // {
+          prism-cli = pkgs.callPackage ./nix/external/scala-did.nix {
+            mkSbtDerivation = sbt.mkSbtDerivation.${system};
+          };
+        };
       }
     );
 }
