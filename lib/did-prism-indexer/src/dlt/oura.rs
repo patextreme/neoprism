@@ -163,8 +163,8 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
                 "2a094a19a6e0c4e12b2fb250b8dfb1034dcc94dc2c47419da3b56eb4aaca4f25".to_string(),
             )),
             NetworkIdentifier::Preprod => oura::sources::IntersectArg::Point(PointArg(
-                10718532,
-                "cb95a5effb12871b69c27c184ffb1355e6208c4071956df67248bad1cc329ca4".to_string(),
+                10715154,
+                "c4cf1b24fb4bdefc3827b4e21bb0cf71e798b360405ebd53b277c61f1a778078".to_string(),
             )),
             _ => oura::sources::IntersectArg::Origin,
         };
