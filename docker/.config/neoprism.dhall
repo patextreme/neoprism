@@ -23,10 +23,12 @@ let Options =
           { extraEnvs : Prelude.Map.Type Text Text
           , hostPort : Natural
           , dbHost : Text
+          , network : Text
           }
       , default =
         { hostPort = 8080
         , dbHost = "db"
+        , network = "mainnet"
         , extraEnvs = [] : Prelude.Map.Type Text Text
         }
       }
@@ -38,7 +40,7 @@ let makeIndexerNodeService =
                 { RUST_LOG = "oura=warn,tracing::span=warn,info"
                 , NPRISM_DB_URL =
                     "postgres://postgres:postgres@${options.dbHost}:5432/postgres"
-                , NPRISM_CARDANO_NETWORK = "mainnet"
+                , NPRISM_CARDANO_NETWORK = options.network
                 }
 
         in  IndexerNodeService::{

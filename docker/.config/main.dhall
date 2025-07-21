@@ -14,7 +14,16 @@ let prismNode = ./prism-node.dhall
 
 let cloudAgent = ./cloud-agent.dhall
 
-in  { mainnet-relay.services
+in  { mainnet-dbsync.services
+      =
+      { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
+      , neoprism-indexer =
+          neoprism.makeIndexerNodeService
+            neoprism.Options::{
+            , extraEnvs = toMap { NPRISM_DBSYNC_URL = "<TODO>" }
+            }
+      }
+    , mainnet-relay.services
       =
       { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
@@ -26,13 +35,16 @@ in  { mainnet-relay.services
                 }
             }
       }
-    , mainnet-dbsync.services
+    , preprod-relay.services
       =
       { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
           neoprism.makeIndexerNodeService
             neoprism.Options::{
-            , extraEnvs = toMap { NPRISM_DBSYNC_URL = "<TODO>" }
+            , network = "preprod"
+            , extraEnvs = toMap
+                { NPRISM_CARDANO_ADDR = "preprod-node.play.dev.cardano.org:3001"
+                }
             }
       }
     , testnet-local =
