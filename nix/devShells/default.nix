@@ -7,8 +7,9 @@ let
     runtimeInputs = with pkgs; [ dhall-json ];
     text = ''
       cd "${rootDir}/docker/.config"
-      dhall-to-yaml <<< "(./main.dhall).mainnet-relay" > "${rootDir}/docker/mainnet-relay/compose.yml"
       dhall-to-yaml <<< "(./main.dhall).mainnet-dbsync" > "${rootDir}/docker/mainnet-dbsync/compose.yml"
+      dhall-to-yaml <<< "(./main.dhall).mainnet-relay" > "${rootDir}/docker/mainnet-relay/compose.yml"
+      dhall-to-yaml <<< "(./main.dhall).preprod-relay" > "${rootDir}/docker/preprod-relay/compose.yml"
       dhall-to-yaml <<< "(./main.dhall).testnet-local" > "${rootDir}/docker/testnet-local/compose.yml"
     '';
   };
