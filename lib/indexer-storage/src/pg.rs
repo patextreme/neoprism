@@ -45,7 +45,7 @@ impl OperationRepo for PostgresDb {
                 &mut tx,
                 Filter::empty(),
                 Sort::new([
-                    entity::DidStatsSort::last_slot().desc(),
+                    entity::DidStatsSort::first_slot().desc(),
                     entity::DidStatsSort::did().asc(),
                 ]),
                 Some(PaginationInput { page, limit: page_size }),
