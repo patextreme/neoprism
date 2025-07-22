@@ -11,7 +11,7 @@ let IndexerNodeService =
           , environment : Prelude.Map.Type Text Text
           }
       , default =
-        { image = "hyperledgeridentus/identus-neoprism:${version}"
+        { image = "identus-neoprism:${version}" -- TODO: revert before PR
         , restart = "always"
         , depends_on = [] : Prelude.Map.Type Text { condition : Text }
         , environment = [] : Prelude.Map.Type Text Text

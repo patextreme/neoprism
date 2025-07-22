@@ -20,7 +20,7 @@ in  { mainnet-dbsync.services
       , neoprism-indexer =
           neoprism.makeIndexerNodeService
             neoprism.Options::{
-            , extraEnvs = toMap { NPRISM_DBSYNC_URL = "<TODO>" }
+            , extraEnvs = toMap { NPRISM_DBSYNC_URL = "<DBSYNC_URL>" }
             }
       }
     , mainnet-relay.services
