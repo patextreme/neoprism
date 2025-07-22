@@ -6,7 +6,7 @@ members = [
   "lib/did-prism",
   "lib/did-prism-indexer",
   "lib/indexer-storage",
-  "service/indexer-node",
+  "bin/nprism-node",
 ]
 
 [workspace.package]

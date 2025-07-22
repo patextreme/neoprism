@@ -34,7 +34,7 @@ let
     buildAssets = pkgs.writeShellApplication {
       name = "buildAssets";
       text = ''
-        cd "${rootDir}/service/indexer-node"
+        cd "${rootDir}/bin/nprism-node"
         tailwindcss -i tailwind.css -o ./assets/styles.css
       '';
     };
@@ -101,7 +101,7 @@ let
       text = ''
         cd "${rootDir}"
         ${buildAssets}/bin/buildAssets
-        cargo run --bin indexer-node -- --db-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
+        cargo run --bin nprism-node -- --db-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
       '';
     };
   };

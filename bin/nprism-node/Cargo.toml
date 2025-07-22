@@ -1,5 +1,5 @@
 [package]
-name = "indexer-node"
+name = "nprism-node"
 version.workspace = true
 edition.workspace = true
 
