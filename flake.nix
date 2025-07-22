@@ -39,7 +39,7 @@
           config.unfree = true;
           overlays = [
             (import rust-overlay)
-            (final: prev: {
+            (_: prev: {
               mkSbtDerivation = sbt.mkSbtDerivation.${pkgs.system};
               rustUtils = prev.callPackage ./nix/rustUtils.nix { inherit rust-overlay; };
               cardano-cli = cardano-node.packages.${system}.cardano-cli;

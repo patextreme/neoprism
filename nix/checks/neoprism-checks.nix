@@ -4,6 +4,7 @@
   makeRustPlatform,
   protobuf,
   sqlfluff,
+  deadnix
 }:
 
 let
@@ -20,9 +21,11 @@ rustPlatform.buildRustPackage {
   nativeBuildInputs = [
     protobuf
     sqlfluff
+    deadnix
   ];
   buildPhase = "cargo b --all-features --all-targets";
   checkPhase = ''
+    deadnix -f
     sqlfluff lint --dialect postgres ./lib/indexer-storage/migrations
     cargo fmt --check
     cargo clippy --all-features --all-targets -- -D warnings
