@@ -32,16 +32,7 @@ enum RunMode {
 struct AppState {
     did_service: DidService,
     dlt_source: Option<DltSourceState>,
-}
-
-impl AppState {
-    fn run_mode(&self) -> RunMode {
-        if self.dlt_source.is_some() {
-            RunMode::Indexer
-        } else {
-            RunMode::Submitter
-        }
-    }
+    run_mode: RunMode,
 }
 
 #[derive(Clone)]
@@ -64,8 +55,12 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
     let network = args.dlt_source.cardano_network.clone().into();
     let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
     let app_state = AppState {
+        run_mode: RunMode::Indexer,
         did_service: DidService::new(&db),
-        dlt_source: Some(DltSourceState { cursor_rx, network }),
+        dlt_source: cursor_rx.map(|cursor_rx| DltSourceState {
+            cursor_rx,
+            network: network,
+        }),
     };
     run_server(app_state, &args.server).await
 }
@@ -73,6 +68,7 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
 async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db).await;
     let app_state = AppState {
+        run_mode: RunMode::Submitter,
         did_service: DidService::new(&db),
         dlt_source: None,
     };
@@ -83,7 +79,7 @@ async fn run_server(app_state: AppState, server_args: &ServerArgs) -> anyhow::Re
     let layer = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
         .option_layer(Some(CorsLayer::permissive()).filter(|_| server_args.cors_enabled));
-    let router = http::router(&server_args.assets_path, app_state.run_mode())
+    let router = http::router(&server_args.assets_path, app_state.run_mode)
         .with_state(app_state)
         .layer(layer);
     let bind_addr = format!("{}:{}", server_args.address, server_args.port);
@@ -113,7 +109,7 @@ async fn init_dlt_source(
     dlt_args: &DltSourceArgs,
     network: &NetworkIdentifier,
     db: &PostgresDb,
-) -> tokio::sync::watch::Receiver<Option<DltCursor>> {
+) -> Option<tokio::sync::watch::Receiver<Option<DltCursor>>> {
     if let Some(address) = &dlt_args.cardano_relay {
         tracing::info!(
             "Starting DLT sync worker on {} from cardano address {}",
@@ -134,7 +130,7 @@ async fn init_dlt_source(
         let cursor_rx = sync_worker.sync_cursor();
         tokio::spawn(sync_worker.run());
         tokio::spawn(index_worker.run());
-        cursor_rx
+        Some(cursor_rx)
     } else if let Some(dbsync_url) = dlt_args.cardano_dbsync_url.as_ref() {
         tracing::info!("Starting DLT sync worker on {} from cardano dbsync", network);
         let source = DbSyncSource::since_persisted_cursor(db.clone(), dbsync_url, dlt_args.confirmation_blocks)
@@ -146,8 +142,8 @@ async fn init_dlt_source(
         let cursor_rx = sync_worker.sync_cursor();
         tokio::spawn(sync_worker.run());
         tokio::spawn(index_worker.run());
-        cursor_rx
+        Some(cursor_rx)
     } else {
-        panic!("DLT source is not configured.")
+        None
     }
 }

@@ -65,7 +65,7 @@ pub struct DbArgs {
 
 #[derive(Args)]
 pub struct DltSourceArgs {
-    /// A Cardano network to connect. This flag is ignored when using DB Sync.
+    /// A Cardano network the node is syncing from.
     #[arg(long, env = "NPRISM_CARDANO_NETWORK")]
     pub cardano_network: NetworkIdentifierOptions,
     /// Address of the Cardano relay node to sync from.

@@ -78,7 +78,7 @@ async fn health() -> &'static str {
 async fn app_meta(State(state): State<AppState>) -> Json<AppMeta> {
     Json(AppMeta {
         version: VERSION.to_string(),
-        mode: state.run_mode().into(),
+        mode: state.run_mode.into(),
     })
 }
 
