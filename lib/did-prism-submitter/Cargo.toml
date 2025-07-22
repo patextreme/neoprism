@@ -1,0 +1,18 @@
+[package]
+name = "identus-did-prism-submitter"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+identus-apollo = { workspace = true, features = [
+  "hash",
+  "hex",
+  "secp256k1",
+  "ed25519",
+  "x25519",
+] }
+identus-did-prism = { workspace = true }
+
+[features]
+default = []

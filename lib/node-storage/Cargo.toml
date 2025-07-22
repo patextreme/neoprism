@@ -1,5 +1,5 @@
 [package]
-name = "indexer-storage"
+name = "node-storage"
 version.workspace = true
 edition.workspace = true
 

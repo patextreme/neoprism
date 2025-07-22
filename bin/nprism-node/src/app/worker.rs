@@ -1,6 +1,6 @@
 use identus_did_prism::dlt::DltCursor;
 use identus_did_prism_indexer::{DltSource, run_indexer_loop, run_sync_loop};
-use indexer_storage::PostgresDb;
+use node_storage::PostgresDb;
 use tokio::sync::watch;
 
 pub struct DltSyncWorker<Src> {

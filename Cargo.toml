@@ -5,7 +5,8 @@ members = [
   "lib/did-core",
   "lib/did-prism",
   "lib/did-prism-indexer",
-  "lib/indexer-storage",
+  "lib/did-prism-submitter",
+  "lib/node-storage",
   "bin/nprism-node",
 ]
 
@@ -20,7 +21,8 @@ identus-apollo = { path = "lib/apollo" }
 identus-did-core = { path = "lib/did-core" }
 identus-did-prism = { path = "lib/did-prism" }
 identus-did-prism-indexer = { path = "lib/did-prism-indexer" }
-indexer-storage = { path = "lib/indexer-storage" }
+identus-did-prism-submitter = { path = "lib/did-prism-submitter" }
+node-storage = { path = "lib/node-storage" }
 # general
 anyhow = "1"
 async-trait = "0.1"

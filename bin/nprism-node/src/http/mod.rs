@@ -16,6 +16,7 @@ pub fn router(assets_dir: &Path, mode: RunMode) -> Router<AppState> {
     tracing::info!("Serving static asset from {:?}", assets_dir);
 
     let api_router = api::router(mode);
+
     let ui_router = Router::new()
         .nest_service(urls::AssetBase::AXUM_PATH, ServeDir::new(assets_dir))
         .merge(ui_explorer::router())

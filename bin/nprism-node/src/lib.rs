@@ -8,7 +8,7 @@ use identus_did_prism::dlt::DltCursor;
 use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
-use indexer_storage::PostgresDb;
+use node_storage::PostgresDb;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
