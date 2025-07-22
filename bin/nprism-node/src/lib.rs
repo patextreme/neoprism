@@ -14,7 +14,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
-use crate::cli::{DbArgs, DltSourceArgs};
+use crate::cli::{DbArgs, DltSourceArgs, IndexerArgs, ServerArgs};
 
 mod app;
 mod cli;
@@ -36,37 +36,33 @@ struct DltSourceState {
 
 pub async fn run_command() -> anyhow::Result<()> {
     let cli = Cli::parse();
-
-    let db_args = match &cli.command {
-        cli::Command::Indexer(args) => &args.db,
-        cli::Command::Submitter(args) => &args.db,
+    match cli.command {
+        cli::Command::Indexer(args) => run_indexer_command(args).await?,
+        cli::Command::Submitter(_) => todo!("implement"),
     };
+    Ok(())
+}
 
-    let server_args = match &cli.command {
-        cli::Command::Indexer(args) => &args.server,
-        cli::Command::Submitter(args) => &args.server,
-    };
-
-    let dlt_args = match &cli.command {
-        cli::Command::Indexer(args) => Some(&args.dlt_source),
-        cli::Command::Submitter(_) => None,
-    };
+async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
+    let db_args = &args.db;
+    let server_args = &args.server;
+    let dlt_args = &args.dlt_source;
 
     // init database
     let db = init_database(db_args).await;
 
     // init state
-    let mut app_state = AppState {
+    let network = dlt_args.cardano_network.clone().into();
+    let cursor_rx = init_dlt_source(&dlt_args, &network, &db).await;
+    let app_state = AppState {
         did_service: DidService::new(&db),
-        dlt_source: None,
+        dlt_source: Some(DltSourceState { cursor_rx, network }),
     };
-    if let Some(dlt_args) = dlt_args {
-        let network = dlt_args.cardano_network.clone().into();
-        let cursor_rx = init_dlt_source(&dlt_args, &network, &db).await;
-        app_state.dlt_source = Some(DltSourceState { cursor_rx, network });
-    }
 
-    // start server
+    run_server(app_state, server_args).await
+}
+
+async fn run_server(app_state: AppState, server_args: &ServerArgs) -> anyhow::Result<()> {
     let layer = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
         .option_layer(Some(CorsLayer::permissive()).filter(|_| server_args.cors_enabled));
@@ -77,7 +73,6 @@ pub async fn run_command() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     tracing::info!("Server is listening on {}", bind_addr);
     axum::serve(listener, router).await?;
-
     Ok(())
 }
 
