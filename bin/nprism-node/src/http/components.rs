@@ -4,7 +4,7 @@ use maud::{DOCTYPE, Markup, html};
 use crate::VERSION;
 use crate::http::urls;
 
-pub fn page_layout(title: &str, network: NetworkIdentifier, body: Markup) -> Markup {
+pub fn page_layout(title: &str, network: Option<NetworkIdentifier>, body: Markup) -> Markup {
     html! {
         (DOCTYPE)
         html {
@@ -27,7 +27,7 @@ pub fn page_layout(title: &str, network: NetworkIdentifier, body: Markup) -> Mar
     }
 }
 
-fn navbar(title: &str, network: NetworkIdentifier) -> Markup {
+fn navbar(title: &str, network: Option<NetworkIdentifier>) -> Markup {
     html! {
         nav class="navbar bg-base-200" {
             div class="navbar-start" {
@@ -51,7 +51,11 @@ fn navbar(title: &str, network: NetworkIdentifier) -> Markup {
             }
             div class="navbar-end" {
                 div class="mr-4" {
-                    span class="text-sm text-success" { (network) }
+                    @match network {
+                        Some(network) => span class="text-sm text-success" { (network) },
+                        None => span class="text-sm text-warn" { "disconnected" },
+                    }
+
                     div class="text-right text-xs text-base-content/50" { (format!("(v{})", VERSION)) }
                 }
             }

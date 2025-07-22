@@ -1,8 +1,8 @@
-use nprism_node::start_server;
+use nprism_node::run_command;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
-    start_server().await?;
+    run_command().await?;
     Ok(())
 }

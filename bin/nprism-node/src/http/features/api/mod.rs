@@ -10,7 +10,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::app::service::error::ResolutionError;
 use crate::http::features::api::models::BuildMeta;
 use crate::http::urls;
-use crate::{IndexerState, VERSION};
+use crate::{AppState, VERSION};
 
 mod models;
 
@@ -19,16 +19,19 @@ mod models;
     (url = "http://localhost:8080", description = "Local"),
     (url = "https://neoprism.patlo.dev", description = "Public - mainnet"),
     (url = "https://neoprism-preprod.patlo.dev", description = "Public - preprod")
-), paths(resolve_did, health, build_meta))]
+), paths(health, build_meta))]
+struct SystemOpenApiDoc;
+
+#[derive(OpenApi)]
+#[openapi(paths(resolve_did))]
 struct IndexerOpenApiDoc;
 
-pub fn router() -> Router<IndexerState> {
-    let indexer_openapi = IndexerOpenApiDoc::openapi();
+pub fn router() -> Router<AppState> {
+    let system_oas = SystemOpenApiDoc::openapi();
+    let indexer_oas = IndexerOpenApiDoc::openapi();
+
     Router::new()
-        .merge(SwaggerUi::new(
-            urls::Swagger::AXUM_PATH)
-            .url("/api/indexer-openapi.json", indexer_openapi)
-        )
+        .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", indexer_oas))
         .route(urls::ApiDid::AXUM_PATH, get(resolve_did))
         .route(urls::ApiHealth::AXUM_PATH, get(health))
         .route(urls::ApiBuildMeta::AXUM_PATH, get(build_meta))
@@ -74,7 +77,7 @@ async fn build_meta() -> Json<BuildMeta> {
         ("did" = String, Path, description = "The DID to resolve", example = "did:prism:b02cc5ce2300b3c6d38496fbc2762eaf07a51cabc8708e8f1eb114d0f14398c5"),
     )
 )]
-async fn resolve_did(Path(did): Path<String>, State(state): State<IndexerState>) -> Result<Json<DidDocument>, StatusCode> {
+async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>) -> Result<Json<DidDocument>, StatusCode> {
     let (result, _) = state.did_service.resolve_did(&did).await;
     match result {
         Err(ResolutionError::InvalidDid { .. }) => Err(StatusCode::BAD_REQUEST),
