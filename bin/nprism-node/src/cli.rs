@@ -56,18 +56,18 @@ pub struct DbArgs {
 #[derive(Args)]
 pub struct DltSourceArgs {
     /// A Cardano network to connect.
-    #[arg(long, short = 'n', env = "NPRISM_CARDANO_NETWORK", default_value_t = NetworkIdentifier::Mainnet, value_parser = parser::parse_network_identifier)]
+    #[arg(long, env = "NPRISM_CARDANO_NETWORK", default_value_t = NetworkIdentifier::Mainnet, value_parser = parser::parse_network_identifier)]
     pub cardano_network: NetworkIdentifier,
-    /// Address of the Cardano node to consume events from.
+    /// Address of the Cardano relay node to consume events from.
     /// If provided, it will sync events from the Cardano relay node.
     /// (e.g. backbone.mainnet.cardanofoundation.org:3001)
-    #[arg(long, env = "NPRISM_CARDANO_ADDR", group = "dlt-source")]
-    pub cardano_addr: Option<String>,
+    #[arg(long, env = "NPRISM_CARDANO_RELAY", group = "dlt-source")]
+    pub cardano_relay: Option<String>,
     /// DB-Sync url.
     /// If provided, it will sync events from the DB sync.
     /// (e.g. postgres://user:pass@host:5432/db)
-    #[arg(long, env = "NPRISM_DBSYNC_URL", group = "dlt-source")]
-    pub dbsync_url: Option<String>,
+    #[arg(long, env = "NPRISM_CARDANO_DBSYNC_URL", group = "dlt-source")]
+    pub cardano_dbsync_url: Option<String>,
     /// Number of confirmation blocks to wait before considering the block valid.
     #[arg(long, env = "NPRISM_CONFIRMATION_BLOCKS", default_value_t = 112)]
     pub confirmation_blocks: usize,

@@ -202,13 +202,15 @@ services:
     image: ghcr.io/input-output-hk/prism-node:2.6.0
     restart: always
   neoprism-indexer:
+    command:
+      - indexer
     depends_on:
       db-neoprism:
         condition: service_healthy
     environment:
+      NPRISM_CARDANO_DBSYNC_URL: "postgresql://postgres:postgres@db-dbsync:5432/postgres"
       NPRISM_CARDANO_NETWORK: mainnet
       NPRISM_CONFIRMATION_BLOCKS: '1'
-      NPRISM_DBSYNC_URL: "postgresql://postgres:postgres@db-dbsync:5432/postgres"
       NPRISM_DB_URL: "postgres://postgres:postgres@db-neoprism:5432/postgres"
       RUST_LOG: "oura=warn,tracing::span=warn,info"
     image: identus-neoprism:0.2.0

@@ -20,7 +20,7 @@ in  { mainnet-dbsync.services
       , neoprism-indexer =
           neoprism.makeIndexerNodeService
             neoprism.Options::{
-            , extraEnvs = toMap { NPRISM_DBSYNC_URL = "<DBSYNC_URL>" }
+            , dltSource = neoprism.DltSource.DbSync "<DBSYNC_URL>"
             }
       }
     , mainnet-relay.services
@@ -29,10 +29,9 @@ in  { mainnet-dbsync.services
       , neoprism-indexer =
           neoprism.makeIndexerNodeService
             neoprism.Options::{
-            , extraEnvs = toMap
-                { NPRISM_CARDANO_ADDR =
-                    "backbone.mainnet.cardanofoundation.org:3001"
-                }
+            , dltSource =
+                neoprism.DltSource.Relay
+                  "backbone.mainnet.cardanofoundation.org:3001"
             }
       }
     , preprod-relay.services
@@ -42,9 +41,9 @@ in  { mainnet-dbsync.services
           neoprism.makeIndexerNodeService
             neoprism.Options::{
             , network = "preprod"
-            , extraEnvs = toMap
-                { NPRISM_CARDANO_ADDR = "preprod-node.play.dev.cardano.org:3001"
-                }
+            , dltSource =
+                neoprism.DltSource.Relay
+                  "preprod-node.play.dev.cardano.org:3001"
             }
       }
     , testnet-local =
@@ -85,11 +84,10 @@ in  { mainnet-dbsync.services
                   neoprism.makeIndexerNodeService
                     neoprism.Options::{
                     , dbHost = "db-neoprism"
-                    , extraEnvs = toMap
-                        { NPRISM_DBSYNC_URL =
-                            "postgresql://postgres:postgres@db-dbsync:5432/postgres"
-                        , NPRISM_CONFIRMATION_BLOCKS = "1"
-                        }
+                    , confirmationBlocks = Some 1
+                    , dltSource =
+                        neoprism.DltSource.DbSync
+                          "postgresql://postgres:postgres@db-dbsync:5432/postgres"
                     }
               , identus-prism-node =
                   prismNode.makePrismNodeService

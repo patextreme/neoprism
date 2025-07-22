@@ -80,7 +80,7 @@ async fn start_dlt_source(
     db: &PostgresDb,
     confirmation_blocks: usize,
 ) -> Option<tokio::sync::watch::Receiver<Option<DltCursor>>> {
-    if let Some(address) = &cli_args.dlt_source.cardano_addr {
+    if let Some(address) = &cli_args.dlt_source.cardano_relay {
         tracing::info!(
             "Starting DLT sync worker on {} from cardano address {}",
             network,
@@ -98,7 +98,7 @@ async fn start_dlt_source(
         tokio::spawn(index_worker.run());
 
         Some(cursor_rx)
-    } else if let Some(dbsync_url) = cli_args.dlt_source.dbsync_url.as_ref() {
+    } else if let Some(dbsync_url) = cli_args.dlt_source.cardano_dbsync_url.as_ref() {
         tracing::info!("Starting DLT sync worker on {} from cardano dbsync", network);
         let source = DbSyncSource::since_persisted_cursor(db.clone(), dbsync_url, confirmation_blocks)
             .await

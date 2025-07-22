@@ -4,7 +4,7 @@
   makeRustPlatform,
   protobuf,
   sqlfluff,
-  deadnix
+  deadnix,
 }:
 
 let
