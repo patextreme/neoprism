@@ -24,4 +24,5 @@ pkgs.mkShell {
 
   CARDANO_CLI = "${pkgs.cardano-cli}/bin/cardano-cli";
   CARDANO_NODE = "${pkgs.cardano-node}/bin/cardano-node";
+  PRISM_HOME = ".";
 }

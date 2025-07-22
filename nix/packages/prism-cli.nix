@@ -58,6 +58,10 @@ writeShellApplication {
   name = "prism-cli";
   runtimeInputs = [ jdk21 ];
   text = ''
-    java -jar ${cliJar} "$@"
+    if [ -z "''${PRISM_HOME:-}" ]; then
+      echo "Error: PRISM_HOME cannot be empty."
+      exit 1
+    fi
+    java -Duser.home="$PRISM_HOME" -jar ${cliJar} "$@"
   '';
 }
