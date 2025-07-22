@@ -13,6 +13,7 @@ pkgs.mkShell {
     cardano-wallet
     cardano-testnet
     cardano-db-sync
+    prism-cli
   ];
 
   shellHook = ''
@@ -23,4 +24,5 @@ pkgs.mkShell {
 
   CARDANO_CLI = "${pkgs.cardano-cli}/bin/cardano-cli";
   CARDANO_NODE = "${pkgs.cardano-node}/bin/cardano-node";
+  PRISM_HOME = ".";
 }

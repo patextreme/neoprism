@@ -9,6 +9,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    sbt = {
+      url = "github:zaninime/sbt-derivation";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-utils.url = "github:numtide/flake-utils";
     cardano-node.url = "github:IntersectMBO/cardano-node?ref=10.4.1";
     cardano-db-sync.url = "github:IntersectMBO/cardano-db-sync?ref=13.6.0.5";
@@ -17,8 +21,10 @@
 
   outputs =
     {
+      self,
       nixpkgs,
       rust-overlay,
+      sbt,
       flake-utils,
       cardano-node,
       cardano-db-sync,
@@ -34,12 +40,14 @@
           overlays = [
             (import rust-overlay)
             (final: prev: {
+              mkSbtDerivation = sbt.mkSbtDerivation.${pkgs.system};
               rustUtils = prev.callPackage ./nix/rustUtils.nix { inherit rust-overlay; };
               cardano-cli = cardano-node.packages.${system}.cardano-cli;
               cardano-node = cardano-node.packages.${system}.cardano-node;
               cardano-testnet = cardano-node.packages.${system}.cardano-testnet;
               cardano-wallet = cardano-wallet.packages.${system}.cardano-wallet;
               cardano-db-sync = cardano-db-sync.packages.${system}.default;
+              prism-cli = self.packages.${system}.prism-cli;
             })
           ];
         };
