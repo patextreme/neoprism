@@ -14,7 +14,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
-use crate::cli::{DbArgs, DltSourceArgs, IndexerArgs, ServerArgs};
+use crate::cli::{DbArgs, DltSourceArgs, IndexerArgs, ServerArgs, SubmitterArgs};
 
 mod app;
 mod cli;
@@ -22,10 +22,26 @@ mod http;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+#[derive(Clone, Copy)]
+enum RunMode {
+    Indexer,
+    Submitter,
+}
+
 #[derive(Clone)]
 struct AppState {
     did_service: DidService,
     dlt_source: Option<DltSourceState>,
+}
+
+impl AppState {
+    fn run_mode(&self) -> RunMode {
+        if self.dlt_source.is_some() {
+            RunMode::Indexer
+        } else {
+            RunMode::Submitter
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -38,35 +54,36 @@ pub async fn run_command() -> anyhow::Result<()> {
     let cli = Cli::parse();
     match cli.command {
         cli::Command::Indexer(args) => run_indexer_command(args).await?,
-        cli::Command::Submitter(_) => todo!("implement"),
+        cli::Command::Submitter(args) => run_submitter_command(args).await?,
     };
     Ok(())
 }
 
 async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
-    let db_args = &args.db;
-    let server_args = &args.server;
-    let dlt_args = &args.dlt_source;
-
-    // init database
-    let db = init_database(db_args).await;
-
-    // init state
-    let network = dlt_args.cardano_network.clone().into();
-    let cursor_rx = init_dlt_source(&dlt_args, &network, &db).await;
+    let db = init_database(&args.db).await;
+    let network = args.dlt_source.cardano_network.clone().into();
+    let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
     let app_state = AppState {
         did_service: DidService::new(&db),
         dlt_source: Some(DltSourceState { cursor_rx, network }),
     };
+    run_server(app_state, &args.server).await
+}
 
-    run_server(app_state, server_args).await
+async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
+    let db = init_database(&args.db).await;
+    let app_state = AppState {
+        did_service: DidService::new(&db),
+        dlt_source: None,
+    };
+    run_server(app_state, &args.server).await
 }
 
 async fn run_server(app_state: AppState, server_args: &ServerArgs) -> anyhow::Result<()> {
     let layer = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
         .option_layer(Some(CorsLayer::permissive()).filter(|_| server_args.cors_enabled));
-    let router = http::router(&server_args.assets_path)
+    let router = http::router(&server_args.assets_path, app_state.run_mode())
         .with_state(app_state)
         .layer(layer);
     let bind_addr = format!("{}:{}", server_args.address, server_args.port);

@@ -6,13 +6,13 @@ use axum::routing::get;
 use features::{api, ui_explorer, ui_resolver};
 use tower_http::services::ServeDir;
 
-use crate::AppState;
+use crate::{AppState, RunMode};
 
 mod components;
 mod features;
 mod urls;
 
-pub fn router(assets_dir: &Path) -> Router<AppState> {
+pub fn router(assets_dir: &Path, mode: RunMode) -> Router<AppState> {
     tracing::info!("Serving static asset from {:?}", assets_dir);
 
     let serve_dir = ServeDir::new(assets_dir);
@@ -22,7 +22,7 @@ pub fn router(assets_dir: &Path) -> Router<AppState> {
             urls::Home::AXUM_PATH,
             get(Redirect::temporary(&urls::Resolver::new_uri(None))),
         )
-        .merge(api::router())
+        .merge(api::router(mode))
         .merge(ui_explorer::router())
         .merge(ui_resolver::router())
 }

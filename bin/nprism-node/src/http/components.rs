@@ -53,7 +53,7 @@ fn navbar(title: &str, network: Option<NetworkIdentifier>) -> Markup {
                 div class="mr-4" {
                     @match network {
                         Some(network) => span class="text-sm text-success" { (network) },
-                        None => span class="text-sm text-warn" { "disconnected" },
+                        None => span class="text-sm text-warning" { "disconnected" },
                     }
 
                     div class="text-right text-xs text-base-content/50" { (format!("(v{})", VERSION)) }

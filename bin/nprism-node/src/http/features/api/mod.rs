@@ -10,7 +10,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::app::service::error::ResolutionError;
 use crate::http::features::api::models::BuildMeta;
 use crate::http::urls;
-use crate::{AppState, VERSION};
+use crate::{AppState, RunMode, VERSION};
 
 mod models;
 
@@ -26,15 +26,33 @@ struct SystemOpenApiDoc;
 #[openapi(paths(resolve_did))]
 struct IndexerOpenApiDoc;
 
-pub fn router() -> Router<AppState> {
+#[derive(OpenApi)]
+struct SubmitterOpenApiDoc;
+
+pub fn router(mode: RunMode) -> Router<AppState> {
     let system_oas = SystemOpenApiDoc::openapi();
     let indexer_oas = IndexerOpenApiDoc::openapi();
+    let submitter_oas = SubmitterOpenApiDoc::openapi();
 
-    Router::new()
-        .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", indexer_oas))
-        .route(urls::ApiDid::AXUM_PATH, get(resolve_did))
+    let mut combined_oas = system_oas;
+    match mode {
+        RunMode::Indexer => combined_oas.merge(indexer_oas),
+        RunMode::Submitter => combined_oas.merge(submitter_oas),
+    }
+
+    let system_router = Router::new()
+        .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", combined_oas))
         .route(urls::ApiHealth::AXUM_PATH, get(health))
-        .route(urls::ApiBuildMeta::AXUM_PATH, get(build_meta))
+        .route(urls::ApiBuildMeta::AXUM_PATH, get(build_meta));
+
+    let indexer_router = Router::new().route(urls::ApiDid::AXUM_PATH, get(resolve_did));
+
+    let submitter_router = Router::new();
+
+    match mode {
+        RunMode::Indexer => system_router.merge(indexer_router),
+        RunMode::Submitter => system_router.merge(submitter_router),
+    }
 }
 
 #[utoipa::path(
