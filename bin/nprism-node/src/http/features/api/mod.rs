@@ -8,8 +8,8 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::app::service::error::ResolutionError;
-use crate::http::features::api::models::BuildMeta;
-use crate::http::urls;
+use crate::http::features::api::models::AppMeta;
+use crate::http::urls::{self, ApiAppMeta, ApiDid, ApiHealth};
 use crate::{AppState, RunMode, VERSION};
 
 mod models;
@@ -19,7 +19,7 @@ mod models;
     (url = "http://localhost:8080", description = "Local"),
     (url = "https://neoprism.patlo.dev", description = "Public - mainnet"),
     (url = "https://neoprism-preprod.patlo.dev", description = "Public - preprod")
-), paths(health, build_meta))]
+), paths(health, app_meta))]
 struct SystemOpenApiDoc;
 
 #[derive(OpenApi)]
@@ -43,7 +43,7 @@ pub fn router(mode: RunMode) -> Router<AppState> {
     let system_router = Router::new()
         .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", combined_oas))
         .route(urls::ApiHealth::AXUM_PATH, get(health))
-        .route(urls::ApiBuildMeta::AXUM_PATH, get(build_meta));
+        .route(urls::ApiAppMeta::AXUM_PATH, get(app_meta));
 
     let indexer_router = Router::new().route(urls::ApiDid::AXUM_PATH, get(resolve_did));
 
@@ -57,7 +57,7 @@ pub fn router(mode: RunMode) -> Router<AppState> {
 
 #[utoipa::path(
     get,
-    path = "/api/_system/health",
+    path = ApiHealth::AXUM_PATH,
     tags = ["System"],
     responses(
         (status = OK, description = "Healthy", body = String, example = "Ok"),
@@ -69,21 +69,22 @@ async fn health() -> &'static str {
 
 #[utoipa::path(
     get,
-    path = "/api/_system/build",
+    path = ApiAppMeta::AXUM_PATH,
     tags = ["System"],
     responses(
-        (status = OK, description = "Healthy", body = BuildMeta),
+        (status = OK, description = "Healthy", body = AppMeta),
     )
 )]
-async fn build_meta() -> Json<BuildMeta> {
-    Json(BuildMeta {
+async fn app_meta(State(state): State<AppState>) -> Json<AppMeta> {
+    Json(AppMeta {
         version: VERSION.to_string(),
+        mode: state.run_mode().into(),
     })
 }
 
 #[utoipa::path(
     get,
-    path = "/api/dids/{did}",
+    path = ApiDid::AXUM_PATH,
     tags = ["DIDs"],
     responses(
         (status = OK, description = "Resolve DID successfully", body = DidDocument),

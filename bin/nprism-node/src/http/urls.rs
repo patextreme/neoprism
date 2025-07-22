@@ -14,7 +14,7 @@ typed_uri!(Swagger, "swagger-ui");
 // api
 typed_uri!(ApiDid, "api" / "dids" / (did: String));
 typed_uri!(ApiHealth, "api" / "_system" / "health");
-typed_uri!(ApiBuildMeta, "api" / "_system" / "build");
+typed_uri!(ApiAppMeta, "api" / "_system" / "metadata");
 
 // resolver
 typed_uri!(Resolver, "resolver" ? Option<DidQuery>);
