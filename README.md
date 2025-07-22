@@ -93,20 +93,20 @@ dbDown
 
 These are commands you can run outside the development shell
 
-| command                                                      | description                                                        |
-|--------------------------------------------------------------|--------------------------------------------------------------------|
-| `nix build .#neoprism-docker`                                | Use nix to build the docker image (output available at `./result`) |
-| `nix build .#neoprism-docker && cat ./result \| docker load` | Use nix to build the docker image and load it using docker         |
+| command                                                 | description                                                        |
+|---------------------------------------------------------|--------------------------------------------------------------------|
+| `nix build .#neoprism-docker`                           | Use nix to build the docker image (output available at `./result`) |
+| `nix build .#neoprism-docker && docker load < ./result` | Use nix to build the docker image and load it using docker         |
 
 Assuming you are in the development shell, these are frequently used commands.
 
-| command                         | description                                    |
-|---------------------------------|------------------------------------------------|
-| `npm install`                   | Install the npm dependencies (first time only) |
-| `cargo build`                   | Build the cargo workspace                      |
-| `cargo clean`                   | Clean the cargo workspace                      |
-| `cargo r -p nprism-node -- -h`  | See `nprism-node` service CLI options          |
-| `cargo test --all-features`     | Run tests which enable all crate features      |
+| command                        | description                                    |
+|--------------------------------|------------------------------------------------|
+| `npm install`                  | Install the npm dependencies (first time only) |
+| `cargo build`                  | Build the cargo workspace                      |
+| `cargo clean`                  | Clean the cargo workspace                      |
+| `cargo r -p nprism-node -- -h` | See `nprism-node` service CLI options          |
+| `cargo test --all-features`    | Run tests which enable all crate features      |
 
 And these are some scripts provided by the shell to automate local dev workflow
 
