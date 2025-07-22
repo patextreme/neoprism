@@ -3,7 +3,7 @@
 
 use app::service::DidService;
 use clap::Parser;
-use cli::CliArgs;
+use cli::Cli;
 use identus_did_prism::dlt::DltCursor;
 use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
@@ -14,6 +14,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
+use crate::cli::IndexerArgs;
 
 mod app;
 mod cli;
@@ -29,14 +30,17 @@ struct AppState {
 }
 
 pub async fn start_server() -> anyhow::Result<()> {
-    let cli = CliArgs::parse();
+    let cli = Cli::parse();
+    let cli_args = match cli.command {
+        cli::Command::Indexer(args) => args,
+    };
 
-    let db = PostgresDb::connect(&cli.db_url)
+    let db = PostgresDb::connect(&cli_args.db.db_url)
         .await
         .expect("Unable to connect to database");
 
     // init migrations
-    if cli.skip_migration {
+    if cli_args.db.skip_migration {
         tracing::info!("Skipping database migrations");
     } else {
         tracing::info!("Applying database migrations");
@@ -46,8 +50,8 @@ pub async fn start_server() -> anyhow::Result<()> {
 
     // init state
     let did_service = DidService::new(&db);
-    let network = cli.cardano_network;
-    let cursor_rx = start_dlt_source(&cli, &network, &db, cli.confirmation_blocks).await;
+    let network = cli_args.dlt_source.cardano_network;
+    let cursor_rx = start_dlt_source(&cli_args, &network, &db, cli_args.dlt_source.confirmation_blocks).await;
 
     let state = AppState {
         did_service,
@@ -58,9 +62,11 @@ pub async fn start_server() -> anyhow::Result<()> {
     // start server
     let layer = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
-        .option_layer(Some(CorsLayer::permissive()).filter(|_| cli.cors_enabled));
-    let router = http::router(&cli.assets_path).with_state(state).layer(layer);
-    let bind_addr = format!("{}:{}", cli.address, cli.port);
+        .option_layer(Some(CorsLayer::permissive()).filter(|_| cli_args.server.cors_enabled));
+    let router = http::router(&cli_args.server.assets_path)
+        .with_state(state)
+        .layer(layer);
+    let bind_addr = format!("{}:{}", cli_args.server.address, cli_args.server.port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     tracing::info!("Server is listening on {}", bind_addr);
     axum::serve(listener, router).await?;
@@ -69,12 +75,12 @@ pub async fn start_server() -> anyhow::Result<()> {
 }
 
 async fn start_dlt_source(
-    cli: &CliArgs,
+    cli_args: &IndexerArgs,
     network: &NetworkIdentifier,
     db: &PostgresDb,
     confirmation_blocks: usize,
 ) -> Option<tokio::sync::watch::Receiver<Option<DltCursor>>> {
-    if let Some(address) = &cli.cardano_addr {
+    if let Some(address) = &cli_args.dlt_source.cardano_addr {
         tracing::info!(
             "Starting DLT sync worker on {} from cardano address {}",
             network,
@@ -92,7 +98,7 @@ async fn start_dlt_source(
         tokio::spawn(index_worker.run());
 
         Some(cursor_rx)
-    } else if let Some(dbsync_url) = cli.dbsync_url.as_ref() {
+    } else if let Some(dbsync_url) = cli_args.dlt_source.dbsync_url.as_ref() {
         tracing::info!("Starting DLT sync worker on {} from cardano dbsync", network);
         let source = DbSyncSource::since_persisted_cursor(db.clone(), dbsync_url, confirmation_blocks)
             .await

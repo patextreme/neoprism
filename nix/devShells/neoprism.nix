@@ -101,7 +101,8 @@ let
       text = ''
         cd "${rootDir}"
         ${buildAssets}/bin/buildAssets
-        cargo run --bin nprism-node -- --db-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
+        export NPRISM_DB_URL="postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName}"
+        cargo run --bin nprism-node -- "$@"
       '';
     };
   };
