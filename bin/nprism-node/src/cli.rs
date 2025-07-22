@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use identus_did_prism_indexer::dlt::NetworkIdentifier;
 
 #[derive(Parser)]
@@ -13,8 +13,10 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// Start a node in indexer mode.
+    /// Start the node in indexer mode.
     Indexer(IndexerArgs),
+    /// Start the node in submitter mode.
+    Submitter(SubmitterArgs),
 }
 
 #[derive(Args)]
@@ -25,6 +27,14 @@ pub struct IndexerArgs {
     pub db: DbArgs,
     #[clap(flatten)]
     pub dlt_source: DltSourceArgs,
+}
+
+#[derive(Args)]
+pub struct SubmitterArgs {
+    #[clap(flatten)]
+    pub server: ServerArgs,
+    #[clap(flatten)]
+    pub db: DbArgs,
 }
 
 #[derive(Args)]
@@ -55,10 +65,10 @@ pub struct DbArgs {
 
 #[derive(Args)]
 pub struct DltSourceArgs {
-    /// A Cardano network to connect.
-    #[arg(long, env = "NPRISM_CARDANO_NETWORK", default_value_t = NetworkIdentifier::Mainnet, value_parser = parser::parse_network_identifier)]
-    pub cardano_network: NetworkIdentifier,
-    /// Address of the Cardano relay node to consume events from.
+    /// A Cardano network to connect. This flag is ignored when using DB Sync.
+    #[arg(long, env = "NPRISM_CARDANO_NETWORK")]
+    pub cardano_network: NetworkIdentifierOptions,
+    /// Address of the Cardano relay node to sync from.
     /// If provided, it will sync events from the Cardano relay node.
     /// (e.g. backbone.mainnet.cardanofoundation.org:3001)
     #[arg(long, env = "NPRISM_CARDANO_RELAY", group = "dlt-source")]
@@ -73,17 +83,19 @@ pub struct DltSourceArgs {
     pub confirmation_blocks: usize,
 }
 
-mod parser {
-    use std::str::FromStr;
+#[derive(Clone, ValueEnum)]
+pub enum NetworkIdentifierOptions {
+    Mainnet,
+    Preprod,
+    Preview,
+}
 
-    use identus_did_prism_indexer::dlt::NetworkIdentifier;
-
-    pub fn parse_network_identifier(s: &str) -> Result<NetworkIdentifier, String> {
-        let values = NetworkIdentifier::variants()
-            .iter()
-            .map(|i| i.to_string())
-            .collect::<Vec<_>>()
-            .join(", ");
-        NetworkIdentifier::from_str(s).map_err(|_| format!("Invalid network {s}. Possible values: [{values}]"))
+impl From<NetworkIdentifierOptions> for NetworkIdentifier {
+    fn from(value: NetworkIdentifierOptions) -> Self {
+        match value {
+            NetworkIdentifierOptions::Mainnet => NetworkIdentifier::Mainnet,
+            NetworkIdentifierOptions::Preprod => NetworkIdentifier::Preprod,
+            NetworkIdentifierOptions::Preview => NetworkIdentifier::Preview,
+        }
     }
 }

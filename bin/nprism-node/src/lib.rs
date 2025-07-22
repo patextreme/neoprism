@@ -33,6 +33,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let cli_args = match cli.command {
         cli::Command::Indexer(args) => args,
+        cli::Command::Submitter(_) => todo!("implement"),
     };
 
     let db = PostgresDb::connect(&cli_args.db.db_url)
@@ -50,7 +51,7 @@ pub async fn start_server() -> anyhow::Result<()> {
 
     // init state
     let did_service = DidService::new(&db);
-    let network = cli_args.dlt_source.cardano_network;
+    let network = cli_args.dlt_source.cardano_network.clone().into();
     let cursor_rx = start_dlt_source(&cli_args, &network, &db, cli_args.dlt_source.confirmation_blocks).await;
 
     let state = AppState {
