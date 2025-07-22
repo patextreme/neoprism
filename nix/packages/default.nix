@@ -17,6 +17,7 @@ in
 rec {
   # misc
   ui-assets = pkgs.callPackage ./ui-assets.nix { };
+  prism-cli = pkgs.callPackage ./prism-cli.nix { };
 
   # neoprism binaries
   neoprism-bin = pkgs.callPackage ./neoprism-bin.nix {
@@ -30,7 +31,7 @@ rec {
     cargoLock = pkgs.rustUtils.cargoLock;
   };
 
-  # neoprism docker image
+  # neoprism image
   neoprism-docker = pkgs.callPackage ./neoprism-docker.nix {
     inherit version neoprism-bin ui-assets;
   };
