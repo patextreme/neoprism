@@ -10,7 +10,6 @@ use crate::http::urls;
 use crate::{AppState, RunMode};
 
 mod indexer;
-mod models;
 mod submitter;
 mod system;
 

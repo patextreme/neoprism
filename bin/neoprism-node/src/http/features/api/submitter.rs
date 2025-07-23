@@ -15,15 +15,14 @@ use crate::http::urls;
 pub struct SubmitterOpenApiDoc;
 
 mod models {
+    use identus_did_prism::did::operation::SignedPrismOperationHexStr;
     use identus_did_prism::dlt::TxId;
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
 
-    use crate::http::features::api::models::SignedOperationHexStr;
-
     #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
     pub struct SignedOperationSubmissionRequest {
-        pub signed_operations: Vec<SignedOperationHexStr>,
+        pub signed_operations: Vec<SignedPrismOperationHexStr>,
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
