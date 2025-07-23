@@ -1,5 +1,6 @@
 use axum::Json;
 use axum::extract::State;
+use axum::http::StatusCode;
 use utoipa::OpenApi;
 
 use crate::AppState;
@@ -43,13 +44,20 @@ mod models {
 pub async fn submit_signed_operations(
     State(state): State<AppState>,
     Json(req): Json<SignedOperationSubmissionRequest>,
-) -> Json<SignedOperationSubmissionResponse> {
-    let tx_id = state
+) -> Result<Json<SignedOperationSubmissionResponse>, StatusCode> {
+    let ops = req.signed_operations.into_iter().map(|i| i.into()).collect();
+    let result = state
         .dlt_sink
-        .unwrap() // TODO: unwrap
-        .publish_operations(req.signed_operations.into_iter().map(|i| i.into()).collect())
-        .await
-        .unwrap(); // TODO: unwrap
+        .expect("DLT sink is not configured for operation submission")
+        .publish_operations(ops)
+        .await;
 
-    Json(SignedOperationSubmissionResponse { tx_id })
+    // TODO: improve error handling
+    match result {
+        Ok(tx_id) => Ok(Json(SignedOperationSubmissionResponse { tx_id })),
+        Err(e) => {
+            tracing::error!("{}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
