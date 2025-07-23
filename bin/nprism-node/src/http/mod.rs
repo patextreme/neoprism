@@ -23,18 +23,18 @@ pub fn router(assets_dir: &Path, mode: RunMode) -> Router<AppState> {
         .merge(ui_resolver::router());
 
     match mode {
-        RunMode::Indexer => Router::new()
-            .route(
-                urls::Home::AXUM_PATH,
-                get(Redirect::temporary(&urls::Resolver::new_uri(None))),
-            )
-            .merge(api_router)
-            .merge(ui_router),
         RunMode::Submitter => Router::new()
             .route(
                 urls::Home::AXUM_PATH,
                 get(Redirect::temporary(&urls::Swagger::new_uri())),
             )
             .merge(api_router),
+        RunMode::Indexer | RunMode::Standalone => Router::new()
+            .route(
+                urls::Home::AXUM_PATH,
+                get(Redirect::temporary(&urls::Resolver::new_uri(None))),
+            )
+            .merge(api_router)
+            .merge(ui_router),
     }
 }

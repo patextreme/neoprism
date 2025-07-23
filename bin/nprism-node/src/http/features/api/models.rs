@@ -13,6 +13,7 @@ pub struct AppMeta {
 pub enum AppMetaRunMode {
     Indexer,
     Submitter,
+    Standalone,
 }
 
 impl From<RunMode> for AppMetaRunMode {
@@ -20,6 +21,7 @@ impl From<RunMode> for AppMetaRunMode {
         match value {
             RunMode::Indexer => Self::Indexer,
             RunMode::Submitter => Self::Submitter,
+            RunMode::Standalone => Self::Standalone,
         }
     }
 }

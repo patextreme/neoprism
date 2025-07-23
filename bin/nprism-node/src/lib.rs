@@ -17,7 +17,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
-use crate::cli::{DbArgs, DltSourceArgs, IndexerArgs, ServerArgs, SubmitterArgs};
+use crate::cli::{DbArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs};
 
 mod app;
 mod cli;
@@ -29,6 +29,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 enum RunMode {
     Indexer,
     Submitter,
+    Standalone,
 }
 
 #[derive(Clone)]
@@ -50,6 +51,7 @@ pub async fn run_command() -> anyhow::Result<()> {
     match cli.command {
         cli::Command::Indexer(args) => run_indexer_command(args).await?,
         cli::Command::Submitter(args) => run_submitter_command(args).await?,
+        cli::Command::Standalone(args) => run_standalone_command(args).await?,
     };
     Ok(())
 }
@@ -70,6 +72,22 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
     let app_state = AppState {
         pg_pool: db.pool.clone(),
         run_mode: RunMode::Indexer,
+        did_service: DidService::new(&db),
+        dlt_source: cursor_rx.map(|cursor_rx| DltSourceState {
+            cursor_rx,
+            network: network,
+        }),
+    };
+    run_server(app_state, &args.server).await
+}
+
+async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
+    let db = init_database(&args.db).await;
+    let network = args.dlt_source.cardano_network.clone().into();
+    let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
+    let app_state = AppState {
+        pg_pool: db.pool.clone(),
+        run_mode: RunMode::Standalone,
         did_service: DidService::new(&db),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState {
             cursor_rx,

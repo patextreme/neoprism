@@ -36,19 +36,19 @@ pub fn router(mode: RunMode) -> Router<AppState> {
     let system_oas = SystemOpenApiDoc::openapi();
     let indexer_oas = IndexerOpenApiDoc::openapi();
     let submitter_oas = SubmitterOpenApiDoc::openapi()
-        .merge_from(ScheduledOperation::create_endpoint_doc(Some("Submitter")))
-        .merge_from(ScheduledOperation::get_endpoint_doc(Some("Submitter")))
-        .merge_from(ScheduledOperation::list_endpoint_doc(Some("Submitter")))
-        .merge_from(ScheduledOperation::delete_endpoint_doc(Some("Submitter")));
+        .merge_from(ScheduledOperation::create_endpoint_doc(Some("Submit")))
+        .merge_from(ScheduledOperation::get_endpoint_doc(Some("Submit")))
+        .merge_from(ScheduledOperation::list_endpoint_doc(Some("Submit")))
+        .merge_from(ScheduledOperation::delete_endpoint_doc(Some("Submit")));
 
-    let mut combined_oas = system_oas;
-    match mode {
-        RunMode::Indexer => combined_oas.merge(indexer_oas),
-        RunMode::Submitter => combined_oas.merge(submitter_oas),
-    }
+    let oas = match mode {
+        RunMode::Indexer => system_oas.merge_from(indexer_oas),
+        RunMode::Submitter => system_oas.merge_from(submitter_oas),
+        RunMode::Standalone => system_oas.merge_from(indexer_oas).merge_from(submitter_oas),
+    };
 
     let system_router = Router::new()
-        .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", combined_oas))
+        .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", oas))
         .route(urls::ApiHealth::AXUM_PATH, get(health))
         .route(urls::ApiAppMeta::AXUM_PATH, get(app_meta));
 
@@ -63,6 +63,7 @@ pub fn router(mode: RunMode) -> Router<AppState> {
     match mode {
         RunMode::Indexer => system_router.merge(indexer_router),
         RunMode::Submitter => system_router.merge(submitter_router),
+        RunMode::Standalone => system_router.merge(indexer_router).merge(submitter_router),
     }
 }
 

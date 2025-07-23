@@ -17,6 +17,8 @@ pub enum Command {
     Indexer(IndexerArgs),
     /// Start the node in submitter mode.
     Submitter(SubmitterArgs),
+    /// Start the node in standalone mode.
+    Standalone(StandaloneArgs),
 }
 
 #[derive(Args)]
@@ -35,6 +37,16 @@ pub struct SubmitterArgs {
     pub server: ServerArgs,
     #[clap(flatten)]
     pub db: DbArgs,
+}
+
+#[derive(Args)]
+pub struct StandaloneArgs {
+    #[clap(flatten)]
+    pub server: ServerArgs,
+    #[clap(flatten)]
+    pub db: DbArgs,
+    #[clap(flatten)]
+    pub dlt_source: DltSourceArgs,
 }
 
 #[derive(Args)]
