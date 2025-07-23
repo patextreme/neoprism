@@ -6,7 +6,7 @@ use identus_did_core::DidDocument;
 use identus_did_prism::did::PrismDidOps;
 use lazybe::openapi::{CreateRouterDoc, DeleteRouterDoc, GetRouterDoc, ListRouterDoc};
 use lazybe::router::{CreateRouter, DeleteRouter, GetRouter, ListRouter};
-use node_storage::entity::ScheduledOperation;
+use node_storage::entity::{StagingOperation, SubmittedOperation};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -32,14 +32,22 @@ struct IndexerOpenApiDoc;
 #[derive(OpenApi)]
 struct SubmitterOpenApiDoc;
 
+mod tags {
+    pub const SYSTEM: &str = "System";
+    pub const DID: &str = "DID";
+    pub const OPS_SUBMIT: &str = "Operation submission";
+}
+
 pub fn router(mode: RunMode) -> Router<AppState> {
     let system_oas = SystemOpenApiDoc::openapi();
     let indexer_oas = IndexerOpenApiDoc::openapi();
     let submitter_oas = SubmitterOpenApiDoc::openapi()
-        .merge_from(ScheduledOperation::create_endpoint_doc(Some("Submit")))
-        .merge_from(ScheduledOperation::get_endpoint_doc(Some("Submit")))
-        .merge_from(ScheduledOperation::list_endpoint_doc(Some("Submit")))
-        .merge_from(ScheduledOperation::delete_endpoint_doc(Some("Submit")));
+        .merge_from(StagingOperation::create_endpoint_doc(Some(tags::OPS_SUBMIT)))
+        .merge_from(StagingOperation::get_endpoint_doc(Some(tags::OPS_SUBMIT)))
+        .merge_from(StagingOperation::list_endpoint_doc(Some(tags::OPS_SUBMIT)))
+        .merge_from(StagingOperation::delete_endpoint_doc(Some(tags::OPS_SUBMIT)))
+        .merge_from(SubmittedOperation::get_endpoint_doc(Some(tags::OPS_SUBMIT)))
+        .merge_from(SubmittedOperation::list_endpoint_doc(Some(tags::OPS_SUBMIT)));
 
     let oas = match mode {
         RunMode::Indexer => system_oas.merge_from(indexer_oas),
@@ -55,10 +63,12 @@ pub fn router(mode: RunMode) -> Router<AppState> {
     let indexer_router = Router::new().route(urls::ApiDid::AXUM_PATH, get(resolve_did));
 
     let submitter_router = Router::new()
-        .merge(ScheduledOperation::create_endpoint())
-        .merge(ScheduledOperation::get_endpoint())
-        .merge(ScheduledOperation::list_endpoint())
-        .merge(ScheduledOperation::delete_endpoint());
+        .merge(StagingOperation::create_endpoint())
+        .merge(StagingOperation::get_endpoint())
+        .merge(StagingOperation::list_endpoint())
+        .merge(StagingOperation::delete_endpoint())
+        .merge(SubmittedOperation::get_endpoint())
+        .merge(SubmittedOperation::list_endpoint());
 
     match mode {
         RunMode::Indexer => system_router.merge(indexer_router),
@@ -70,7 +80,7 @@ pub fn router(mode: RunMode) -> Router<AppState> {
 #[utoipa::path(
     get,
     path = ApiHealth::AXUM_PATH,
-    tags = ["System"],
+    tags = [tags::SYSTEM],
     responses(
         (status = OK, description = "Healthy", body = String, example = "Ok"),
     )
@@ -82,7 +92,7 @@ async fn health() -> &'static str {
 #[utoipa::path(
     get,
     path = ApiAppMeta::AXUM_PATH,
-    tags = ["System"],
+    tags = [tags::SYSTEM],
     responses(
         (status = OK, description = "Healthy", body = AppMeta),
     )
@@ -97,7 +107,7 @@ async fn app_meta(State(state): State<AppState>) -> Json<AppMeta> {
 #[utoipa::path(
     get,
     path = ApiDid::AXUM_PATH,
-    tags = ["DID"],
+    tags = [tags::DID],
     responses(
         (status = OK, description = "Resolve DID successfully", body = DidDocument),
         (status = BAD_REQUEST, description = "Invalid DID"),

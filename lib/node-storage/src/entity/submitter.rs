@@ -7,10 +7,24 @@ use utoipa::ToSchema;
 use crate::entity::BytesHex;
 
 #[derive(Entity, Serialize, Deserialize, ToSchema)]
-#[lazybe(table = "scheduled_operation", endpoint = "/scheduled-operations", derive_to_schema)]
-pub struct ScheduledOperation {
+#[lazybe(table = "staging_operation", endpoint = "/api/staging-operations", derive_to_schema)]
+pub struct StagingOperation {
     #[lazybe(primary_key)]
-    pub id: Uuid, // TODO: use hash
+    pub id: Uuid,
+    pub signed_operation: BytesHex,
+    #[lazybe(created_at)]
+    pub submitted_at: DateTime<Utc>,
+}
+
+#[derive(Entity, Serialize, Deserialize, ToSchema)]
+#[lazybe(
+    table = "submitted_operation",
+    endpoint = "/api/submitted-operations",
+    derive_to_schema
+)]
+pub struct SubmittedOperation {
+    #[lazybe(primary_key)]
+    pub id: Uuid,
     pub signed_operation: BytesHex,
     #[lazybe(created_at)]
     pub submitted_at: DateTime<Utc>,
