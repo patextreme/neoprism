@@ -1,6 +1,8 @@
 #![allow(non_snake_case)]
 #![feature(error_reporter)]
 
+use std::sync::Arc;
+
 use app::service::DidService;
 use clap::Parser;
 use cli::Cli;
@@ -8,6 +10,8 @@ use identus_did_prism::dlt::DltCursor;
 use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
+use identus_did_prism_submitter::DltSink;
+use identus_did_prism_submitter::dlt::cardano_wallet::CardanoWalletSink;
 use lazybe::db::postgres::PostgresDbCtx;
 use lazybe::router::RouteConfig;
 use node_storage::PostgresDb;
@@ -37,6 +41,7 @@ struct AppState {
     pg_pool: PgPool,
     did_service: DidService,
     dlt_source: Option<DltSourceState>,
+    dlt_sink: Option<Arc<dyn DltSink>>,
     run_mode: RunMode,
 }
 
@@ -77,6 +82,20 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
             cursor_rx,
             network: network,
         }),
+        dlt_sink: None,
+    };
+    run_server(app_state, &args.server).await
+}
+
+async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
+    let db = init_database(&args.db).await;
+    let dlt_sink = init_dlt_sink();
+    let app_state = AppState {
+        pg_pool: db.pool.clone(),
+        run_mode: RunMode::Submitter,
+        did_service: DidService::new(&db),
+        dlt_source: None,
+        dlt_sink: Some(dlt_sink),
     };
     run_server(app_state, &args.server).await
 }
@@ -85,6 +104,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db).await;
     let network = args.dlt_source.cardano_network.clone().into();
     let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
+    let dlt_sink = init_dlt_sink();
     let app_state = AppState {
         pg_pool: db.pool.clone(),
         run_mode: RunMode::Standalone,
@@ -93,17 +113,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
             cursor_rx,
             network: network,
         }),
-    };
-    run_server(app_state, &args.server).await
-}
-
-async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
-    let db = init_database(&args.db).await;
-    let app_state = AppState {
-        pg_pool: db.pool.clone(),
-        run_mode: RunMode::Submitter,
-        did_service: DidService::new(&db),
-        dlt_source: None,
+        dlt_sink: Some(dlt_sink),
     };
     run_server(app_state, &args.server).await
 }
@@ -179,4 +189,13 @@ async fn init_dlt_source(
     } else {
         None
     }
+}
+
+fn init_dlt_sink() -> Arc<dyn DltSink> {
+    Arc::new(CardanoWalletSink::new(
+        "http://localhost:8090/v2".to_string(),
+        "abc".to_string(),
+        "super_secret".to_string(),
+        "addr1234".to_string(),
+    ))
 }

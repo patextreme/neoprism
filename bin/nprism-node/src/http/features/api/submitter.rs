@@ -1,7 +1,8 @@
 use axum::Json;
-use identus_apollo::hash::Sha256Digest;
+use axum::extract::State;
 use utoipa::OpenApi;
 
+use crate::AppState;
 use crate::http::features::api::submitter::models::{
     SignedOperationSubmissionRequest, SignedOperationSubmissionResponse,
 };
@@ -40,8 +41,15 @@ mod models {
     )
 )]
 pub async fn submit_signed_operations(
-    _: Json<SignedOperationSubmissionRequest>,
+    State(state): State<AppState>,
+    Json(req): Json<SignedOperationSubmissionRequest>,
 ) -> Json<SignedOperationSubmissionResponse> {
-    let digest = Sha256Digest::from_bytes(&[0; 32]).unwrap();
-    Json(SignedOperationSubmissionResponse { tx_id: digest.into() })
+    let tx_id = state
+        .dlt_sink
+        .unwrap() // TODO: unwrap
+        .publish_operations(req.signed_operations.into_iter().map(|i| i.into()).collect())
+        .await
+        .unwrap(); // TODO: unwrap
+
+    Json(SignedOperationSubmissionResponse { tx_id })
 }

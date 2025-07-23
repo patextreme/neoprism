@@ -5,6 +5,6 @@ use crate::dlt::TxId;
 pub mod dlt;
 
 #[async_trait::async_trait]
-pub trait DltSink {
+pub trait DltSink: Send + Sync {
     async fn publish_operations(&self, operations: Vec<SignedPrismOperation>) -> Result<TxId, String>;
 }
