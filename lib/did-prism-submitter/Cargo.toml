@@ -9,7 +9,10 @@ async-trait = { workspace = true }
 derive_more = { workspace = true, features = ["from", "debug", "display"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-reqwest = { workspace = true, optional = true, features = ["json"] }
+reqwest = { workspace = true, optional = true, features = [
+  "rustls-tls",
+  "json",
+] }
 utoipa = { workspace = true, optional = true }
 
 identus-apollo = { workspace = true, features = [

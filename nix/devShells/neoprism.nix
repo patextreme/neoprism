@@ -117,8 +117,6 @@ pkgs.mkShell {
       git-cliff
       less
       ncurses
-      openssl
-      pkg-config
       protobuf
       which
       # config

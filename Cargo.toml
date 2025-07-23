@@ -35,7 +35,7 @@ im-rc = "15"
 lazybe = "0.2"
 maud = "0.27"
 regex = "1"
-reqwest = "0.12"
+reqwest = { version = "0.12", default-features = false }
 serde = "1"
 serde_json = "1"
 strum = "0.27"
