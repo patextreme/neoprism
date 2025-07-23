@@ -1671,9 +1671,11 @@ dependencies = [
  "protobuf",
  "protobuf-codegen",
  "regex",
+ "serde",
  "serde_json",
  "tracing",
  "uriparse",
+ "utoipa",
 ]
 
 [[package]]
@@ -1709,7 +1711,6 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "utoipa",
 ]
 
 [[package]]

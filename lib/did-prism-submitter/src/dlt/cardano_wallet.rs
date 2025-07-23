@@ -1,4 +1,5 @@
 use identus_apollo::hex::HexStr;
+use identus_did_prism::dlt::TxId;
 use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::proto::MessageExt;
 use identus_did_prism::proto::prism::{PrismBlock, PrismObject};
@@ -6,13 +7,11 @@ use reqwest::Client;
 use serde_json::json;
 
 use crate::DltSink;
-use crate::dlt::TxId;
 use crate::dlt::cardano_wallet::models::{Payment, PaymentAmount, TxRequest, TxResponse};
 
 mod models {
+    use identus_did_prism::dlt::TxId;
     use serde::{Deserialize, Serialize};
-
-    use crate::dlt::TxId;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct TxResponse {

@@ -20,9 +20,11 @@ enum_dispatch = { workspace = true }
 im-rc = { workspace = true }
 protobuf = { workspace = true }
 regex = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 uriparse = { workspace = true }
+utoipa = { workspace = true, optional = true }
 
 identus-did-core = { workspace = true }
 identus-apollo = { workspace = true, features = [
@@ -38,3 +40,4 @@ protobuf-codegen = { workspace = true }
 
 [features]
 default = []
+openapi = ["dep:utoipa"]

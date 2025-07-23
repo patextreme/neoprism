@@ -15,7 +15,7 @@ use crate::http::urls;
 pub struct SubmitterOpenApiDoc;
 
 mod models {
-    use identus_did_prism_submitter::dlt::TxId;
+    use identus_did_prism::dlt::TxId;
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
 

@@ -1,6 +1,5 @@
+use identus_did_prism::dlt::TxId;
 use identus_did_prism::prelude::SignedPrismOperation;
-
-use crate::dlt::TxId;
 
 pub mod dlt;
 
