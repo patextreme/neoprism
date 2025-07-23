@@ -8,7 +8,10 @@ use identus_did_prism::dlt::DltCursor;
 use identus_did_prism_indexer::dlt::NetworkIdentifier;
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
+use lazybe::db::postgres::PostgresDbCtx;
+use lazybe::router::RouteConfig;
 use node_storage::PostgresDb;
+use sqlx::{PgPool, Postgres};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -30,6 +33,7 @@ enum RunMode {
 
 #[derive(Clone)]
 struct AppState {
+    pg_pool: PgPool,
     did_service: DidService,
     dlt_source: Option<DltSourceState>,
     run_mode: RunMode,
@@ -50,11 +54,21 @@ pub async fn run_command() -> anyhow::Result<()> {
     Ok(())
 }
 
+impl RouteConfig for AppState {
+    type Ctx = PostgresDbCtx;
+    type Db = Postgres;
+
+    fn db_ctx(&self) -> (Self::Ctx, PgPool) {
+        (PostgresDbCtx, self.pg_pool.clone())
+    }
+}
+
 async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db).await;
     let network = args.dlt_source.cardano_network.clone().into();
     let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
     let app_state = AppState {
+        pg_pool: db.pool.clone(),
         run_mode: RunMode::Indexer,
         did_service: DidService::new(&db),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState {
@@ -68,6 +82,7 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
 async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db).await;
     let app_state = AppState {
+        pg_pool: db.pool.clone(),
         run_mode: RunMode::Submitter,
         did_service: DidService::new(&db),
         dlt_source: None,

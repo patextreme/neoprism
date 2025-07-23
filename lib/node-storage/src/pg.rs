@@ -14,7 +14,7 @@ use crate::{Error, entity};
 
 #[derive(Debug, Clone)]
 pub struct PostgresDb {
-    pool: PgPool,
+    pub pool: PgPool,
     db_ctx: PostgresDbCtx,
 }
 

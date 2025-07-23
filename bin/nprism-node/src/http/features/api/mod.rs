@@ -4,6 +4,9 @@ use axum::routing::get;
 use axum::{Json, Router};
 use identus_did_core::DidDocument;
 use identus_did_prism::did::PrismDidOps;
+use lazybe::openapi::{CreateRouterDoc, DeleteRouterDoc, GetRouterDoc, ListRouterDoc};
+use lazybe::router::{CreateRouter, DeleteRouter, GetRouter, ListRouter};
+use node_storage::entity::ScheduledOperation;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -32,7 +35,11 @@ struct SubmitterOpenApiDoc;
 pub fn router(mode: RunMode) -> Router<AppState> {
     let system_oas = SystemOpenApiDoc::openapi();
     let indexer_oas = IndexerOpenApiDoc::openapi();
-    let submitter_oas = SubmitterOpenApiDoc::openapi();
+    let submitter_oas = SubmitterOpenApiDoc::openapi()
+        .merge_from(ScheduledOperation::create_endpoint_doc(Some("Submitter")))
+        .merge_from(ScheduledOperation::get_endpoint_doc(Some("Submitter")))
+        .merge_from(ScheduledOperation::list_endpoint_doc(Some("Submitter")))
+        .merge_from(ScheduledOperation::delete_endpoint_doc(Some("Submitter")));
 
     let mut combined_oas = system_oas;
     match mode {
@@ -47,7 +54,11 @@ pub fn router(mode: RunMode) -> Router<AppState> {
 
     let indexer_router = Router::new().route(urls::ApiDid::AXUM_PATH, get(resolve_did));
 
-    let submitter_router = Router::new();
+    let submitter_router = Router::new()
+        .merge(ScheduledOperation::create_endpoint())
+        .merge(ScheduledOperation::get_endpoint())
+        .merge(ScheduledOperation::list_endpoint())
+        .merge(ScheduledOperation::delete_endpoint());
 
     match mode {
         RunMode::Indexer => system_router.merge(indexer_router),
@@ -85,7 +96,7 @@ async fn app_meta(State(state): State<AppState>) -> Json<AppMeta> {
 #[utoipa::path(
     get,
     path = ApiDid::AXUM_PATH,
-    tags = ["DIDs"],
+    tags = ["DID"],
     responses(
         (status = OK, description = "Resolve DID successfully", body = DidDocument),
         (status = BAD_REQUEST, description = "Invalid DID"),

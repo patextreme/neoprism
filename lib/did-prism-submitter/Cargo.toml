@@ -5,6 +5,8 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+async-trait = { workspace = true }
+
 identus-apollo = { workspace = true, features = [
   "hash",
   "hex",

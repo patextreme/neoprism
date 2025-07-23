@@ -4,7 +4,7 @@ use identus_did_prism::did::{CanonicalPrismDid, PrismDidOps};
 use identus_did_prism::{proto, test_utils};
 use identus_did_prism_indexer::repo::OperationRepo;
 use identus_did_prism_indexer::run_indexer_loop;
-use indexer_storage::PostgresDb;
+use node_storage::PostgresDb;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

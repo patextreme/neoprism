@@ -1666,6 +1666,7 @@ dependencies = [
 name = "identus-did-prism-submitter"
 version = "0.2.0"
 dependencies = [
+ "async-trait",
  "identus-apollo",
  "identus-did-prism",
 ]
@@ -1867,12 +1868,14 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d26d11f19972c44bc5d6f95e439180311e35924171a4440cbdb1fcf4f338545c"
 dependencies = [
+ "axum",
  "lazybe-macros",
  "sea-query",
  "serde",
  "serde_qs",
  "sqlx",
  "tracing",
+ "utoipa",
  "uuid",
 ]
 
@@ -2145,12 +2148,14 @@ dependencies = [
  "identus-apollo",
  "identus-did-prism",
  "identus-did-prism-indexer",
+ "identus-did-prism-submitter",
  "lazybe",
  "protobuf",
  "sea-query",
  "serde",
  "sqlx",
  "tracing",
+ "utoipa",
  "uuid",
 ]
 
@@ -3985,6 +3990,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.101",
+ "uuid",
 ]
 
 [[package]]

@@ -25,7 +25,7 @@ let
         find . | grep '\.dhall$' | xargs -I _ bash -c "echo running dhall format on _ && dhall format _"
         cargo fmt
 
-        cd "${rootDir}/lib/indexer-storage/migrations"
+        cd "${rootDir}/lib/node-storage/migrations"
         sqlfluff fix .
         sqlfluff lint .
       '';
