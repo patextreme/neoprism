@@ -66,7 +66,7 @@ in  { mainnet-dbsync.services
                     , networkMagic
                     , testnetVolume
                     , cardanoNodeHost
-                    , walletBaseUrl = "http://cardano-wallet:8090"
+                    , walletBaseUrl = "http://cardano-wallet:8090/v2"
                     , walletPassphrase = "super_secret"
                     , walletPaymentAddress =
                         "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
@@ -80,7 +80,7 @@ in  { mainnet-dbsync.services
                     , dbHost = "db-dbsync"
                     , configFile = "./dbsync-config.yaml"
                     }
-              , neoprism-indexer =
+              , neoprism-standalone =
                   neoprism.makeIndexerNodeService
                     neoprism.Options::{
                     , dbHost = "db-neoprism"
@@ -88,6 +88,13 @@ in  { mainnet-dbsync.services
                     , dltSource =
                         neoprism.DltSource.DbSync
                           "postgresql://postgres:postgres@db-dbsync:5432/postgres"
+                    , dltSink = Some neoprism.DltSink::{
+                      , walletBaseUrl = "http://cardano-wallet:8090/v2"
+                      , walletId = "9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d"
+                      , walletPassphrase = "super_secret"
+                      , walletPaymentAddr =
+                          "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
+                      }
                     }
               , identus-prism-node =
                   prismNode.makePrismNodeService

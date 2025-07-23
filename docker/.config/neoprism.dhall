@@ -13,7 +13,6 @@ let IndexerNodeService =
           }
       , default =
         { image = "identus-neoprism:${version}"
-        , command = [ "indexer" ]
         , restart = "always"
         , depends_on = [] : Prelude.Map.Type Text { condition : Text }
         , environment = [] : Prelude.Map.Type Text Text
@@ -22,18 +21,30 @@ let IndexerNodeService =
 
 let DltSource = < Relay : Text | DbSync : Text >
 
+let DltSink =
+      { Type =
+          { walletBaseUrl : Text
+          , walletId : Text
+          , walletPassphrase : Text
+          , walletPaymentAddr : Text
+          }
+      , default = {=}
+      }
+
 let Options =
       { Type =
           { hostPort : Natural
           , dbHost : Text
           , network : Text
           , dltSource : DltSource
+          , dltSink : Optional DltSink.Type
           , confirmationBlocks : Optional Natural
           }
       , default =
         { hostPort = 8080
         , dbHost = "db"
         , network = "mainnet"
+        , dltSink = None DltSink.Type
         , confirmationBlocks = None Natural
         }
       }
@@ -66,10 +77,30 @@ let makeIndexerNodeService =
                       \(url : Text) -> toMap { NPRISM_CARDANO_DBSYNC_URL = url }
                   }
                   options.dltSource
+              # merge
+                  { None = [] : Prelude.Map.Type Text Text
+                  , Some =
+                      \(sink : DltSink.Type) ->
+                        toMap
+                          { NPRISM_CARDANO_WALLET_BASE_URL = sink.walletBaseUrl
+                          , NPRISM_CARDANO_WALLET_WALLET_ID = sink.walletId
+                          , NPRISM_CARDANO_WALLET_PASSPHRASE =
+                              sink.walletPassphrase
+                          , NPRISM_CARDANO_WALLET_PAYMENT_ADDR =
+                              sink.walletPaymentAddr
+                          }
+                  }
+                  options.dltSink
+
+        let command =
+              if    Prelude.Optional.null DltSink.Type options.dltSink
+              then  "indexer"
+              else  "standalone"
 
         in  IndexerNodeService::{
             , ports = [ "${Prelude.Natural.show options.hostPort}:8080" ]
             , environment = mandatoryIndexerNodeEnvs # extraEnvs
+            , command = [ command ]
             , depends_on =
               [ { mapKey = options.dbHost
                 , mapValue.condition = "service_healthy"
@@ -77,4 +108,4 @@ let makeIndexerNodeService =
               ]
             }
 
-in  { Options, makeIndexerNodeService, DltSource }
+in  { Options, makeIndexerNodeService, DltSource, DltSink }
