@@ -4,8 +4,8 @@ use axum::routing::get;
 use axum::{Json, Router};
 use identus_did_core::DidDocument;
 use identus_did_prism::did::PrismDidOps;
-use lazybe::openapi::{CreateRouterDoc, DeleteRouterDoc, GetRouterDoc, ListRouterDoc};
-use lazybe::router::{CreateRouter, DeleteRouter, GetRouter, ListRouter};
+use lazybe::openapi::{CreateRouterDoc, GetRouterDoc, ListRouterDoc};
+use lazybe::router::{CreateRouter, GetRouter, ListRouter};
 use node_storage::entity::{StagingOperation, SubmittedOperation};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -45,7 +45,6 @@ pub fn router(mode: RunMode) -> Router<AppState> {
         .merge_from(StagingOperation::create_endpoint_doc(Some(tags::OPS_SUBMIT)))
         .merge_from(StagingOperation::get_endpoint_doc(Some(tags::OPS_SUBMIT)))
         .merge_from(StagingOperation::list_endpoint_doc(Some(tags::OPS_SUBMIT)))
-        .merge_from(StagingOperation::delete_endpoint_doc(Some(tags::OPS_SUBMIT)))
         .merge_from(SubmittedOperation::get_endpoint_doc(Some(tags::OPS_SUBMIT)))
         .merge_from(SubmittedOperation::list_endpoint_doc(Some(tags::OPS_SUBMIT)));
 
@@ -66,7 +65,6 @@ pub fn router(mode: RunMode) -> Router<AppState> {
         .merge(StagingOperation::create_endpoint())
         .merge(StagingOperation::get_endpoint())
         .merge(StagingOperation::list_endpoint())
-        .merge(StagingOperation::delete_endpoint())
         .merge(SubmittedOperation::get_endpoint())
         .merge(SubmittedOperation::list_endpoint());
 

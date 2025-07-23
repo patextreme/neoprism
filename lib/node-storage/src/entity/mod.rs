@@ -33,11 +33,15 @@ impl TryFrom<DidSuffix> for CanonicalPrismDid {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Newtype, derive_more::From, ToSchema)]
 #[schema(description = "A hexadecimal string representing underlying bytes", value_type = String, example = "0123456789abcdef")]
-pub struct BytesHex(
-    #[serde(serialize_with = "BytesHex::serialize", deserialize_with = "BytesHex::deserialize")] Vec<u8>,
+pub struct HexStrBytes(
+    #[serde(
+        serialize_with = "HexStrBytes::serialize",
+        deserialize_with = "HexStrBytes::deserialize"
+    )]
+    Vec<u8>,
 );
 
-impl BytesHex {
+impl HexStrBytes {
     fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
