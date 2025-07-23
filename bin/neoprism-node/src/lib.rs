@@ -50,6 +50,15 @@ struct DltSourceState {
     network: NetworkIdentifier,
 }
 
+impl RouteConfig for AppState {
+    type Ctx = PostgresDbCtx;
+    type Db = Postgres;
+
+    fn db_ctx(&self) -> (Self::Ctx, PgPool) {
+        (PostgresDbCtx, self.pg_pool.clone())
+    }
+}
+
 pub async fn run_command() -> anyhow::Result<()> {
     let cli = Cli::parse();
     match cli.command {
@@ -58,15 +67,6 @@ pub async fn run_command() -> anyhow::Result<()> {
         cli::Command::Standalone(args) => run_standalone_command(args).await?,
     };
     Ok(())
-}
-
-impl RouteConfig for AppState {
-    type Ctx = PostgresDbCtx;
-    type Db = Postgres;
-
-    fn db_ctx(&self) -> (Self::Ctx, PgPool) {
-        (PostgresDbCtx, self.pg_pool.clone())
-    }
 }
 
 async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
