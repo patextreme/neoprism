@@ -78,10 +78,7 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
         pg_pool: db.pool.clone(),
         run_mode: RunMode::Indexer,
         did_service: DidService::new(&db),
-        dlt_source: cursor_rx.map(|cursor_rx| DltSourceState {
-            cursor_rx,
-            network: network,
-        }),
+        dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
         dlt_sink: None,
     };
     run_server(app_state, &args.server).await
@@ -109,10 +106,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
         pg_pool: db.pool.clone(),
         run_mode: RunMode::Standalone,
         did_service: DidService::new(&db),
-        dlt_source: cursor_rx.map(|cursor_rx| DltSourceState {
-            cursor_rx,
-            network: network,
-        }),
+        dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
         dlt_sink: Some(dlt_sink),
     };
     run_server(app_state, &args.server).await
