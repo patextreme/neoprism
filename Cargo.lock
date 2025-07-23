@@ -2191,6 +2191,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "neoprism-node"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "chrono",
+ "clap 4.5.39",
+ "derive_more",
+ "identus-apollo",
+ "identus-did-core",
+ "identus-did-prism",
+ "identus-did-prism-indexer",
+ "identus-did-prism-submitter",
+ "lazybe",
+ "maud",
+ "node-storage",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "utoipa",
+ "utoipa-swagger-ui",
+]
+
+[[package]]
 name = "net2"
 version = "0.2.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2229,35 +2258,6 @@ checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
 dependencies = [
  "memchr",
  "minimal-lexical",
-]
-
-[[package]]
-name = "nprism-node"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "axum",
- "chrono",
- "clap 4.5.39",
- "derive_more",
- "identus-apollo",
- "identus-did-core",
- "identus-did-prism",
- "identus-did-prism-indexer",
- "identus-did-prism-submitter",
- "lazybe",
- "maud",
- "node-storage",
- "serde",
- "serde_json",
- "sqlx",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "utoipa",
- "utoipa-swagger-ui",
 ]
 
 [[package]]

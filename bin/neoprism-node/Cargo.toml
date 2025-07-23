@@ -1,5 +1,5 @@
 [package]
-name = "nprism-node"
+name = "neoprism-node"
 version.workspace = true
 edition.workspace = true
 

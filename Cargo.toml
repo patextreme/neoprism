@@ -7,7 +7,7 @@ members = [
   "lib/did-prism-indexer",
   "lib/did-prism-submitter",
   "lib/node-storage",
-  "bin/nprism-node",
+  "bin/neoprism-node",
 ]
 
 [workspace.package]

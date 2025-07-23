@@ -1,4 +1,4 @@
-use nprism_node::run_command;
+use neoprism_node::run_command;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

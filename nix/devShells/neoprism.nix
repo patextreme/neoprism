@@ -34,7 +34,7 @@ let
     buildAssets = pkgs.writeShellApplication {
       name = "buildAssets";
       text = ''
-        cd "${rootDir}/bin/nprism-node"
+        cd "${rootDir}/bin/neoprism-node"
         tailwindcss -i tailwind.css -o ./assets/styles.css
       '';
     };
@@ -102,7 +102,7 @@ let
         cd "${rootDir}"
         ${buildAssets}/bin/buildAssets
         export NPRISM_DB_URL="postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName}"
-        cargo run --bin nprism-node -- "$@"
+        cargo run --bin neoprism-node -- "$@"
       '';
     };
   };
