@@ -122,9 +122,7 @@ fn encode_metadata(prism_object: PrismObject) -> serde_json::Value {
                 { "k" : { "string": "v" }, "v" : { "int" : 1 } },
                 {
                     "k" : { "string" : "c" },
-                    "v" : {
-                        "list" : byte_group
-                    }
+                    "v" : { "list" : byte_group }
                 }
             ]
         }
