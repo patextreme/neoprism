@@ -37,6 +37,8 @@ pub struct SubmitterArgs {
     pub server: ServerArgs,
     #[clap(flatten)]
     pub db: DbArgs,
+    #[clap(flatten)]
+    pub dlt_sink: DltSinkArgs,
 }
 
 #[derive(Args)]
@@ -47,6 +49,8 @@ pub struct StandaloneArgs {
     pub db: DbArgs,
     #[clap(flatten)]
     pub dlt_source: DltSourceArgs,
+    #[clap(flatten)]
+    pub dlt_sink: DltSinkArgs,
 }
 
 #[derive(Args)]
@@ -83,8 +87,8 @@ pub struct DltSourceArgs {
     /// Address of the Cardano relay node to sync from.
     /// If provided, it will sync events from the Cardano relay node.
     /// (e.g. backbone.mainnet.cardanofoundation.org:3001)
-    #[arg(long, env = "NPRISM_CARDANO_RELAY", group = "dlt-source")]
-    pub cardano_relay: Option<String>,
+    #[arg(long, env = "NPRISM_CARDANO_RELAY_ADDR", group = "dlt-source")]
+    pub cardano_relay_addr: Option<String>,
     /// DB-Sync url.
     /// If provided, it will sync events from the DB sync.
     /// (e.g. postgres://user:pass@host:5432/db)
@@ -93,6 +97,22 @@ pub struct DltSourceArgs {
     /// Number of confirmation blocks to wait before considering the block valid.
     #[arg(long, env = "NPRISM_CONFIRMATION_BLOCKS", default_value_t = 112)]
     pub confirmation_blocks: usize,
+}
+
+#[derive(Args)]
+pub struct DltSinkArgs {
+    /// Base url of cardano wallet
+    #[arg(long, env = "NPRISM_CARDANO_WALLET_BASE_URL")]
+    pub cardano_wallet_base_url: String,
+    /// Wallet ID to use for making transaction
+    #[arg(long, env = "NPRISM_CARDANO_WALLET_WALLET_ID")]
+    pub cardano_wallet_wallet_id: String,
+    /// Passphrase for the wallet
+    #[arg(long, env = "NPRISM_CARDANO_WALLET_PASSPHRASE")]
+    pub cardano_wallet_passphrase: String,
+    /// Payment address for making transaction
+    #[arg(long, env = "NPRISM_CARDANO_WALLET_PAYMENT_ADDR")]
+    pub cardano_wallet_payment_addr: String,
 }
 
 #[derive(Clone, ValueEnum)]

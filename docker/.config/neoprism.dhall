@@ -60,7 +60,8 @@ let makeIndexerNodeService =
                   options.confirmationBlocks
               # merge
                   { Relay =
-                      \(addr : Text) -> toMap { NPRISM_CARDANO_RELAY = addr }
+                      \(addr : Text) ->
+                        toMap { NPRISM_CARDANO_RELAY_ADDR = addr }
                   , DbSync =
                       \(url : Text) -> toMap { NPRISM_CARDANO_DBSYNC_URL = url }
                   }

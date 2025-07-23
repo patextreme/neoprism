@@ -21,7 +21,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
-use crate::cli::{DbArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs};
+use crate::cli::{DbArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs};
 
 mod app;
 mod cli;
@@ -89,7 +89,7 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
 
 async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db).await;
-    let dlt_sink = init_dlt_sink();
+    let dlt_sink = init_dlt_sink(&args.dlt_sink);
     let app_state = AppState {
         pg_pool: db.pool.clone(),
         run_mode: RunMode::Submitter,
@@ -104,7 +104,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db).await;
     let network = args.dlt_source.cardano_network.clone().into();
     let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
-    let dlt_sink = init_dlt_sink();
+    let dlt_sink = init_dlt_sink(&args.dlt_sink);
     let app_state = AppState {
         pg_pool: db.pool.clone(),
         run_mode: RunMode::Standalone,
@@ -153,7 +153,7 @@ async fn init_dlt_source(
     network: &NetworkIdentifier,
     db: &PostgresDb,
 ) -> Option<tokio::sync::watch::Receiver<Option<DltCursor>>> {
-    if let Some(address) = &dlt_args.cardano_relay {
+    if let Some(address) = &dlt_args.cardano_relay_addr {
         tracing::info!(
             "Starting DLT sync worker on {} from cardano address {}",
             network,
@@ -191,11 +191,12 @@ async fn init_dlt_source(
     }
 }
 
-fn init_dlt_sink() -> Arc<dyn DltSink> {
+fn init_dlt_sink(dlt_args: &DltSinkArgs) -> Arc<dyn DltSink> {
+    // TODO: use value from CLI
     Arc::new(CardanoWalletSink::new(
-        "http://localhost:8090/v2".to_string(),
-        "abc".to_string(),
-        "super_secret".to_string(),
-        "addr1234".to_string(),
+        dlt_args.cardano_wallet_base_url.to_string(),
+        dlt_args.cardano_wallet_wallet_id.to_string(),
+        dlt_args.cardano_wallet_passphrase.to_string(),
+        dlt_args.cardano_wallet_payment_addr.to_string(),
     ))
 }
