@@ -4,5 +4,5 @@ use identus_did_prism::prelude::SignedPrismOperation;
 pub trait ScheduledOperationRepo {
     type Error: std::error::Error;
 
-    async fn get_unpublished_operations(&self) -> Result<Vec<SignedPrismOperation>, Self::Error>;
+    async fn get_staging_operations(&self) -> Result<Vec<SignedPrismOperation>, Self::Error>;
 }

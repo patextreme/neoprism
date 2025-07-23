@@ -21,7 +21,7 @@ pub struct StagingOperation {
     pub id: Uuid,
     pub signed_operation: HexStrBytes,
     #[lazybe(created_at)]
-    pub submitted_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 }
 
 impl ValidationHook for StagingOperation {
@@ -48,5 +48,5 @@ pub struct SubmittedOperation {
     pub id: Uuid,
     pub signed_operation: HexStrBytes,
     #[lazybe(created_at)]
-    pub submitted_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 }
