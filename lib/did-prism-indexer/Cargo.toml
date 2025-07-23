@@ -22,7 +22,6 @@ protobuf = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, optional = true }
 sqlx = { workspace = true, optional = true, features = ["postgres", "chrono"] }
-strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["sync", "time", "rt"] }
 tracing = { workspace = true }
 uuid = { workspace = true }

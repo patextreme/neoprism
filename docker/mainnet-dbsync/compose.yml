@@ -16,12 +16,14 @@ services:
       - "5432:5432"
     restart: always
   neoprism-indexer:
+    command:
+      - indexer
     depends_on:
       db:
         condition: service_healthy
     environment:
+      NPRISM_CARDANO_DBSYNC_URL: "<DBSYNC_URL>"
       NPRISM_CARDANO_NETWORK: mainnet
-      NPRISM_DBSYNC_URL: "<TODO>"
       NPRISM_DB_URL: "postgres://postgres:postgres@db:5432/postgres"
       RUST_LOG: "oura=warn,tracing::span=warn,info"
     image: hyperledgeridentus/identus-neoprism:0.2.0

@@ -25,7 +25,7 @@ let
         find . | grep '\.dhall$' | xargs -I _ bash -c "echo running dhall format on _ && dhall format _"
         cargo fmt
 
-        cd "${rootDir}/lib/indexer-storage/migrations"
+        cd "${rootDir}/lib/node-storage/migrations"
         sqlfluff fix .
         sqlfluff lint .
       '';
@@ -34,7 +34,7 @@ let
     buildAssets = pkgs.writeShellApplication {
       name = "buildAssets";
       text = ''
-        cd "${rootDir}/service/indexer-node"
+        cd "${rootDir}/bin/neoprism-node"
         tailwindcss -i tailwind.css -o ./assets/styles.css
       '';
     };
@@ -101,7 +101,8 @@ let
       text = ''
         cd "${rootDir}"
         ${buildAssets}/bin/buildAssets
-        cargo run --bin indexer-node -- --db-url postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName} "$@"
+        export NPRISM_DB_URL="postgres://${localDb.username}:${localDb.password}@localhost:${toString localDb.port}/${localDb.dbName}"
+        cargo run --bin neoprism-node -- "$@"
       '';
     };
   };
@@ -117,7 +118,6 @@ pkgs.mkShell {
       less
       ncurses
       protobuf
-      watchexec
       which
       # config
       dhall

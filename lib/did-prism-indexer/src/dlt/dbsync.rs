@@ -8,11 +8,11 @@ use tokio::task::JoinHandle;
 
 use crate::DltSource;
 use crate::dlt::common::CursorPersistWorker;
-use crate::dlt::dbsync::model::{BlockTimeProjection, MetadataProjection};
+use crate::dlt::dbsync::models::{BlockTimeProjection, MetadataProjection};
 use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
 
-mod model {
+mod models {
     use std::str::FromStr;
 
     use chrono::{DateTime, Utc};
@@ -269,7 +269,7 @@ impl DbSyncStreamWorker {
             HexStr::from(&row.block_hash).to_string(),
         );
 
-        let parsed_prism_object = model::parse_metadata_projection(row);
+        let parsed_prism_object = models::parse_metadata_projection(row);
         match parsed_prism_object {
             Ok(prism_object) => event_tx.send(prism_object).await.map_err(|e| DltError::EventHandling {
                 source: e.to_string().into(),

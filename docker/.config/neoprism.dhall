@@ -7,6 +7,7 @@ let IndexerNodeService =
           { image : Text
           , restart : Text
           , ports : List Text
+          , command : List Text
           , depends_on : Prelude.Map.Type Text { condition : Text }
           , environment : Prelude.Map.Type Text Text
           }
@@ -18,18 +19,33 @@ let IndexerNodeService =
         }
       }
 
+let DltSource = < Relay : Text | DbSync : Text >
+
+let DltSink =
+      { Type =
+          { walletBaseUrl : Text
+          , walletId : Text
+          , walletPassphrase : Text
+          , walletPaymentAddress : Text
+          }
+      , default = {=}
+      }
+
 let Options =
       { Type =
-          { extraEnvs : Prelude.Map.Type Text Text
-          , hostPort : Natural
+          { hostPort : Natural
           , dbHost : Text
           , network : Text
+          , dltSource : DltSource
+          , dltSink : Optional DltSink.Type
+          , confirmationBlocks : Optional Natural
           }
       , default =
         { hostPort = 8080
         , dbHost = "db"
         , network = "mainnet"
-        , extraEnvs = [] : Prelude.Map.Type Text Text
+        , dltSink = None DltSink.Type
+        , confirmationBlocks = None Natural
         }
       }
 
@@ -43,9 +59,48 @@ let makeIndexerNodeService =
                 , NPRISM_CARDANO_NETWORK = options.network
                 }
 
+        let extraEnvs =
+                merge
+                  { None = [] : Prelude.Map.Type Text Text
+                  , Some =
+                      \(n : Natural) ->
+                        toMap
+                          { NPRISM_CONFIRMATION_BLOCKS = Prelude.Natural.show n
+                          }
+                  }
+                  options.confirmationBlocks
+              # merge
+                  { Relay =
+                      \(addr : Text) ->
+                        toMap { NPRISM_CARDANO_RELAY_ADDR = addr }
+                  , DbSync =
+                      \(url : Text) -> toMap { NPRISM_CARDANO_DBSYNC_URL = url }
+                  }
+                  options.dltSource
+              # merge
+                  { None = [] : Prelude.Map.Type Text Text
+                  , Some =
+                      \(sink : DltSink.Type) ->
+                        toMap
+                          { NPRISM_CARDANO_WALLET_BASE_URL = sink.walletBaseUrl
+                          , NPRISM_CARDANO_WALLET_WALLET_ID = sink.walletId
+                          , NPRISM_CARDANO_WALLET_PASSPHRASE =
+                              sink.walletPassphrase
+                          , NPRISM_CARDANO_WALLET_PAYMENT_ADDR =
+                              sink.walletPaymentAddress
+                          }
+                  }
+                  options.dltSink
+
+        let command =
+              if    Prelude.Optional.null DltSink.Type options.dltSink
+              then  "indexer"
+              else  "standalone"
+
         in  IndexerNodeService::{
             , ports = [ "${Prelude.Natural.show options.hostPort}:8080" ]
-            , environment = mandatoryIndexerNodeEnvs # options.extraEnvs
+            , environment = mandatoryIndexerNodeEnvs # extraEnvs
+            , command = [ command ]
             , depends_on =
               [ { mapKey = options.dbHost
                 , mapValue.condition = "service_healthy"
@@ -53,4 +108,4 @@ let makeIndexerNodeService =
               ]
             }
 
-in  { Options, makeIndexerNodeService }
+in  { Options, makeIndexerNodeService, DltSource, DltSink }

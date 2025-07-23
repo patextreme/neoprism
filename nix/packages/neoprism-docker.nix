@@ -18,7 +18,7 @@ dockerTools.buildLayeredImage {
       "RUST_LOG=info,oura=warn"
       "NPRISM_ASSETS_PATH=/assets"
     ];
-    Entrypoint = [ "/bin/indexer-node" ];
+    Entrypoint = [ "/bin/neoprism-node" ];
     Cmd = [ ];
     WorkingDir = "/";
   };

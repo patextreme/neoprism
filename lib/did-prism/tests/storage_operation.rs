@@ -4,11 +4,13 @@ use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
 use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::did::operation::StorageData;
 use identus_did_prism::did::{CanonicalPrismDid, PrismDidOps};
+use identus_did_prism::proto;
 use identus_did_prism::protocol::resolver;
-use identus_did_prism::{proto, test_utils};
 
 const VDR_KEY: [u8; 32] = [2; 32];
 const VDR_KEY_NAME: &str = "vdr-0";
+
+mod test_utils;
 
 #[test]
 fn create_storage_entry() {
