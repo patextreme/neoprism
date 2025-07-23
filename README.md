@@ -100,26 +100,26 @@ These are commands you can run outside the development shell
 
 Assuming you are in the development shell, these are frequently used commands.
 
-| command                        | description                                    |
-|--------------------------------|------------------------------------------------|
-| `npm install`                  | Install the npm dependencies (first time only) |
-| `cargo build`                  | Build the cargo workspace                      |
-| `cargo clean`                  | Clean the cargo workspace                      |
-| `cargo r -p nprism-node -- -h` | See `nprism-node` service CLI options          |
-| `cargo test --all-features`    | Run tests which enable all crate features      |
+| command                          | description                                    |
+|----------------------------------|------------------------------------------------|
+| `npm install`                    | Install the npm dependencies (first time only) |
+| `cargo build`                    | Build the cargo workspace                      |
+| `cargo clean`                    | Clean the cargo workspace                      |
+| `cargo r -p neoprism-node -- -h` | See `nprism-node` service CLI options          |
+| `cargo test --all-features`      | Run tests which enable all crate features      |
 
 And these are some scripts provided by the shell to automate local dev workflow
 
-| command                         | description                                                       |
-|---------------------------------|-------------------------------------------------------------------|
-| `format`                        | Run formatter on everything                                       |
-| `build`                         | Building the whole project                                        |
-| `buildAssets`                   | Building the WebUI assets (css, javascript, static assets)        |
-| `buildConfig`                   | Building the generated config                                     |
-| `dbUp`                          | Spin up the local database                                        |
-| `dbDown`                        | Tear down the local database                                      |
-| `pgDump`                        | Dump the local database to `postgres.dump` file                   |
-| `pgRestore`                     | Restore the local database from `postgres.dump` file              |
-| `runNode`                       | Run the `nprism-node` connecting to the local database            |
-| `runNode --cardano-addr <ADDR>` | Run the `nprism-node` connecting to the cardano relay at `ADDR`   |
-| `runNode --dbsync-url <URL>`    | Run the `nprism-node` connecting to the DB Sync instance at `URL` |
+| command                                 | description                                                       |
+|-----------------------------------------|-------------------------------------------------------------------|
+| `format`                                | Run formatter on everything                                       |
+| `build`                                 | Building the whole project                                        |
+| `buildAssets`                           | Building the WebUI assets (css, javascript, static assets)        |
+| `buildConfig`                           | Building the generated config                                     |
+| `dbUp`                                  | Spin up the local database                                        |
+| `dbDown`                                | Tear down the local database                                      |
+| `pgDump`                                | Dump the local database to `postgres.dump` file                   |
+| `pgRestore`                             | Restore the local database from `postgres.dump` file              |
+| `runNode indexer`                       | Run the `nprism-node` connecting to the local database            |
+| `runNode indexer --cardano-addr <ADDR>` | Run the `nprism-node` connecting to the cardano relay at `ADDR`   |
+| `runNode indexer --dbsync-url <URL>`    | Run the `nprism-node` connecting to the DB Sync instance at `URL` |
