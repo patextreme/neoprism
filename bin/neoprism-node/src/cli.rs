@@ -2,7 +2,7 @@ use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use identus_did_prism_indexer::dlt::NetworkIdentifier;
+use identus_did_prism::dlt::NetworkIdentifier;
 
 #[derive(Parser)]
 #[command(version)]
@@ -83,7 +83,7 @@ pub struct DbArgs {
 pub struct DltSourceArgs {
     /// A Cardano network the node is syncing from.
     #[arg(long, env = "NPRISM_CARDANO_NETWORK")]
-    pub cardano_network: NetworkIdentifierOptions,
+    pub cardano_network: NetworkIdentifierCliOption,
     /// Address of the Cardano relay node to sync from.
     /// If provided, it will sync events from the Cardano relay node.
     /// (e.g. backbone.mainnet.cardanofoundation.org:3001)
@@ -116,18 +116,18 @@ pub struct DltSinkArgs {
 }
 
 #[derive(Clone, ValueEnum)]
-pub enum NetworkIdentifierOptions {
+pub enum NetworkIdentifierCliOption {
     Mainnet,
     Preprod,
     Preview,
 }
 
-impl From<NetworkIdentifierOptions> for NetworkIdentifier {
-    fn from(value: NetworkIdentifierOptions) -> Self {
+impl From<NetworkIdentifierCliOption> for NetworkIdentifier {
+    fn from(value: NetworkIdentifierCliOption) -> Self {
         match value {
-            NetworkIdentifierOptions::Mainnet => NetworkIdentifier::Mainnet,
-            NetworkIdentifierOptions::Preprod => NetworkIdentifier::Preprod,
-            NetworkIdentifierOptions::Preview => NetworkIdentifier::Preview,
+            NetworkIdentifierCliOption::Mainnet => NetworkIdentifier::Mainnet,
+            NetworkIdentifierCliOption::Preprod => NetworkIdentifier::Preprod,
+            NetworkIdentifierCliOption::Preview => NetworkIdentifier::Preview,
         }
     }
 }

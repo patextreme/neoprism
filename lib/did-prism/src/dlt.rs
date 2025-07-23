@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use strum::VariantArray;
 
 use crate::proto::prism::PrismObject;
 
@@ -84,5 +85,21 @@ impl TxId {
         let digest = Sha256Digest::from_bytes(&bytes.to_bytes())
             .map_err(|e| serde::de::Error::custom(format!("Value is not a valid digest: {e}")))?;
         Ok(digest)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
+pub enum NetworkIdentifier {
+    #[strum(serialize = "mainnet")]
+    Mainnet,
+    #[strum(serialize = "preprod")]
+    Preprod,
+    #[strum(serialize = "preview")]
+    Preview,
+}
+
+impl NetworkIdentifier {
+    pub fn variants() -> &'static [Self] {
+        Self::VARIANTS
     }
 }

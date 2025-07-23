@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::sync::mpsc::RecvTimeoutError;
 
 use identus_apollo::hex::HexStr;
-use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
+use identus_did_prism::dlt::{DltCursor, NetworkIdentifier, PublishedPrismObject};
 use identus_did_prism::location;
 use oura::model::{Event, EventData};
 use oura::pipelining::{SourceProvider, StageReceiver};
@@ -14,7 +14,6 @@ use tokio::sync::{mpsc, watch};
 
 use super::error::DltError;
 use crate::DltSource;
-use crate::dlt::NetworkIdentifier;
 use crate::dlt::common::CursorPersistWorker;
 use crate::repo::DltCursorRepo;
 
@@ -129,18 +128,16 @@ mod models {
     }
 }
 
-impl NetworkIdentifier {
-    fn magic_args(&self) -> MagicArg {
-        let chain_magic = MagicArg::from_str(&self.to_string());
-        chain_magic.expect("The chain magic value cannot be parsed")
-    }
+fn magic_args(network: &NetworkIdentifier) -> MagicArg {
+    let chain_magic = MagicArg::from_str(&network.to_string());
+    chain_magic.expect("The chain magic value cannot be parsed")
+}
 
-    fn chain_wellknown_info(&self) -> ChainWellKnownInfo {
-        match self {
-            NetworkIdentifier::Mainnet => ChainWellKnownInfo::mainnet(),
-            NetworkIdentifier::Preprod => ChainWellKnownInfo::preprod(),
-            NetworkIdentifier::Preview => ChainWellKnownInfo::preview(),
-        }
+fn chain_wellknown_info(network: &NetworkIdentifier) -> ChainWellKnownInfo {
+    match network {
+        NetworkIdentifier::Mainnet => ChainWellKnownInfo::mainnet(),
+        NetworkIdentifier::Preprod => ChainWellKnownInfo::preprod(),
+        NetworkIdentifier::Preview => ChainWellKnownInfo::preview(),
     }
 }
 
@@ -206,7 +203,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
         #[allow(deprecated)]
         let config = Config {
             address: AddressArg(oura::sources::BearerKind::Tcp, remote_addr.to_string()),
-            magic: Some(chain.magic_args()),
+            magic: Some(magic_args(chain)),
             since: None,
             intersect: Some(intersect),
             well_known: None,
@@ -220,7 +217,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
             }),
             finalize: None,
         };
-        let utils = Utils::new(chain.chain_wellknown_info());
+        let utils = Utils::new(chain_wellknown_info(chain));
         let with_utils = WithUtils::new(config, Arc::new(utils));
         let (sync_cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
