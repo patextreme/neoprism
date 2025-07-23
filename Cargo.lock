@@ -2155,7 +2155,6 @@ dependencies = [
  "serde",
  "sqlx",
  "tracing",
- "utoipa",
  "uuid",
 ]
 
@@ -3990,7 +3989,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.101",
- "uuid",
 ]
 
 [[package]]

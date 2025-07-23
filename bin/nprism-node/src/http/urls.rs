@@ -11,15 +11,20 @@ typed_uri!(AssetStyleSheet, "assets" / "styles.css");
 typed_uri!(Home, "");
 typed_uri!(Swagger, "swagger-ui");
 
-// api
-typed_uri!(ApiDid, "api" / "dids" / (did: String));
+// system
 typed_uri!(ApiHealth, "api" / "_system" / "health");
 typed_uri!(ApiAppMeta, "api" / "_system" / "metadata");
 
-// resolver
+// indexer
+typed_uri!(ApiDid, "api" / "dids" / (did: String));
+
+// submitter
+typed_uri!(ApiSignedOpSubmissions, "api" / "signed-operation-submissions");
+
+// UI resolver
 typed_uri!(Resolver, "resolver" ? Option<DidQuery>);
 
-// explorer
+// UI explorer
 typed_uri!(Explorer, "explorer" ? Option<PageQuery>);
 typed_uri!(ExplorerDltCursor, "explorer" / "dlt-cursor");
 typed_uri!(ExplorerDidList, "explorer" / "did-list" ? Option<PageQuery>);
