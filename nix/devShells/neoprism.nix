@@ -117,8 +117,9 @@ pkgs.mkShell {
       git-cliff
       less
       ncurses
+      openssl
+      pkg-config
       protobuf
-      watchexec
       which
       # config
       dhall

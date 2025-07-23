@@ -1,4 +1,5 @@
 use axum::Json;
+use identus_apollo::hash::Sha256Digest;
 use utoipa::OpenApi;
 
 use crate::http::features::api::submitter::models::{
@@ -12,19 +13,20 @@ use crate::http::urls;
 pub struct SubmitterOpenApiDoc;
 
 mod models {
+    use identus_did_prism_submitter::dlt::TxId;
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
 
-    use crate::http::features::api::models::HexStrBytes;
+    use crate::http::features::api::models::SignedOperationHexStr;
 
     #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
     pub struct SignedOperationSubmissionRequest {
-        pub signed_operations: Vec<HexStrBytes>,
+        pub signed_operations: Vec<SignedOperationHexStr>,
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
     pub struct SignedOperationSubmissionResponse {
-        pub tx_id: String,
+        pub tx_id: TxId,
     }
 }
 
@@ -40,7 +42,6 @@ mod models {
 pub async fn submit_signed_operations(
     _: Json<SignedOperationSubmissionRequest>,
 ) -> Json<SignedOperationSubmissionResponse> {
-    Json(SignedOperationSubmissionResponse {
-        tx_id: "TODO".to_string(),
-    })
+    let digest = Sha256Digest::from_bytes(&[0; 32]).unwrap();
+    Json(SignedOperationSubmissionResponse { tx_id: digest.into() })
 }

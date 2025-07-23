@@ -1,7 +1,8 @@
 use identus_did_prism::prelude::SignedPrismOperation;
 
-pub mod repo;
+pub mod dlt;
 
+#[async_trait::async_trait]
 pub trait DltSink {
-    fn publish(&self, ops: Vec<SignedPrismOperation>) -> Result<(), String>;
+    async fn publish(&self, ops: Vec<SignedPrismOperation>) -> Result<(), String>;
 }

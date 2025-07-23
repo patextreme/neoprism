@@ -36,6 +36,10 @@ identus-apollo = { workspace = true, features = ["hex", "jwk"] }
 identus-did-core = { workspace = true, features = ["openapi"] }
 identus-did-prism = { workspace = true }
 identus-did-prism-indexer = { workspace = true, features = ["oura", "dbsync"] }
+identus-did-prism-submitter = { workspace = true, features = [
+  "cardano-wallet",
+  "openapi",
+] }
 node-storage = { workspace = true }
 
 [dev-dependencies]

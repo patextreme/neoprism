@@ -6,6 +6,10 @@ license.workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
+derive_more = { workspace = true, features = ["from", "debug", "display"] }
+serde = { workspace = true, features = ["derive"] }
+reqwest = { workspace = true, optional = true, features = ["json"] }
+utoipa = { workspace = true, optional = true }
 
 identus-apollo = { workspace = true, features = [
   "hash",
@@ -18,3 +22,5 @@ identus-did-prism = { workspace = true }
 
 [features]
 default = []
+cardano-wallet = ["dep:reqwest"]
+openapi = ["dep:utoipa"]
