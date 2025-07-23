@@ -1,7 +1,7 @@
 use identus_did_prism::did::Error as DidError;
 use identus_did_prism::did::error::DidSyntaxError;
 
-pub mod entity;
+mod entity;
 mod pg;
 
 pub use pg::PostgresDb;
