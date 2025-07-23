@@ -4,6 +4,7 @@ let CardanoWalletService =
       { Type =
           { image : Text
           , restart : Text
+          , ports : Optional (List Text)
           , volumes : List Text
           , entrypoint : List Text
           , command : List Text
@@ -28,12 +29,24 @@ let CardanoWalletService =
       }
 
 let Options =
-      { Type = { testnetVolume : Text, cardanoNodeHost : Text }, default = {=} }
+      { Type =
+          { hostPort : Optional Natural
+          , testnetVolume : Text
+          , cardanoNodeHost : Text
+          }
+      , default.hostPort = None Natural
+      }
 
 let makeWalletService =
       \(options : Options.Type) ->
         CardanoWalletService::{
         , volumes = [ "${options.testnetVolume}:/node/testnet" ]
+        , ports =
+            Prelude.Optional.map
+              Natural
+              (List Text)
+              (\(n : Natural) -> [ Prelude.Natural.show n ])
+              options.hostPort
         , depends_on =
           [ { mapKey = options.cardanoNodeHost
             , mapValue.condition = "service_healthy"

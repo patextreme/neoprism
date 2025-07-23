@@ -73,6 +73,8 @@ services:
         condition: service_healthy
     entrypoint: []
     image: cardanofoundation/cardano-wallet:2025.3.31
+    ports:
+      - '8090'
     restart: always
     volumes:
       - node-testnet:/node/testnet

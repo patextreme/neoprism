@@ -26,7 +26,7 @@ let DltSink =
           { walletBaseUrl : Text
           , walletId : Text
           , walletPassphrase : Text
-          , walletPaymentAddr : Text
+          , walletPaymentAddress : Text
           }
       , default = {=}
       }
@@ -87,7 +87,7 @@ let makeIndexerNodeService =
                           , NPRISM_CARDANO_WALLET_PASSPHRASE =
                               sink.walletPassphrase
                           , NPRISM_CARDANO_WALLET_PAYMENT_ADDR =
-                              sink.walletPaymentAddr
+                              sink.walletPaymentAddress
                           }
                   }
                   options.dltSink

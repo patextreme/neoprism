@@ -53,13 +53,24 @@ in  { mainnet-dbsync.services
 
         let cardanoNodeHost = "cardano-node"
 
+        let walletId = "9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d"
+
+        let walletPassphrase = "super_secret"
+
+        let walletPaymentAddress =
+              "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
+
         in  { services =
               { cardano-node =
                   cardanoNode.makeNodeService
                     cardanoNode.Options::{ networkMagic, testnetVolume }
               , cardano-wallet =
                   cardanoWallet.makeWalletService
-                    cardanoWallet.Options::{ testnetVolume, cardanoNodeHost }
+                    cardanoWallet.Options::{
+                    , testnetVolume
+                    , cardanoNodeHost
+                    , hostPort = Some 8090
+                    }
               , bootstrap-testnet =
                   cardanoNode.makeBootstrapService
                     cardanoNode.BootstrapOptions::{
@@ -67,9 +78,8 @@ in  { mainnet-dbsync.services
                     , testnetVolume
                     , cardanoNodeHost
                     , walletBaseUrl = "http://cardano-wallet:8090/v2"
-                    , walletPassphrase = "super_secret"
-                    , walletPaymentAddress =
-                        "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
+                    , walletPassphrase
+                    , walletPaymentAddress
                     , initWalletHurlFile = "./init-wallet.hurl"
                     }
               , cardano-dbsync =
@@ -90,10 +100,9 @@ in  { mainnet-dbsync.services
                           "postgresql://postgres:postgres@db-dbsync:5432/postgres"
                     , dltSink = Some neoprism.DltSink::{
                       , walletBaseUrl = "http://cardano-wallet:8090/v2"
-                      , walletId = "9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d"
-                      , walletPassphrase = "super_secret"
-                      , walletPaymentAddr =
-                          "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
+                      , walletId
+                      , walletPassphrase
+                      , walletPaymentAddress
                       }
                     }
               , identus-prism-node =
@@ -103,10 +112,9 @@ in  { mainnet-dbsync.services
                     , dbSyncDbHost = "db-dbsync"
                     , bootstrapTestnetHost = "bootstrap-testnet"
                     , walletApiHost = "cardano-wallet"
-                    , walletPassphrase = "super_secret"
-                    , walletId = "9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d"
-                    , walletPaymentAddress =
-                        "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
+                    , walletPassphrase
+                    , walletId
+                    , walletPaymentAddress
                     }
               , identus-cloud-agent =
                   cloudAgent.makeCloudAgentService
