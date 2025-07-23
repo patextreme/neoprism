@@ -91,6 +91,8 @@ services:
         - pg_isready -U postgres
       timeout: "5s"
     image: postgres:16
+    ports:
+      - "5435:5432"
     restart: always
     volumes:
       - "./postgres/init_script.sh:/docker-entrypoint-initdb.d/init-script.sh"
@@ -140,6 +142,8 @@ services:
         - pg_isready -U postgres
       timeout: "5s"
     image: postgres:16
+    ports:
+      - "5434:5432"
     restart: always
   identus-cloud-agent:
     depends_on:

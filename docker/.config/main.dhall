@@ -122,13 +122,14 @@ in  { mainnet-dbsync.services
                     , dbHost = "db-cloud-agent"
                     , prismNodeHost = "identus-prism-node"
                     }
-              , db-prism-node = db.makeDbService db.Options::{=}
               , db-neoprism =
                   db.makeDbService db.Options::{ hostPort = Some 5432 }
               , db-dbsync =
                   db.makeDbService db.Options::{ hostPort = Some 5433 }
+              , db-prism-node =
+                  db.makeDbService db.Options::{ hostPort = Some 5434 }
               , db-cloud-agent =
-                      db.makeDbService db.Options::{=}
+                      db.makeDbService db.Options::{ hostPort = Some 5435 }
                   //  { environment = toMap
                           { POSTGRES_MULTIPLE_DATABASES = "pollux,connect,agent"
                           , POSTGRES_USER = "postgres"
