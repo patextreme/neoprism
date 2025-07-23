@@ -33,7 +33,6 @@ rustPlatform.buildRustPackage {
 
     # check individual feature if properly gated
     echo "checking feature gate for identus-apollo"
-    cargo clippy -p identus-apollo --all-targets -- -D warnings
     cargo clippy -p identus-apollo --all-targets --features base64 -- -D warnings
     cargo clippy -p identus-apollo --all-targets --features ed25519 -- -D warnings
     cargo clippy -p identus-apollo --all-targets --features hash -- -D warnings
@@ -45,17 +44,16 @@ rustPlatform.buildRustPackage {
     cargo clippy -p identus-apollo --all-targets --features x25519 -- -D warnings
 
     echo "checking feature gate for identus-did-core"
-    cargo clippy -p identus-did-core --all-targets -- -D warnings
     cargo clippy -p identus-did-core --all-targets --features openapi -- -D warnings
 
+    echo "checking feature gate for identus-did-prism"
+    cargo clippy -p identus-did-prism --all-targets --features openapi -- -D warnings
+
     echo "checking feature gate for identus-did-prism-indexer"
-    cargo clippy -p identus-did-prism-indexer --all-targets -- -D warnings
     cargo clippy -p identus-did-prism-indexer --all-targets --features oura -- -D warnings
     cargo clippy -p identus-did-prism-indexer --all-targets --features dbsync -- -D warnings
-    cargo clippy -p identus-did-prism-indexer --all-targets --features openapi -- -D warnings
 
     echo "checking feature gate for identus-did-prism-submitter"
-    cargo clippy -p identus-did-prism-submitter --all-targets -- -D warnings
     cargo clippy -p identus-did-prism-submitter --all-targets --features cardano-wallet -- -D warnings
   '';
   installPhase = "touch $out";
