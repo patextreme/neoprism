@@ -4,7 +4,12 @@ use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Clone, Serialize, Deserialize, derive_more::Debug, derive_more::Display, derive_more::From)]
+#[cfg(feature = "cardano-wallet")]
+pub mod cardano_wallet;
+
+#[derive(
+    Clone, PartialEq, Eq, Hash, Serialize, Deserialize, derive_more::Debug, derive_more::Display, derive_more::From,
+)]
 #[display("{}", identus_apollo::hex::HexStr::from(self.0.as_bytes()))]
 #[debug("{}", identus_apollo::hex::HexStr::from(self.0.as_bytes()))]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
@@ -32,6 +37,3 @@ impl TxId {
         Ok(digest)
     }
 }
-
-#[cfg(feature = "cardano-wallet")]
-pub mod cardano_wallet;

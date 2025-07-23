@@ -18,7 +18,7 @@ use crate::dlt::NetworkIdentifier;
 use crate::dlt::common::CursorPersistWorker;
 use crate::repo::DltCursorRepo;
 
-mod model {
+mod models {
     use chrono::{DateTime, Utc};
     use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject};
     use identus_did_prism::prelude::*;
@@ -337,7 +337,7 @@ impl OuraStreamWorker {
         let Ok(block_hash) = HexStr::from_str(block_hash_hex) else {
             return;
         };
-        let Ok(timestamp) = model::parse_oura_timestamp(&event.context) else {
+        let Ok(timestamp) = models::parse_oura_timestamp(&event.context) else {
             return;
         };
         let cursor = DltCursor {
@@ -363,7 +363,7 @@ impl OuraStreamWorker {
             context.block_hash.as_deref().unwrap_or_default(),
         );
 
-        let parsed_prism_object = model::parse_oura_event(context, meta);
+        let parsed_prism_object = models::parse_oura_event(context, meta);
         match parsed_prism_object {
             Ok(prism_object) => self
                 .event_tx
