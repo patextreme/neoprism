@@ -41,6 +41,3 @@ identus-did-prism-submitter = { workspace = true, features = [
   "openapi",
 ] }
 node-storage = { workspace = true }
-
-[dev-dependencies]
-identus-did-prism = { workspace = true, features = ["test-utils"] }
