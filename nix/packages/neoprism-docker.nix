@@ -1,15 +1,17 @@
 {
+  curl,
   dockerTools,
-  ui-assets,
   neoprism-bin,
-  version,
   tagSuffix ? "",
+  ui-assets,
+  version,
 }:
 
 dockerTools.buildLayeredImage {
   name = "identus-neoprism";
   tag = "${version}${tagSuffix}";
   contents = [
+    curl
     neoprism-bin
     ui-assets
   ];

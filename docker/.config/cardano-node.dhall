@@ -20,9 +20,9 @@ let CardanoNodeService =
         , command = [ "initTestnet" ]
         , healthcheck =
           { test = [ "CMD-SHELL", "cardano-cli query tip" ]
-          , interval = "5s"
+          , interval = "2s"
           , timeout = "5s"
-          , retries = 10
+          , retries = 30
           }
         }
       }

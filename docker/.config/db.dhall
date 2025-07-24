@@ -18,10 +18,10 @@ let DbService =
         , restart = "always"
         , ports = None (List Text)
         , healthcheck =
-          { test = [ "CMD-SHELL", "pg_isready -U postgres" ]
-          , interval = "5s"
+          { test = [ "CMD", "pg_isready", "-U", "postgres" ]
+          , interval = "2s"
           , timeout = "5s"
-          , retries = 10
+          , retries = 30
           }
         , environment = toMap
             { POSTGRES_DB = "postgres"
