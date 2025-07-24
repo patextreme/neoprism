@@ -18,7 +18,7 @@ in  { mainnet-dbsync.services
       =
       { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
-          neoprism.makeIndexerNodeService
+          neoprism.makeNodeService
             neoprism.Options::{
             , dltSource = neoprism.DltSource.DbSync "<DBSYNC_URL>"
             }
@@ -27,7 +27,7 @@ in  { mainnet-dbsync.services
       =
       { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
-          neoprism.makeIndexerNodeService
+          neoprism.makeNodeService
             neoprism.Options::{
             , dltSource =
                 neoprism.DltSource.Relay
@@ -38,7 +38,7 @@ in  { mainnet-dbsync.services
       =
       { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
-          neoprism.makeIndexerNodeService
+          neoprism.makeNodeService
             neoprism.Options::{
             , network = "preprod"
             , dltSource =
@@ -91,7 +91,7 @@ in  { mainnet-dbsync.services
                     , configFile = "./dbsync-config.yaml"
                     }
               , neoprism-standalone =
-                  neoprism.makeIndexerNodeService
+                  neoprism.makeNodeService
                     neoprism.Options::{
                     , dbHost = "db-neoprism"
                     , confirmationBlocks = Some 1

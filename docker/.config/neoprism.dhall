@@ -49,7 +49,7 @@ let Options =
         }
       }
 
-let makeIndexerNodeService =
+let makeNodeService =
       \(options : Options.Type) ->
         let mandatoryIndexerNodeEnvs =
               toMap
@@ -108,4 +108,4 @@ let makeIndexerNodeService =
               ]
             }
 
-in  { Options, makeIndexerNodeService, DltSource, DltSink }
+in  { Options, makeNodeService, DltSource, DltSink }
