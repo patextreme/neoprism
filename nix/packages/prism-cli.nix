@@ -13,13 +13,13 @@
 let
   cliJar = mkSbtDerivation rec {
     pname = "prism-cli";
-    version = "v0.1.0-M27";
+    version = "3f2afc43969cda5cd2d8f2064c10312ee2718423"; # master
     depsSha256 = "sha256-L8cGfwptKpQVxrMpXZ3HiAjWcHQrT5uHbpLCzd8vczw=";
     src = fetchFromGitHub {
       owner = "FabioPinheiro";
       repo = "scala-did";
       rev = version;
-      hash = "sha256-gEnp7gHRixnA9lSNIL6wxvQm5WPTctqnghcEOX3zL5Y=";
+      hash = "sha256-QVBbBGeqaI+2vyiaPQZ7zX8P0cclK2urXRQmHvQcpt8=";
     };
 
     nativeBuildInputs = [
