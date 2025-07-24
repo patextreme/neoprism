@@ -49,8 +49,8 @@ services:
       CARDANO_NODE_NETWORK_ID: '42'
       CARDANO_NODE_SOCKET_PATH: /node/testnet/socket/node1/sock
     healthcheck:
-      interval: "5s"
-      retries: 10
+      interval: "2s"
+      retries: 30
       test:
         - CMD-SHELL
         - cardano-cli query tip
@@ -84,11 +84,13 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
     healthcheck:
-      interval: "5s"
-      retries: 10
+      interval: "2s"
+      retries: 30
       test:
-        - CMD-SHELL
-        - pg_isready -U postgres
+        - CMD
+        - pg_isready
+        - "-U"
+        - postgres
       timeout: "5s"
     image: postgres:16
     ports:
@@ -103,11 +105,13 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
     healthcheck:
-      interval: "5s"
-      retries: 10
+      interval: "2s"
+      retries: 30
       test:
-        - CMD-SHELL
-        - pg_isready -U postgres
+        - CMD
+        - pg_isready
+        - "-U"
+        - postgres
       timeout: "5s"
     image: postgres:16
     ports:
@@ -119,11 +123,13 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
     healthcheck:
-      interval: "5s"
-      retries: 10
+      interval: "2s"
+      retries: 30
       test:
-        - CMD-SHELL
-        - pg_isready -U postgres
+        - CMD
+        - pg_isready
+        - "-U"
+        - postgres
       timeout: "5s"
     image: postgres:16
     ports:
@@ -135,11 +141,13 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
     healthcheck:
-      interval: "5s"
-      retries: 10
+      interval: "2s"
+      retries: 30
       test:
-        - CMD-SHELL
-        - pg_isready -U postgres
+        - CMD
+        - pg_isready
+        - "-U"
+        - postgres
       timeout: "5s"
     image: postgres:16
     ports:
@@ -223,6 +231,15 @@ services:
       NPRISM_CONFIRMATION_BLOCKS: '1'
       NPRISM_DB_URL: "postgres://postgres:postgres@db-neoprism:5432/postgres"
       RUST_LOG: "oura=warn,tracing::span=warn,info"
+    healthcheck:
+      interval: "2s"
+      retries: 30
+      test:
+        - CMD
+        - curl
+        - "-f"
+        - http://localhost:8080/api/_system/health
+      timeout: "5s"
     image: hyperledgeridentus/identus-neoprism:0.2.0
     ports:
       - "8080:8080"

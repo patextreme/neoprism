@@ -62,7 +62,7 @@ pub struct ServerArgs {
     #[arg(long, short, env = "NPRISM_PORT", default_value_t = 8080)]
     pub port: u16,
     /// The directory containing the web-ui assets (CSS, Javascripts)
-    #[arg(long, env = "NPRISM_ASSETS_PATH", default_value = "./bin/nprism-node/assets")]
+    #[arg(long, env = "NPRISM_ASSETS_PATH", default_value = "./bin/neoprism-node/assets")]
     pub assets_path: PathBuf,
     /// Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive)
     #[arg(long, env = "NPRISM_CORS_ENABLED")]

@@ -10,12 +10,25 @@ let IndexerNodeService =
           , command : List Text
           , depends_on : Prelude.Map.Type Text { condition : Text }
           , environment : Prelude.Map.Type Text Text
+          , healthcheck :
+              { test : List Text
+              , interval : Text
+              , timeout : Text
+              , retries : Natural
+              }
           }
       , default =
         { image = "hyperledgeridentus/identus-neoprism:${version}"
         , restart = "always"
         , depends_on = [] : Prelude.Map.Type Text { condition : Text }
         , environment = [] : Prelude.Map.Type Text Text
+        , healthcheck =
+          { test =
+            [ "CMD", "curl", "-f", "http://localhost:8080/api/_system/health" ]
+          , interval = "2s"
+          , timeout = "5s"
+          , retries = 30
+          }
         }
       }
 
@@ -49,7 +62,7 @@ let Options =
         }
       }
 
-let makeIndexerNodeService =
+let makeNodeService =
       \(options : Options.Type) ->
         let mandatoryIndexerNodeEnvs =
               toMap
@@ -108,4 +121,4 @@ let makeIndexerNodeService =
               ]
             }
 
-in  { Options, makeIndexerNodeService, DltSource, DltSink }
+in  { Options, makeNodeService, DltSource, DltSink }
