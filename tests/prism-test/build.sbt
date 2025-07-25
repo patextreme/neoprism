@@ -6,6 +6,13 @@ lazy val root = project
     name := "prism-test",
     version := "0.1.0-SNAPSHOT",
     scalaVersion := scala3Version,
+    scalacOptions := Seq(
+      "-Xsource:3",
+      "-feature",
+      "-deprecation",
+      "-unchecked",
+      "-Wunused:all"
+    ),
     Compile / PB.targets := Seq(
       scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
     ),
@@ -19,5 +26,5 @@ lazy val root = project
     ),
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio" % "2.1.20"
-    ),
+    )
   )
