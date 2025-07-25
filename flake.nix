@@ -48,7 +48,7 @@
               cardano-db-sync = cardano-db-sync.packages.${system}.default;
             })
             (_: prev: {
-              pkgsInternal = import ./nix/pkgsInternal{ pkgs = prev; };
+              pkgsInternal = import ./nix/pkgsInternal { pkgs = prev; };
             })
           ];
         };
