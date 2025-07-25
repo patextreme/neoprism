@@ -18,6 +18,7 @@ rec {
   # misc
   ui-assets = pkgs.callPackage ./ui-assets.nix { };
   prism-cli = pkgs.callPackage ./prism-cli.nix { };
+  prism-node-proto-jar = pkgs.callPackage ./prism-node-proto-jar { };
 
   # neoprism binaries
   neoprism-bin = pkgs.callPackage ./neoprism-bin.nix {
