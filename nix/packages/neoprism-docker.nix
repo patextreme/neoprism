@@ -3,7 +3,7 @@
   dockerTools,
   neoprism-bin,
   tagSuffix ? "",
-  ui-assets,
+  neoprism-ui-assets,
   version,
 }:
 
@@ -13,7 +13,7 @@ dockerTools.buildLayeredImage {
   contents = [
     curl
     neoprism-bin
-    ui-assets
+    neoprism-ui-assets
   ];
   config = {
     Env = [

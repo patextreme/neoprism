@@ -16,7 +16,7 @@ let
   };
 in
 stdenv.mkDerivation {
-  name = "ui-assets";
+  name = "neoprism-ui-assets";
   src = ./../..;
   buildInputs = [ tailwindcss_4 ];
   installPhase = ''

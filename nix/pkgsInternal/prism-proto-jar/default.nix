@@ -5,13 +5,13 @@
   git,
   cacert,
   lib,
-  stdenv
+  stdenv,
 }:
 
 mkSbtDerivation rec {
-  pname = "prism-node-client";
+  pname = "prism-proto-jar";
   version = "update-proto";
-  depsSha256 = "sha256-hMDL+/r50NJlaE2O2cz0JlC7MA65BzxFpBqR/CXf67s=";
+  depsSha256 = "sha256-wTfPTgEs6E8YxAfefE1vZ6wOAnTPAFB9kqA6KS1SgOs=";
   src = fetchFromGitHub {
     owner = "hyperledger-identus";
     repo = "cloud-agent";
@@ -36,8 +36,6 @@ mkSbtDerivation rec {
         stdenv.cc.cc
       ]
     }
-    sbt shared/compile
-    sbt sharedCrypto/compile
     sbt prismNodeClient/compile
   '';
 
@@ -47,18 +45,12 @@ mkSbtDerivation rec {
         stdenv.cc.cc
       ]
     }
-    sbt shared/packageBin
-    sbt shared/packageSrc
-    sbt sharedCrypto/packageBin
-    sbt sharedCrypto/packageSrc
     sbt prismNodeClient/packageBin
     sbt prismNodeClient/packageSrc
   '';
 
   installPhase = ''
-    mkdir -p $out
-    cp -r prism-node/client/scala-client/target/scala-3.3.5/*.jar $out/
-    cp -r shared/core/target/*.jar $out/
-    cp -r shared/crypto/target/*.jar $out/
+    mkdir -p $out/jars
+    cp -r prism-node/client/scala-client/target/scala-3.3.5/*.jar $out/jars
   '';
 }
