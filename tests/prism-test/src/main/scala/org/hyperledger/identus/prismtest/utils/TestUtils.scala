@@ -13,6 +13,7 @@ import proto.prism.SignedPrismOperation
 import proto.prism_ssi.CompressedECKeyData
 import proto.prism_ssi.KeyUsage
 import proto.prism_ssi.ProtoCreateDID
+import proto.prism_ssi.ProtoCreateDID.DIDCreationData
 import proto.prism_ssi.PublicKey
 import proto.prism_ssi.PublicKey.KeyData
 
@@ -38,7 +39,7 @@ private trait DslUtils extends ProtoUtils, CryptoUtils:
       )
 
   case class OpBuilder(seed: Array[Byte]):
-    def createDid: CreateDidOpBuilder = CreateDidOpBuilder(seed, ProtoCreateDID(didData = None))
+    def createDid: CreateDidOpBuilder = CreateDidOpBuilder(seed, ProtoCreateDID(didData = Some(DIDCreationData())))
 
   case class CreateDidOpBuilder(seed: Array[Byte], op: ProtoCreateDID):
     def build: PrismOperation = PrismOperation(Operation.CreateDid(op))
@@ -57,8 +58,8 @@ private trait ProtoUtils:
       case hdKey: HDKey =>
         KeyData.CompressedEcKeyData(
           CompressedECKeyData(
-            curve = "secp25k1",
-            data = hdKey.getPrivateKey()
+            curve = "secp256k1",
+            data = hdKey.getKMMSecp256k1PrivateKey().getPublicKey().getCompressed()
           )
         )
       case hdKey: EdHDKey =>

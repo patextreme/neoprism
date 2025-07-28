@@ -105,7 +105,7 @@ in  { mainnet-dbsync.services
                       , walletPaymentAddress
                       }
                     }
-              , identus-prism-node =
+              , prism-node =
                   prismNode.makePrismNodeService
                     prismNode.Options::{
                     , nodeDbHost = "db-prism-node"
@@ -120,7 +120,7 @@ in  { mainnet-dbsync.services
                   cloudAgent.makeCloudAgentService
                     cloudAgent.Options::{
                     , dbHost = "db-cloud-agent"
-                    , prismNodeHost = "identus-prism-node"
+                    , prismNodeHost = "prism-node"
                     }
               , db-neoprism =
                   db.makeDbService db.Options::{ hostPort = Some 5432 }

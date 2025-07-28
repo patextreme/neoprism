@@ -18,11 +18,9 @@ object Main extends ZIOAppDefault, TestUtils:
   val SEED: Array[Byte] = Array.fill[Byte](64)(0)
 
   override def run =
-    val po = builder(SEED).createDid
+    val spo = builder(SEED).createDid
       .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
-      .key("auth-0")(KeyUsage.AUTHENTICATION_KEY ed25519 "m/0'/4'/0'")
       .build
-
-    val spo = po.signWith("master-0", deriveSecp256k1(SEED)("m/0'/1'/0'"))
+      .signWith("master-0", deriveSecp256k1(SEED)("m/0'/1'/0'"))
 
     ZIO.debug(spo.toByteArray.toHexString)
