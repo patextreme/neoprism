@@ -115,6 +115,7 @@ in  { mainnet-dbsync.services
                     , walletPassphrase
                     , walletId
                     , walletPaymentAddress
+                    , hostPort = Some 50053
                     }
               , identus-cloud-agent =
                   cloudAgent.makeCloudAgentService

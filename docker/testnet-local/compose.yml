@@ -252,6 +252,8 @@ services:
       NODE_PSQL_USERNAME: postgres
       NODE_REFRESH_AND_SUBMIT_PERIOD: "5s"
     image: ghcr.io/input-output-hk/prism-node:2.6.0
+    ports:
+      - "50053:50053"
     restart: always
 volumes:
   node-testnet: {}

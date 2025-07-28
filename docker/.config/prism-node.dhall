@@ -4,12 +4,14 @@ let PrismNodeService =
       { Type =
           { image : Text
           , restart : Text
+          , ports : Optional (List Text)
           , depends_on : Prelude.Map.Type Text { condition : Text }
           , environment : Prelude.Map.Type Text Text
           }
       , default =
         { image = "ghcr.io/input-output-hk/prism-node:2.6.0"
         , restart = "always"
+        , ports = None (List Text)
         , depends_on = [] : Prelude.Map.Type Text { condition : Text }
         , environment = [] : Prelude.Map.Type Text Text
         }
@@ -25,13 +27,20 @@ let Options =
           , walletPassphrase : Text
           , walletId : Text
           , walletPaymentAddress : Text
+          , hostPort : Optional Natural
           }
-      , default.walletApiPort = 8090
+      , default = { walletApiPort = 8090, hostPort = None Natural }
       }
 
 let makePrismNodeService =
       \(options : Options.Type) ->
         PrismNodeService::{
+        , ports =
+            Prelude.Optional.map
+              Natural
+              (List Text)
+              (\(p : Natural) -> [ "${Prelude.Natural.show p}:50053" ])
+              options.hostPort
         , environment = toMap
             { NODE_PSQL_HOST = "${options.nodeDbHost}:5432"
             , NODE_PSQL_DATABASE = "postgres"
