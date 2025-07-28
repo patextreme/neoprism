@@ -19,9 +19,9 @@ import proto.prism_ssi.PublicKey.KeyData
 
 import scala.language.implicitConversions
 
-trait TestUtils extends CryptoUtils, ProtoUtils, DslUtils
+trait TestUtils extends CryptoUtils, ProtoUtils, TestDsl
 
-private trait DslUtils extends ProtoUtils, CryptoUtils:
+trait TestDsl extends ProtoUtils, CryptoUtils:
   def builder(seed: Array[Byte]): OpBuilder = OpBuilder(seed)
 
   extension (ku: KeyUsage)
@@ -50,7 +50,7 @@ private trait DslUtils extends ProtoUtils, CryptoUtils:
         .focus(_.op.didData.some.publicKeys)
         .modify(_ :+ PublicKey(id = keyId, usage = keyUsage, keyData = hdKey))
 
-private trait ProtoUtils:
+trait ProtoUtils:
   given Conversion[Array[Byte], ByteString] = ByteString.copyFrom
 
   given Conversion[HDKey | EdHDKey, KeyData] = (hdKey: HDKey | EdHDKey) =>
@@ -70,7 +70,7 @@ private trait ProtoUtils:
           )
         )
 
-private trait CryptoUtils:
+trait CryptoUtils:
   extension (str: String) def decodeHex: Array[Byte] = StringExtKt.decodeHex(str)
   extension (bytes: Array[Byte]) def toHexString: String = ByteArrayExtKt.toHexString(bytes)
 

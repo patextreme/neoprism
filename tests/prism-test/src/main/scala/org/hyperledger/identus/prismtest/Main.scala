@@ -20,6 +20,7 @@ object Main extends ZIOAppDefault, TestUtils:
   override def run =
     val spo = builder(SEED).createDid
       .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+      .key("vdr-0")(KeyUsage.VDR_KEY secp256k1 "m/0'/1'/0'")
       .build
       .signWith("master-0", deriveSecp256k1(SEED)("m/0'/1'/0'"))
 

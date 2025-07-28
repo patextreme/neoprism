@@ -7,7 +7,7 @@ val D = new {
   )
 
   val apolloDeps: Seq[ModuleID] = Seq(
-    "io.iohk.atala.prism.apollo" % "apollo-jvm" % "1.3.5" exclude (
+    "org.hyperledger.identus" % "apollo-jvm" % "1.8.0" exclude (
       "net.jcip",
       "jcip-annotations"
     ), // Exclude because of license
