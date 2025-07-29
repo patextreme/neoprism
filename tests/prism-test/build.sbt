@@ -1,5 +1,12 @@
 val scala3Version = "3.3.6"
 
+val V = new {
+  val zio = "2.1.20"
+  val monocle = "3.1.0"
+  val apollo = "1.8.0"
+  val grpcNetty = "1.73.0"
+}
+
 val D = new {
   val scalaPbDeps: Seq[ModuleID] = Seq(
     "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
@@ -7,7 +14,7 @@ val D = new {
   )
 
   val apolloDeps: Seq[ModuleID] = Seq(
-    "org.hyperledger.identus" % "apollo-jvm" % "1.8.0" exclude (
+    "org.hyperledger.identus" % "apollo-jvm" % V.apollo exclude (
       "net.jcip",
       "jcip-annotations"
     ), // Exclude because of license
@@ -15,10 +22,16 @@ val D = new {
   )
 
   val deps: Seq[ModuleID] = Seq(
-    "dev.zio" %% "zio" % "2.1.20",
-    "dev.optics" %% "monocle-core" % "3.1.0",
-    "dev.optics" %% "monocle-macro" % "3.1.0",
-    "io.grpc" % "grpc-netty" % "1.73.0"
+    "dev.zio" %% "zio" % V.zio,
+    "dev.optics" %% "monocle-core" % V.monocle,
+    "dev.optics" %% "monocle-macro" % V.monocle,
+    "io.grpc" % "grpc-netty" % V.grpcNetty
+  )
+
+  val testDeps: Seq[ModuleID] = Seq(
+    "dev.zio" %% "zio-test" % V.zio % Test,
+    "dev.zio" %% "zio-test-sbt" % V.zio % Test,
+    "dev.zio" %% "zio-test-magnolia" % V.zio % Test
   )
 }
 
@@ -34,6 +47,7 @@ lazy val root = project
       "-unchecked",
       "-Wunused:all"
     ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
     Compile / PB.targets := Seq(
       scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
     ),
@@ -41,5 +55,5 @@ lazy val root = project
       baseDirectory.value / ".." / ".." / "lib" / "did-prism" / "proto",
       (Compile / resourceDirectory).value // includes scalapb codegen package wide config
     ),
-    libraryDependencies ++= D.scalaPbDeps ++ D.apolloDeps ++ D.deps
+    libraryDependencies ++= D.scalaPbDeps ++ D.apolloDeps ++ D.deps ++ D.testDeps
   )

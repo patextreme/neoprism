@@ -25,21 +25,22 @@ import scala.language.implicitConversions
 trait TestUtils extends CryptoUtils, ProtoUtils, TestDsl
 
 trait TestDsl extends ProtoUtils, CryptoUtils:
+  def newSeed: UIO[Array[Byte]] = Random.nextBytes(64).map(_.toArray)
+  def builder(seed: Array[Byte]): OpBuilder = OpBuilder(seed)
+
   def waitUntilConfirmed(operationRefs: Seq[OperationRef]): URIO[NodeClient, Unit] =
     ZIO
       .foreach(operationRefs) { operationRef =>
         ZIO.serviceWithZIO[NodeClient] { nodeClient =>
-          nodeClient
-            .isOperationConfirmed(operationRef)
-            .filterOrFail(identity)(Exception("operation is not confirmed"))
-            .debug("isOperationConfirmed")
-            .retry(Schedule.recurs(30) && Schedule.spaced(2.seconds))
-            .orDie
+          ZIO.logInfo(s"waiting for operation $operationRef to be confirmed") *>
+            nodeClient
+              .isOperationConfirmed(operationRef)
+              .filterOrFail(identity)(Exception("operation is not confirmed"))
+              .retry(Schedule.recurs(90) && Schedule.spaced(1.seconds))
+              .orDie
         }
       }
       .unit
-
-  def builder(seed: Array[Byte]): OpBuilder = OpBuilder(seed)
 
   extension (ku: KeyUsage)
     def secp256k1(path: String): Array[Byte] => (KeyUsage, HDKey) = (seed: Array[Byte]) =>
@@ -47,7 +48,17 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
     def ed25519(path: String): Array[Byte] => (KeyUsage, EdHDKey) = (seed: Array[Byte]) =>
       ku -> deriveEd25519(seed)(path)
 
+  extension (op: SignedPrismOperation) def getDid: Option[String] = op.operation.flatMap(_.getDid)
+
   extension (op: PrismOperation)
+    def getDid: Option[String] =
+      op.operation match
+        case Operation.CreateDid(_) =>
+          val bytes = op.toByteArray
+          val hexSuffix = sha256(bytes).toHexString
+          Some(s"did:prism:$hexSuffix")
+        case _ => None
+
     def signWith(keyId: String, hdKey: HDKey): SignedPrismOperation =
       SignedPrismOperation(
         signedWith = keyId,
@@ -90,6 +101,8 @@ trait ProtoUtils:
 trait CryptoUtils:
   extension (str: String) def decodeHex: Array[Byte] = StringExtKt.decodeHex(str)
   extension (bytes: Array[Byte]) def toHexString: String = ByteArrayExtKt.toHexString(bytes)
+
+  def sha256(bytes: Array[Byte]): Array[Byte] = Sha256Hash.compute(bytes).bytes.toArray
 
   def deriveSecp256k1(seed: Array[Byte])(pathStr: String): HDKey =
     derivation.HDKey(seed, 0, 0).derive(pathStr)
