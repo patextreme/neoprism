@@ -7,6 +7,8 @@ import org.hyperledger.identus.apollo.derivation.EdHDKey
 import org.hyperledger.identus.apollo.derivation.HDKey
 import org.hyperledger.identus.apollo.utils.ByteArrayExtKt
 import org.hyperledger.identus.apollo.utils.StringExtKt
+import org.hyperledger.identus.prismtest.NodeClient
+import org.hyperledger.identus.prismtest.OperationRef
 import proto.prism.PrismOperation
 import proto.prism.PrismOperation.Operation
 import proto.prism.SignedPrismOperation
@@ -16,12 +18,27 @@ import proto.prism_ssi.ProtoCreateDID
 import proto.prism_ssi.ProtoCreateDID.DIDCreationData
 import proto.prism_ssi.PublicKey
 import proto.prism_ssi.PublicKey.KeyData
+import zio.*
 
 import scala.language.implicitConversions
 
 trait TestUtils extends CryptoUtils, ProtoUtils, TestDsl
 
 trait TestDsl extends ProtoUtils, CryptoUtils:
+  def waitUntilConfirmed(operationRefs: Seq[OperationRef]): URIO[NodeClient, Unit] =
+    ZIO
+      .foreach(operationRefs) { operationRef =>
+        ZIO.serviceWithZIO[NodeClient] { nodeClient =>
+          nodeClient
+            .isOperationConfirmed(operationRef)
+            .filterOrFail(identity)(Exception("operation is not confirmed"))
+            .debug("isOperationConfirmed")
+            .retry(Schedule.recurs(30) && Schedule.spaced(2.seconds))
+            .orDie
+        }
+      }
+      .unit
+
   def builder(seed: Array[Byte]): OpBuilder = OpBuilder(seed)
 
   extension (ku: KeyUsage)
