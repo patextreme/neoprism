@@ -1,16 +1,16 @@
 package org.hyperledger.identus.prismtest
 
 import io.grpc.ManagedChannelBuilder
+import io.iohk.atala.prism.protos.node_api.DIDData
+import io.iohk.atala.prism.protos.node_api.GetDidDocumentRequest
+import io.iohk.atala.prism.protos.node_api.GetOperationInfoRequest
+import io.iohk.atala.prism.protos.node_api.NodeServiceGrpc
+import io.iohk.atala.prism.protos.node_api.NodeServiceGrpc.NodeService
+import io.iohk.atala.prism.protos.node_api.OperationOutput.OperationMaybe
+import io.iohk.atala.prism.protos.node_api.OperationStatus
+import io.iohk.atala.prism.protos.node_api.ScheduleOperationsRequest
 import org.hyperledger.identus.prismtest.utils.CryptoUtils
 import org.hyperledger.identus.prismtest.utils.ProtoUtils
-import proto.prism.DIDData
-import proto.prism.GetDidDocumentRequest
-import proto.prism.GetOperationInfoRequest
-import proto.prism.NodeServiceGrpc
-import proto.prism.NodeServiceGrpc.NodeService
-import proto.prism.OperationOutput.OperationMaybe
-import proto.prism.OperationStatus
-import proto.prism.ScheduleOperationsRequest
 import proto.prism.SignedPrismOperation
 import zio.*
 
