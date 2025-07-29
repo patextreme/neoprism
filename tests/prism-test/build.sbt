@@ -17,7 +17,8 @@ val D = new {
   val deps: Seq[ModuleID] = Seq(
     "dev.zio" %% "zio" % "2.1.20",
     "dev.optics" %% "monocle-core" % "3.1.0",
-    "dev.optics" %% "monocle-macro" % "3.1.0"
+    "dev.optics" %% "monocle-macro" % "3.1.0",
+    "io.grpc" % "grpc-netty" % "1.73.0"
   )
 }
 

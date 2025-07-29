@@ -20,8 +20,15 @@ object Main extends ZIOAppDefault, TestUtils:
   override def run =
     val spo = builder(SEED).createDid
       .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
-      .key("vdr-0")(KeyUsage.VDR_KEY secp256k1 "m/0'/1'/0'")
+      .key("auth-0")(KeyUsage.AUTHENTICATION_KEY secp256k1 "m/0'/4'/0'")
+      .key("auth-1")(KeyUsage.AUTHENTICATION_KEY secp256k1 "m/0'/4'/1'")
+      .key("auth-2")(KeyUsage.AUTHENTICATION_KEY secp256k1 "m/0'/4'/2'")
       .build
       .signWith("master-0", deriveSecp256k1(SEED)("m/0'/1'/0'"))
 
-    ZIO.debug(spo.toByteArray.toHexString)
+    val test = for
+      client <- ZIO.service[NodeClient]
+      _ <- client.scheduleOperations(Seq(spo))
+    yield ()
+
+    test.provide(NodeClient.grpc("localhost", 50053))
