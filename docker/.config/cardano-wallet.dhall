@@ -9,12 +9,6 @@ let CardanoWalletService =
           , entrypoint : List Text
           , command : List Text
           , depends_on : Prelude.Map.Type Text { condition : Text }
-          , healthcheck :
-              { test : List Text
-              , interval : Text
-              , timeout : Text
-              , retries : Natural
-              }
           }
       , default =
         { image = "cardanofoundation/cardano-wallet:2025.3.31"
@@ -31,17 +25,6 @@ let CardanoWalletService =
               --listen-address 0.0.0.0
             ''
           ]
-        , healthcheck =
-          { test =
-            [ "CMD"
-            , "curl"
-            , "-f"
-            , "https://localhost:8090/v2/network/information"
-            ]
-          , interval = "2s"
-          , timeout = "5s"
-          , retries = 30
-          }
         }
       }
 

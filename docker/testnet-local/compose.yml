@@ -72,15 +72,6 @@ services:
       cardano-node:
         condition: service_healthy
     entrypoint: []
-    healthcheck:
-      interval: "2s"
-      retries: 30
-      test:
-        - CMD
-        - curl
-        - "-f"
-        - https://localhost:8090/v2/network/information
-      timeout: "5s"
     image: cardanofoundation/cardano-wallet:2025.3.31
     ports:
       - '8090'
