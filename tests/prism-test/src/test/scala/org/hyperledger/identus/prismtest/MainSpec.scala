@@ -3,6 +3,7 @@ package org.hyperledger.identus.prismtest
 import org.hyperledger.identus.prismtest.utils.TestUtils
 import proto.prism_ssi.KeyUsage
 import zio.*
+import zio.http.Client
 import zio.test.*
 import zio.test.Assertion.*
 
@@ -18,12 +19,16 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
   // VDR_KEY = 8;
 
   override def spec =
-    (createOperationSuite
-      @@ TestAspect.withLiveClock
-      @@ TestAspect.withLiveRandom
-      @@ TestAspect.timed)
+    createOperationSuite
       .provide(NodeClient.grpc("localhost", 50053))
+      // .provide(
+      //   NodeClient.neoprism("localhost", 8080)("localhost", 8090),
+      //   Client.default
+      // )
       .provide(Runtime.removeDefaultLoggers)
+      @@ TestAspect.timed
+      @@ TestAspect.withLiveEnvironment
+      @@ TestAspect.parallelN(1)
 
   private def createOperationSuite = suite("CreateDidOperation spec")(
     test("create operation with only master key") {

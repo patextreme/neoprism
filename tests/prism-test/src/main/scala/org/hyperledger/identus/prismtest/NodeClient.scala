@@ -13,6 +13,9 @@ import org.hyperledger.identus.prismtest.utils.CryptoUtils
 import org.hyperledger.identus.prismtest.utils.ProtoUtils
 import proto.prism.SignedPrismOperation
 import zio.*
+import zio.http.*
+import zio.json.*
+import zio.schema.codec.JsonCodec.zioJsonBinaryCodec
 
 import scala.language.implicitConversions
 
@@ -31,6 +34,19 @@ object NodeClient:
         .attempt(NodeServiceGrpc.stub(ManagedChannelBuilder.forAddress(host, port).usePlaintext.build))
         .map(GrpcNodeClient(_))
     )
+
+  def neoprism(neoprismHost: String, neoprismPort: Int)(
+      cardanoWalletHost: String,
+      cardanoWalletPort: Int,
+      confirmationBlocks: Int = 0
+  ): RLayer[Client, NodeClient] =
+    ZLayer
+      .fromZIO {
+        for
+          neoprismClient <- ZIO.serviceWith[Client](_.url(url"http://$neoprismHost:$neoprismPort"))
+          cardanoWalletClient <- ZIO.serviceWith[Client](_.url(url"http://$cardanoWalletHost:$cardanoWalletPort"))
+        yield NeoprismNodeClient(neoprismClient, cardanoWalletClient, confirmationBlocks)
+      }
 
 private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, CryptoUtils, ProtoUtils:
 
@@ -59,3 +75,77 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
       .fromFuture(_ => nodeService.getDidDocument(GetDidDocumentRequest(did = did)))
       .orDie
       .map(_.document)
+
+private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Client, confirmationBlocks: Int)
+    extends NodeClient,
+      CryptoUtils:
+
+  import NeoprismNodeClient.*
+
+  override def scheduleOperations(operations: Seq[SignedPrismOperation]): UIO[Seq[OperationRef]] =
+    val requestBody = ScheduleOperationRequest(signed_operations = operations.map(_.toByteArray.toHexString))
+    neoprismClient.batched
+      .post("/api/signed-operation-submissions")(Body.from(requestBody).contentType(MediaType.application.json))
+      .flatMap(resp => resp.body.to[ScheduleOperationResponse])
+      .map(resp => Seq(resp.tx_id))
+      .orDie
+
+  override def isOperationConfirmed(ref: OperationRef): UIO[Boolean] =
+    for
+      wallets <- cardanoWalletClient.batched
+        .get("/v2/wallets")
+        .flatMap(_.body.to[List[Wallet]])
+        .orDie
+      wallet <- ZIO.succeed(wallets.headOption).someOrFailException.orDie
+      tx <- cardanoWalletClient.batched
+        .get(url"/v2/wallets/${wallet.id}/transactions/$ref".toString)
+        .flatMap(_.body.to[TransactionResponse])
+        .orDie
+    yield tx.depth.exists(_.quantity >= confirmationBlocks)
+
+  override def getDidDocument(did: String): UIO[Option[DIDData]] =
+    for
+      resp <- neoprismClient.batched.get(url"/api/did-data/$did".toString).orDie
+      body <- resp.body.asString.orDie
+      didData <- resp.status match
+        case Status.NotFound => ZIO.none
+        case Status.Ok       => ZIO.some(DIDData.parseFrom(body.decodeHex))
+        case s               => ZIO.dieMessage("Could not get DIDData")
+    yield didData
+
+private object NeoprismNodeClient:
+
+  case class ScheduleOperationRequest(signed_operations: Seq[String])
+
+  object ScheduleOperationRequest:
+    given dec: JsonDecoder[ScheduleOperationRequest] = JsonDecoder.derived
+    given enc: JsonEncoder[ScheduleOperationRequest] = JsonEncoder.derived
+    given JsonCodec[ScheduleOperationRequest] = JsonCodec.fromEncoderDecoder(enc, dec)
+
+  case class ScheduleOperationResponse(tx_id: String)
+
+  object ScheduleOperationResponse:
+    given dec: JsonDecoder[ScheduleOperationResponse] = JsonDecoder.derived
+    given enc: JsonEncoder[ScheduleOperationResponse] = JsonEncoder.derived
+    given JsonCodec[ScheduleOperationResponse] = JsonCodec.fromEncoderDecoder(enc, dec)
+
+  case class Wallet(id: String)
+
+  object Wallet:
+    given dec: JsonDecoder[Wallet] = JsonDecoder.derived
+    given enc: JsonEncoder[Wallet] = JsonEncoder.derived
+    given JsonCodec[Wallet] = JsonCodec.fromEncoderDecoder(enc, dec)
+
+  case class TransactionResponse(depth: Option[TransactionDepth])
+
+  object TransactionResponse:
+    given dec: JsonDecoder[TransactionResponse] = JsonDecoder.derived
+    given enc: JsonEncoder[TransactionResponse] = JsonEncoder.derived
+    given JsonCodec[TransactionResponse] = JsonCodec.fromEncoderDecoder(enc, dec)
+
+  case class TransactionDepth(quantity: Int)
+
+  object TransactionDepth:
+    given dec: JsonDecoder[TransactionDepth] = JsonDecoder.derived
+    given enc: JsonEncoder[TransactionDepth] = JsonEncoder.derived
+    given JsonCodec[TransactionDepth] = JsonCodec.fromEncoderDecoder(enc, dec)

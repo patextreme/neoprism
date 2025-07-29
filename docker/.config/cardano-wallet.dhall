@@ -57,7 +57,7 @@ let makeWalletService =
             Prelude.Optional.map
               Natural
               (List Text)
-              (\(n : Natural) -> [ Prelude.Natural.show n ])
+              (\(n : Natural) -> [ "${Prelude.Natural.show n}:8090" ])
               options.hostPort
         , depends_on =
           [ { mapKey = options.cardanoNodeHost

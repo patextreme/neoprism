@@ -2,9 +2,10 @@ val scala3Version = "3.3.6"
 
 val V = new {
   val zio = "2.1.20"
+  val zioHttp = "3.3.3"
   val monocle = "3.1.0"
   val apollo = "1.8.0"
-  val grpcNetty = "1.73.0"
+  val grpcNetty = "1.74.0"
 }
 
 val D = new {
@@ -25,7 +26,8 @@ val D = new {
     "dev.zio" %% "zio" % V.zio,
     "dev.optics" %% "monocle-core" % V.monocle,
     "dev.optics" %% "monocle-macro" % V.monocle,
-    "io.grpc" % "grpc-netty" % V.grpcNetty
+    "io.grpc" % "grpc-netty-shaded" % V.grpcNetty,
+    "dev.zio" %% "zio-http" % V.zioHttp
   )
 
   val testDeps: Seq[ModuleID] = Seq(

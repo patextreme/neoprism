@@ -43,7 +43,9 @@ pub fn router(mode: RunMode) -> Router<AppState> {
         .route(urls::ApiHealth::AXUM_PATH, get(system::health))
         .route(urls::ApiAppMeta::AXUM_PATH, get(system::app_meta));
 
-    let indexer_router = Router::new().route(urls::ApiDid::AXUM_PATH, get(indexer::resolve_did));
+    let indexer_router = Router::new()
+        .route(urls::ApiDid::AXUM_PATH, get(indexer::resolve_did))
+        .route(urls::ApiDidData::AXUM_PATH, get(indexer::did_data));
 
     let submitter_router = Router::new().route(
         urls::ApiSignedOpSubmissions::AXUM_PATH,
