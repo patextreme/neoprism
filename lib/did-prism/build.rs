@@ -8,6 +8,7 @@ fn main() {
             "proto/prism-ssi.proto",
             "proto/prism-storage.proto",
             "proto/prism-version.proto",
+            "proto/node-api.proto",
         ])
         .cargo_out_dir("generated")
         .run_from_script();

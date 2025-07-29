@@ -28,22 +28,20 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
   private def createOperationSuite = suite("CreateDidOperation spec")(
     test("create operation with only master key") {
       for
-        client <- ZIO.service[NodeClient]
         seed <- newSeed
         spo = builder(seed).createDid
           .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- client.scheduleOperations(Seq(spo))
+        operationRefs <- scheduleOperations(Seq(spo))
         _ <- waitUntilConfirmed(operationRefs)
-        didData <- client.getDidDocument(spo.getDid.get).map(_.get)
+        didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.context)(isEmpty) &&
         assert(didData.services)(isEmpty) &&
         assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
     test("create operation with invalid signedWith key") {
       for
-        client <- ZIO.service[NodeClient]
         seed <- newSeed
         // key id not exist
         spo1 = builder(seed).createDid
@@ -55,10 +53,10 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
           .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/1'/1'/0'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/1'/1'/1'"))
-        operationRefs <- client.scheduleOperations(Seq(spo1, spo2))
+        operationRefs <- scheduleOperations(Seq(spo1, spo2))
         _ <- waitUntilConfirmed(operationRefs)
-        didData1 <- client.getDidDocument(spo1.getDid.get)
-        didData2 <- client.getDidDocument(spo2.getDid.get)
+        didData1 <- getDidDocument(spo1.getDid.get)
+        didData2 <- getDidDocument(spo2.getDid.get)
       yield assert(didData1)(isNone) && assert(didData2)(isNone)
     }
   )

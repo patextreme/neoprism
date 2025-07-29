@@ -1,6 +1,7 @@
 package org.hyperledger.identus.prismtest.utils
 
 import com.google.protobuf.ByteString
+import io.iohk.atala.prism.protos.node_api.DIDData
 import monocle.syntax.all.*
 import org.hyperledger.identus.apollo.derivation
 import org.hyperledger.identus.apollo.derivation.EdHDKey
@@ -28,17 +29,23 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
   def newSeed: UIO[Array[Byte]] = Random.nextBytes(64).map(_.toArray)
   def builder(seed: Array[Byte]): OpBuilder = OpBuilder(seed)
 
+  def scheduleOperations(operations: Seq[SignedPrismOperation]): URIO[NodeClient, Seq[OperationRef]] =
+    ZIO.serviceWithZIO[NodeClient](nodeClient => nodeClient.scheduleOperations(operations))
+
+  def getDidDocument(did: String): URIO[NodeClient, Option[DIDData]] =
+    ZIO.serviceWithZIO[NodeClient](nodeClient => nodeClient.getDidDocument(did))
+
   def waitUntilConfirmed(operationRefs: Seq[OperationRef]): URIO[NodeClient, Unit] =
     ZIO
       .foreach(operationRefs) { operationRef =>
-        ZIO.serviceWithZIO[NodeClient] { nodeClient =>
+        ZIO.serviceWithZIO[NodeClient](nodeClient =>
           ZIO.logInfo(s"waiting for operation $operationRef to be confirmed") *>
             nodeClient
               .isOperationConfirmed(operationRef)
               .filterOrFail(identity)(Exception("operation is not confirmed"))
               .retry(Schedule.recurs(120) && Schedule.spaced(1.seconds))
               .orDie
-        }
+        )
       }
       .unit
 
