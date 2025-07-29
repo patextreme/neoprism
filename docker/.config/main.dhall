@@ -96,7 +96,7 @@ in  { mainnet-dbsync.services
                   neoprism.makeNodeService
                     neoprism.Options::{
                     , dbHost = "db-neoprism"
-                    , confirmationBlocks = Some 1
+                    , confirmationBlocks = Some 0
                     , dltSource =
                         neoprism.DltSource.DbSync
                           neoprism.DbSyncDltSourceArgs::{
@@ -123,6 +123,7 @@ in  { mainnet-dbsync.services
                     , walletId
                     , walletPaymentAddress
                     , hostPort = Some 50053
+                    , confirmationBlocks = 0
                     }
               , identus-cloud-agent =
                   cloudAgent.makeCloudAgentService

@@ -28,8 +28,13 @@ let Options =
           , walletId : Text
           , walletPaymentAddress : Text
           , hostPort : Optional Natural
+          , confirmationBlocks : Natural
           }
-      , default = { walletApiPort = 8090, hostPort = None Natural }
+      , default =
+        { walletApiPort = 8090
+        , hostPort = None Natural
+        , confirmationBlocks = 112
+        }
       }
 
 let makePrismNodeService =
@@ -47,7 +52,8 @@ let makePrismNodeService =
             , NODE_PSQL_USERNAME = "postgres"
             , NODE_PSQL_PASSWORD = "postgres"
             , NODE_LEDGER = "cardano"
-            , NODE_CARDANO_CONFIRMATION_BLOCKS = "1"
+            , NODE_CARDANO_CONFIRMATION_BLOCKS =
+                Prelude.Natural.show options.confirmationBlocks
             , NODE_REFRESH_AND_SUBMIT_PERIOD = "1s"
             , NODE_MOVE_SCHEDULED_TO_PENDING_PERIOD = "1s"
             , NODE_CARDANO_NETWORK = "testnet"
