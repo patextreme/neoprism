@@ -105,7 +105,8 @@ in  { mainnet-dbsync.services
                           , pollInterval = 1
                           }
                     , dltSink = Some neoprism.DltSink::{
-                      , walletBaseUrl = "http://cardano-wallet:8090/v2"
+                      , walletHost = "cardano-wallet"
+                      , walletPort = 8090
                       , walletId
                       , walletPassphrase
                       , walletPaymentAddress

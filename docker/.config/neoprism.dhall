@@ -2,7 +2,7 @@ let Prelude = (./prelude.dhall).Prelude
 
 let version = (./prelude.dhall).neoPrismVersion
 
-let IndexerNodeService =
+let NeoprismNodeService =
       { Type =
           { image : Text
           , restart : Text
@@ -41,7 +41,8 @@ let DltSource = < Relay : Text | DbSync : DbSyncDltSourceArgs.Type >
 
 let DltSink =
       { Type =
-          { walletBaseUrl : Text
+          { walletHost : Text
+          , walletPort : Natural
           , walletId : Text
           , walletPassphrase : Text
           , walletPaymentAddress : Text
@@ -57,6 +58,7 @@ let Options =
           , dltSource : DltSource
           , dltSink : Optional DltSink.Type
           , confirmationBlocks : Optional Natural
+          , extraDependsOn : List Text
           }
       , default =
         { hostPort = 8080
@@ -64,6 +66,7 @@ let Options =
         , network = "mainnet"
         , dltSink = None DltSink.Type
         , confirmationBlocks = None Natural
+        , extraDependsOn = [] : List Text
         }
       }
 
@@ -104,31 +107,47 @@ let makeNodeService =
                   { None = [] : Prelude.Map.Type Text Text
                   , Some =
                       \(sink : DltSink.Type) ->
-                        toMap
-                          { NPRISM_CARDANO_WALLET_BASE_URL = sink.walletBaseUrl
-                          , NPRISM_CARDANO_WALLET_WALLET_ID = sink.walletId
-                          , NPRISM_CARDANO_WALLET_PASSPHRASE =
-                              sink.walletPassphrase
-                          , NPRISM_CARDANO_WALLET_PAYMENT_ADDR =
-                              sink.walletPaymentAddress
-                          }
+                        let portStr = Prelude.Natural.show sink.walletPort
+
+                        in  toMap
+                              { NPRISM_CARDANO_WALLET_BASE_URL =
+                                  "http://${sink.walletHost}:${portStr}/v2"
+                              , NPRISM_CARDANO_WALLET_WALLET_ID = sink.walletId
+                              , NPRISM_CARDANO_WALLET_PASSPHRASE =
+                                  sink.walletPassphrase
+                              , NPRISM_CARDANO_WALLET_PAYMENT_ADDR =
+                                  sink.walletPaymentAddress
+                              }
                   }
                   options.dltSink
+
+        let extraDependsOn =
+              merge
+                { None = [] : Prelude.Map.Type Text { condition : Text }
+                , Some =
+                    \(sink : DltSink.Type) ->
+                      [ { mapKey = sink.walletHost
+                        , mapValue.condition = "service_healthy"
+                        }
+                      ]
+                }
+                options.dltSink
 
         let command =
               if    Prelude.Optional.null DltSink.Type options.dltSink
               then  "indexer"
               else  "standalone"
 
-        in  IndexerNodeService::{
+        in  NeoprismNodeService::{
             , ports = [ "${Prelude.Natural.show options.hostPort}:8080" ]
             , environment = mandatoryIndexerNodeEnvs # extraEnvs
             , command = [ command ]
             , depends_on =
-              [ { mapKey = options.dbHost
-                , mapValue.condition = "service_healthy"
-                }
-              ]
+                  [ { mapKey = options.dbHost
+                    , mapValue.condition = "service_healthy"
+                    }
+                  ]
+                # extraDependsOn
             }
 
 in  { Options, makeNodeService, DltSource, DbSyncDltSourceArgs, DltSink }

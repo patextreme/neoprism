@@ -72,6 +72,15 @@ services:
       cardano-node:
         condition: service_healthy
     entrypoint: []
+    healthcheck:
+      interval: "2s"
+      retries: 30
+      test:
+        - CMD
+        - curl
+        - "-f"
+        - https://localhost:8090/v2/network/information
+      timeout: "5s"
     image: cardanofoundation/cardano-wallet:2025.3.31
     ports:
       - '8090'
@@ -198,6 +207,8 @@ services:
     command:
       - standalone
     depends_on:
+      cardano-wallet:
+        condition: service_healthy
       db-neoprism:
         condition: service_healthy
     environment:
@@ -228,6 +239,8 @@ services:
     depends_on:
       bootstrap-testnet:
         condition: service_completed_successfully
+      cardano-wallet:
+        condition: service_healthy
       db-dbsync:
         condition: service_healthy
       db-prism-node:

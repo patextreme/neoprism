@@ -70,6 +70,9 @@ let makePrismNodeService =
           , { mapKey = options.dbSyncDbHost
             , mapValue.condition = "service_healthy"
             }
+          , { mapKey = options.walletApiHost
+            , mapValue.condition = "service_healthy"
+            }
           , { mapKey = options.bootstrapTestnetHost
             , mapValue.condition = "service_completed_successfully"
             }
