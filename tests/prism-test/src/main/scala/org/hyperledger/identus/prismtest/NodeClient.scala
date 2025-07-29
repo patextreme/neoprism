@@ -20,8 +20,8 @@ type OperationRef = String
 
 trait NodeClient:
   def scheduleOperations(operations: Seq[SignedPrismOperation]): UIO[Seq[OperationRef]]
-  def getDidDocument(did: String): UIO[DIDData]
   def isOperationConfirmed(ref: OperationRef): UIO[Boolean]
+  def getDidDocument(did: String): UIO[Option[DIDData]]
 
 object NodeClient:
 
@@ -54,9 +54,8 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
         case _                                      => false)
       .orDie
 
-  override def getDidDocument(did: String): UIO[DIDData] =
+  override def getDidDocument(did: String): UIO[Option[DIDData]] =
     ZIO
       .fromFuture(_ => nodeService.getDidDocument(GetDidDocumentRequest(did = did)))
       .orDie
       .map(_.document)
-      .someOrElseZIO(ZIO.dieMessage("DIDData does not exist"))

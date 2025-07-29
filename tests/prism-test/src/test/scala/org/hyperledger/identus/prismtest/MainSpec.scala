@@ -24,7 +24,7 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
       @@ TestAspect.withLiveRandom
 
   private def createOperationSuite = suite("CreateDidOperation spec")(
-    test("create operation with only master key")(
+    test("create operation with only master key") {
       for
         client <- ZIO.service[NodeClient]
         seed <- newSeed
@@ -32,11 +32,24 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
           .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        did <- ZIO.fromOption(spo.getDid)
         operationRefs <- client.scheduleOperations(Seq(spo))
         _ <- waitUntilConfirmed(operationRefs)
-        didData1 <- client.getDidDocument(did).debug("didData-1")
-        didData2 <- client.getDidDocument(did).debug("didData-2")
-      yield assert(didData1)(equalTo(didData2))
-    )
+        didData <- client.getDidDocument(spo.getDid.get).map(_.get)
+      yield assert(didData.context)(isEmpty) &&
+        assert(didData.services)(isEmpty) &&
+        assert(didData.publicKeys)(hasSize(equalTo(1)))
+    },
+    test("create operation with signedWith key not found") {
+      for
+        client <- ZIO.service[NodeClient]
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("master-1", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- client.scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- client.getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    }
   )
