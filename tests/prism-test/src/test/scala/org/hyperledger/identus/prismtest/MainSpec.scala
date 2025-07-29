@@ -18,10 +18,12 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
   // VDR_KEY = 8;
 
   override def spec =
-    createOperationSuite
-      .provide(NodeClient.grpc("localhost", 50053))
+    (createOperationSuite
       @@ TestAspect.withLiveClock
       @@ TestAspect.withLiveRandom
+      @@ TestAspect.timed)
+      .provide(NodeClient.grpc("localhost", 50053))
+      .provide(Runtime.removeDefaultLoggers)
 
   private def createOperationSuite = suite("CreateDidOperation spec")(
     test("create operation with only master key") {
@@ -39,17 +41,24 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         assert(didData.services)(isEmpty) &&
         assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
-    test("create operation with signedWith key not found") {
+    test("create operation with invalid signedWith key") {
       for
         client <- ZIO.service[NodeClient]
         seed <- newSeed
-        spo = builder(seed).createDid
+        // key id not exist
+        spo1 = builder(seed).createDid
           .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
           .build
           .signWith("master-1", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- client.scheduleOperations(Seq(spo))
+        // same key id with wrong private key
+        spo2 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/1'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/1'/1'/1'"))
+        operationRefs <- client.scheduleOperations(Seq(spo1, spo2))
         _ <- waitUntilConfirmed(operationRefs)
-        didData <- client.getDidDocument(spo.getDid.get)
-      yield assert(didData)(isNone)
+        didData1 <- client.getDidDocument(spo1.getDid.get)
+        didData2 <- client.getDidDocument(spo2.getDid.get)
+      yield assert(didData1)(isNone) && assert(didData2)(isNone)
     }
   )
