@@ -119,20 +119,27 @@ pub struct DbSyncSource<Store: DltCursorRepo + Send + 'static> {
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
     from_slot: u64,
     confirmation_blocks: usize,
+    poll_interval: u64,
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
-    pub async fn since_persisted_cursor(store: Store, dbsync_url: &str, confirmation_blocks: usize) -> Result<Self, E> {
+    pub async fn since_persisted_cursor(
+        store: Store,
+        dbsync_url: &str,
+        confirmation_blocks: usize,
+        poll_interval: u64,
+    ) -> Result<Self, E> {
         let cursor = store.get_cursor().await?;
         Ok(Self::new(
             store,
             dbsync_url,
             cursor.map(|i| i.slot).unwrap_or_default(),
             confirmation_blocks,
+            poll_interval,
         ))
     }
 
-    pub fn new(store: Store, dbsync_url: &str, from_slot: u64, confirmation_blocks: usize) -> Self {
+    pub fn new(store: Store, dbsync_url: &str, from_slot: u64, confirmation_blocks: usize, poll_interval: u64) -> Self {
         let (cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
             store,
@@ -140,6 +147,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
             sync_cursor_tx: cursor_tx,
             from_slot,
             confirmation_blocks,
+            poll_interval,
         }
     }
 }
@@ -156,9 +164,10 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DltSource for DbSyncSo
         let stream_worker = DbSyncStreamWorker {
             dbsync_url: self.dbsync_url,
             sync_cursor_tx: self.sync_cursor_tx,
-            from_slot: self.from_slot,
             event_tx,
+            from_slot: self.from_slot,
             confirmation_blocks: self.confirmation_blocks,
+            poll_interval: self.poll_interval,
         };
 
         cursor_persist_worker.spawn();
@@ -174,6 +183,7 @@ struct DbSyncStreamWorker {
     event_tx: mpsc::Sender<PublishedPrismObject>,
     from_slot: u64,
     confirmation_blocks: usize,
+    poll_interval: u64,
 }
 
 impl DbSyncStreamWorker {
@@ -193,6 +203,7 @@ impl DbSyncStreamWorker {
                             sync_cursor_tx.clone(),
                             self.from_slot,
                             self.confirmation_blocks,
+                            self.poll_interval,
                         )
                         .await
                         {
@@ -220,6 +231,7 @@ impl DbSyncStreamWorker {
         sync_cursor_tx: watch::Sender<Option<DltCursor>>,
         from_slot: u64,
         confirmation_blocks: usize,
+        poll_interval: u64,
     ) -> Result<(), DltError> {
         let mut sync_cursor = sync_cursor_tx
             .subscribe()
@@ -254,7 +266,7 @@ impl DbSyncStreamWorker {
                 }
 
                 // sleep if we don't find a new block to avoid spamming db sync
-                tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+                tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
             }
         }
     }

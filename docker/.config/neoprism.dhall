@@ -32,7 +32,12 @@ let IndexerNodeService =
         }
       }
 
-let DltSource = < Relay : Text | DbSync : Text >
+let DbSyncDltSourceArgs =
+      { Type = { url : Text, pollInterval : Natural }
+      , default.pollInterval = 10
+      }
+
+let DltSource = < Relay : Text | DbSync : DbSyncDltSourceArgs.Type >
 
 let DltSink =
       { Type =
@@ -87,7 +92,12 @@ let makeNodeService =
                       \(addr : Text) ->
                         toMap { NPRISM_CARDANO_RELAY_ADDR = addr }
                   , DbSync =
-                      \(url : Text) -> toMap { NPRISM_CARDANO_DBSYNC_URL = url }
+                      \(args : DbSyncDltSourceArgs.Type) ->
+                        toMap
+                          { NPRISM_CARDANO_DBSYNC_URL = args.url
+                          , NPRISM_CARDANO_DBSYNC_POLL_INTERVAL =
+                              Prelude.Natural.show args.pollInterval
+                          }
                   }
                   options.dltSource
               # merge
@@ -121,4 +131,4 @@ let makeNodeService =
               ]
             }
 
-in  { Options, makeNodeService, DltSource, DltSink }
+in  { Options, makeNodeService, DltSource, DbSyncDltSourceArgs, DltSink }

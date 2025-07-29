@@ -20,7 +20,9 @@ in  { mainnet-dbsync.services
       , neoprism-indexer =
           neoprism.makeNodeService
             neoprism.Options::{
-            , dltSource = neoprism.DltSource.DbSync "<DBSYNC_URL>"
+            , dltSource =
+                neoprism.DltSource.DbSync
+                  neoprism.DbSyncDltSourceArgs::{ url = "<DBSYNC_URL>" }
             }
       }
     , mainnet-relay.services
@@ -97,7 +99,11 @@ in  { mainnet-dbsync.services
                     , confirmationBlocks = Some 1
                     , dltSource =
                         neoprism.DltSource.DbSync
-                          "postgresql://postgres:postgres@db-dbsync:5432/postgres"
+                          neoprism.DbSyncDltSourceArgs::{
+                          , url =
+                              "postgresql://postgres:postgres@db-dbsync:5432/postgres"
+                          , pollInterval = 1
+                          }
                     , dltSink = Some neoprism.DltSink::{
                       , walletBaseUrl = "http://cardano-wallet:8090/v2"
                       , walletId
