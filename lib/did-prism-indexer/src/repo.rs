@@ -1,6 +1,6 @@
 use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::did::CanonicalPrismDid;
-use identus_did_prism::dlt::{DltCursor, OperationMetadata};
+use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
 use uuid::Uuid;
@@ -38,6 +38,8 @@ impl IndexedOperation {
 #[async_trait::async_trait]
 pub trait OperationRepo {
     type Error: std::error::Error;
+
+    async fn get_last_indexed_block(&self) -> Result<Option<(SlotNo, BlockNo)>, Self::Error>;
 
     async fn get_all_dids(&self, page: u32, page_size: u32) -> Result<Paginated<CanonicalPrismDid>, Self::Error>;
 

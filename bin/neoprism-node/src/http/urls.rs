@@ -18,6 +18,7 @@ typed_uri!(ApiAppMeta, "api" / "_system" / "metadata");
 // indexer
 typed_uri!(ApiDid, "api" / "dids" / (did: String));
 typed_uri!(ApiDidData, "api" / "did-data" / (did: String));
+typed_uri!(ApiIndexerStats, "api" / "indexer-stats");
 
 // submitter
 typed_uri!(ApiSignedOpSubmissions, "api" / "signed-operation-submissions");

@@ -67,16 +67,22 @@ mod models {
                 tx_idx,
                 name: "tx_idx",
             })? as u32,
-            block_number: context.block_number.ok_or(MetadataReadError::MissingBlockProperty {
-                block_hash: block_hash.clone(),
-                tx_idx,
-                name: "block_number",
-            })?,
-            slot_number: context.slot.ok_or(MetadataReadError::MissingBlockProperty {
-                block_hash: block_hash.clone(),
-                tx_idx,
-                name: "slot",
-            })?,
+            block_number: context
+                .block_number
+                .ok_or(MetadataReadError::MissingBlockProperty {
+                    block_hash: block_hash.clone(),
+                    tx_idx,
+                    name: "block_number",
+                })?
+                .into(),
+            slot_number: context
+                .slot
+                .ok_or(MetadataReadError::MissingBlockProperty {
+                    block_hash: block_hash.clone(),
+                    tx_idx,
+                    name: "slot",
+                })?
+                .into(),
         };
 
         // parse prism_block

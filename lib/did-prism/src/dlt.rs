@@ -18,9 +18,9 @@ pub struct DltCursor {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlockMetadata {
     /// Cardano slot number
-    pub slot_number: u64,
+    pub slot_number: SlotNo,
     /// Cardano block number
-    pub block_number: u64,
+    pub block_number: BlockNo,
     /// Cardano block timestamp
     pub cbt: DateTime<Utc>,
     /// PrismBlock seqeuence number
@@ -55,6 +55,60 @@ impl OperationMetadata {
 pub struct PublishedPrismObject {
     pub block_metadata: BlockMetadata,
     pub prism_object: PrismObject,
+}
+
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    derive_more::Debug,
+    derive_more::Display,
+    derive_more::From,
+    derive_more::Into,
+)]
+#[display("{}", self.0)]
+#[debug("{}", self.0)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "openapi", schema(example = 8086))]
+pub struct SlotNo(u64);
+
+impl SlotNo {
+    pub fn inner(&self) -> u64 {
+        self.0
+    }
+}
+
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    derive_more::Debug,
+    derive_more::Display,
+    derive_more::From,
+    derive_more::Into,
+)]
+#[display("{}", self.0)]
+#[debug("{}", self.0)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "openapi", schema(example = 42))]
+pub struct BlockNo(u64);
+
+impl BlockNo {
+    pub fn inner(&self) -> u64 {
+        self.0
+    }
 }
 
 #[derive(

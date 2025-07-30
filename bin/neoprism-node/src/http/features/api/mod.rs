@@ -23,8 +23,8 @@ struct BaseOpenApiDoc;
 
 mod tags {
     pub const SYSTEM: &str = "System";
-    pub const DID: &str = "DID";
-    pub const OP_SUBMIT: &str = "Operation submission";
+    pub const OP_INDEX: &str = "PRISM indexer";
+    pub const OP_SUBMIT: &str = "PRISM submitter";
 }
 
 pub fn router(mode: RunMode) -> Router<AppState> {
@@ -45,7 +45,8 @@ pub fn router(mode: RunMode) -> Router<AppState> {
 
     let indexer_router = Router::new()
         .route(urls::ApiDid::AXUM_PATH, get(indexer::resolve_did))
-        .route(urls::ApiDidData::AXUM_PATH, get(indexer::did_data));
+        .route(urls::ApiDidData::AXUM_PATH, get(indexer::did_data))
+        .route(urls::ApiIndexerStats::AXUM_PATH, get(indexer::indexer_stats));
 
     let submitter_router = Router::new().route(
         urls::ApiSignedOpSubmissions::AXUM_PATH,

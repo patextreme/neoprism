@@ -96,8 +96,8 @@ pub fn populate_metadata(
 ) -> Vec<(OperationMetadata, proto::prism::SignedPrismOperation)> {
     let dummy_metadata = OperationMetadata {
         block_metadata: BlockMetadata {
-            slot_number: 0,
-            block_number: 0,
+            slot_number: 0.into(),
+            block_number: 0.into(),
             cbt: DateTime::UNIX_EPOCH,
             absn: 0,
         },

@@ -61,8 +61,8 @@ mod models {
     pub fn parse_metadata_projection(metadata: MetadataProjection) -> Result<PublishedPrismObject, MetadataReadError> {
         let block_hash = HexStr::from(&metadata.block_hash).to_string();
         let block_metadata = BlockMetadata {
-            slot_number: metadata.slot_no as u64,
-            block_number: metadata.block_no as u64,
+            slot_number: (metadata.slot_no as u64).into(),
+            block_number: (metadata.block_no as u64).into(),
             cbt: metadata.time,
             absn: metadata.tx_idx as u32,
         };
