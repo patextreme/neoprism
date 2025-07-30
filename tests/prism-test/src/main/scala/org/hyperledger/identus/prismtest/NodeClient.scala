@@ -33,7 +33,7 @@ object NodeClient:
       ZIO
         .acquireRelease(
           ZIO.attempt(ManagedChannelBuilder.forAddress(host, port).usePlaintext.build)
-        )(channel => ZIO.attempt(channel.shutdown()).orDie )
+        )(channel => ZIO.attempt(channel.shutdown()).orDie)
         .map(NodeServiceGrpc.stub(_))
         .map(GrpcNodeClient(_))
     )
