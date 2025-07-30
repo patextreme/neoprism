@@ -36,6 +36,18 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         assert(didData.services)(isEmpty) &&
         assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
+    test("create operation with master key that is not secp256k1") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY ed25519 "m/0'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    },
     test("create operation with all other keys") {
       for
         seed <- newSeed
