@@ -29,9 +29,12 @@ trait NodeClient:
 object NodeClient:
 
   def grpc(host: String, port: Int): TaskLayer[NodeClient] =
-    ZLayer.fromZIO(
+    ZLayer.scoped(
       ZIO
-        .attempt(NodeServiceGrpc.stub(ManagedChannelBuilder.forAddress(host, port).usePlaintext.build))
+        .acquireRelease(
+          ZIO.attempt(ManagedChannelBuilder.forAddress(host, port).usePlaintext.build)
+        )(channel => ZIO.attempt(channel.shutdown()).orDie )
+        .map(NodeServiceGrpc.stub(_))
         .map(GrpcNodeClient(_))
     )
 
