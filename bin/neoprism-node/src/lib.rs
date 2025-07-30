@@ -162,7 +162,7 @@ async fn init_dlt_source(
         .expect("Failed to create DLT source");
 
         let sync_worker = DltSyncWorker::new(db.clone(), source);
-        let index_worker = DltIndexWorker::new(db.clone());
+        let index_worker = DltIndexWorker::new(db.clone(), dlt_args.index_interval);
         let cursor_rx = sync_worker.sync_cursor();
         tokio::spawn(sync_worker.run());
         tokio::spawn(index_worker.run());
@@ -179,7 +179,7 @@ async fn init_dlt_source(
         .expect("Failed to create DLT source");
 
         let sync_worker = DltSyncWorker::new(db.clone(), source);
-        let index_worker = DltIndexWorker::new(db.clone());
+        let index_worker = DltIndexWorker::new(db.clone(), dlt_args.index_interval);
         let cursor_rx = sync_worker.sync_cursor();
         tokio::spawn(sync_worker.run());
         tokio::spawn(index_worker.run());

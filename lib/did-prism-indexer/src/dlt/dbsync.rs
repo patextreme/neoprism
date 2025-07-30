@@ -118,7 +118,7 @@ pub struct DbSyncSource<Store: DltCursorRepo + Send + 'static> {
     dbsync_url: String,
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
     from_slot: u64,
-    confirmation_blocks: usize,
+    confirmation_blocks: u16,
     poll_interval: u64,
 }
 
@@ -126,7 +126,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
     pub async fn since_persisted_cursor(
         store: Store,
         dbsync_url: &str,
-        confirmation_blocks: usize,
+        confirmation_blocks: u16,
         poll_interval: u64,
     ) -> Result<Self, E> {
         let cursor = store.get_cursor().await?;
@@ -139,7 +139,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
         ))
     }
 
-    pub fn new(store: Store, dbsync_url: &str, from_slot: u64, confirmation_blocks: usize, poll_interval: u64) -> Self {
+    pub fn new(store: Store, dbsync_url: &str, from_slot: u64, confirmation_blocks: u16, poll_interval: u64) -> Self {
         let (cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
             store,
@@ -182,7 +182,7 @@ struct DbSyncStreamWorker {
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
     event_tx: mpsc::Sender<PublishedPrismObject>,
     from_slot: u64,
-    confirmation_blocks: usize,
+    confirmation_blocks: u16,
     poll_interval: u64,
 }
 
@@ -230,7 +230,7 @@ impl DbSyncStreamWorker {
         event_tx: mpsc::Sender<PublishedPrismObject>,
         sync_cursor_tx: watch::Sender<Option<DltCursor>>,
         from_slot: u64,
-        confirmation_blocks: usize,
+        confirmation_blocks: u16,
         poll_interval: u64,
     ) -> Result<(), DltError> {
         let mut sync_cursor = sync_cursor_tx
@@ -308,7 +308,7 @@ impl DbSyncStreamWorker {
         let _ = sync_cursor_tx.send(Some(cursor));
     }
 
-    async fn fetch_latest_block(pool: &PgPool, confirmation_blocks: usize) -> Result<BlockTimeProjection, DltError> {
+    async fn fetch_latest_block(pool: &PgPool, confirmation_blocks: u16) -> Result<BlockTimeProjection, DltError> {
         let row = sqlx::query_as(
             r#"
 SELECT
@@ -321,7 +321,7 @@ ORDER BY b.block_no DESC
 LIMIT 1
             "#,
         )
-        .bind(confirmation_blocks as i64)
+        .bind(i64::from(confirmation_blocks))
         .fetch_one(pool)
         .await
         .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
@@ -333,7 +333,7 @@ LIMIT 1
     async fn fetch_metadata(
         pool: &PgPool,
         from_slot: i64,
-        confirmation_blocks: usize,
+        confirmation_blocks: u16,
     ) -> Result<Vec<MetadataProjection>, DltError> {
         let rows = sqlx::query_as(
             r#"
@@ -353,7 +353,7 @@ LIMIT 1000
             "#,
         )
         .bind(from_slot)
-        .bind(confirmation_blocks as i64)
+        .bind(i64::from(confirmation_blocks))
         .fetch_all(pool)
         .await
         .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))

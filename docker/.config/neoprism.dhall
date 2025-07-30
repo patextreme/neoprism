@@ -58,6 +58,7 @@ let Options =
           , dltSource : DltSource
           , dltSink : Optional DltSink.Type
           , confirmationBlocks : Optional Natural
+          , indexInterval : Optional Natural
           , extraDependsOn : List Text
           }
       , default =
@@ -66,6 +67,7 @@ let Options =
         , network = "mainnet"
         , dltSink = None DltSink.Type
         , confirmationBlocks = None Natural
+        , indexInterval = None Natural
         , extraDependsOn = [] : List Text
         }
       }
@@ -90,6 +92,13 @@ let makeNodeService =
                           }
                   }
                   options.confirmationBlocks
+              # merge
+                  { None = [] : Prelude.Map.Type Text Text
+                  , Some =
+                      \(n : Natural) ->
+                        toMap { NPRISM_INDEX_INTERVAL = Prelude.Natural.show n }
+                  }
+                  options.indexInterval
               # merge
                   { Relay =
                       \(addr : Text) ->

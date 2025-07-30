@@ -97,6 +97,7 @@ in  { mainnet-dbsync.services
                     neoprism.Options::{
                     , dbHost = "db-neoprism"
                     , confirmationBlocks = Some 0
+                    , indexInterval = Some 1
                     , dltSource =
                         neoprism.DltSource.DbSync
                           neoprism.DbSyncDltSourceArgs::{
