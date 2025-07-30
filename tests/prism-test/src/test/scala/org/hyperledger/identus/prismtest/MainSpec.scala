@@ -9,23 +9,14 @@ import zio.test.Assertion.*
 
 object MainSpec extends ZIOSpecDefault, TestUtils:
 
-  // MASTER_KEY = 1;
-  // ISSUING_KEY = 2;
-  // KEY_AGREEMENT_KEY = 3;
-  // AUTHENTICATION_KEY = 4;
-  // REVOCATION_KEY = 5;
-  // CAPABILITY_INVOCATION_KEY = 6;
-  // CAPABILITY_DELEGATION_KEY = 7;
-  // VDR_KEY = 8;
-
   override def spec =
-    createOperationSuite
-      // .provide(NodeClient.grpc("localhost", 50053))
-      .provide(
-        NodeClient.neoprism("localhost", 8080)("localhost", 8090),
-        Client.default
-      )
-      .provide(Runtime.removeDefaultLoggers)
+    val prismNodeSpec = suite("PRISM node suite")(createOperationSuite).provide(NodeClient.grpc("localhost", 50053))
+    val neoprismSpec = suite("NeoPRISM suite")(createOperationSuite).provide(
+      NodeClient.neoprism("localhost", 8080)("localhost", 8090),
+      Client.default
+    )
+
+    (prismNodeSpec + neoprismSpec).provide(Runtime.removeDefaultLoggers)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment
       @@ TestAspect.parallelN(1)
