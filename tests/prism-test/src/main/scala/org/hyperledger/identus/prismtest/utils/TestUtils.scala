@@ -3,10 +3,10 @@ package org.hyperledger.identus.prismtest.utils
 import com.google.protobuf.ByteString
 import io.iohk.atala.prism.protos.node_api.DIDData
 import monocle.syntax.all.*
-import org.hyperledger.identus.apollo.derivation
 import org.hyperledger.identus.apollo.derivation.EdHDKey
 import org.hyperledger.identus.apollo.derivation.HDKey
 import org.hyperledger.identus.apollo.utils.ByteArrayExtKt
+import org.hyperledger.identus.apollo.utils.KMMEdPrivateKey
 import org.hyperledger.identus.apollo.utils.StringExtKt
 import org.hyperledger.identus.prismtest.NodeClient
 import org.hyperledger.identus.prismtest.OperationRef
@@ -85,7 +85,7 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
         .focus(_.op.didData.some.publicKeys)
         .modify(_ :+ PublicKey(id = keyId, usage = keyUsage, keyData = hdKey))
 
-trait ProtoUtils:
+trait ProtoUtils extends CryptoUtils:
   given Conversion[Array[Byte], ByteString] = ByteString.copyFrom
 
   given Conversion[HDKey | EdHDKey, KeyData] = (hdKey: HDKey | EdHDKey) =>
@@ -98,10 +98,11 @@ trait ProtoUtils:
           )
         )
       case hdKey: EdHDKey =>
+        val privKey = KMMEdPrivateKey(hdKey.getPrivateKey())
         KeyData.CompressedEcKeyData(
           CompressedECKeyData(
             curve = "Ed25519",
-            data = hdKey.getPrivateKey()
+            data = privKey.publicKey().getRaw()
           )
         )
 
@@ -112,7 +113,7 @@ trait CryptoUtils:
   def sha256(bytes: Array[Byte]): Array[Byte] = Sha256Hash.compute(bytes).bytes.toArray
 
   def deriveSecp256k1(seed: Array[Byte])(pathStr: String): HDKey =
-    derivation.HDKey(seed, 0, 0).derive(pathStr)
+    HDKey(seed, 0, 0).derive(pathStr)
 
   def deriveEd25519(seed: Array[Byte])(pathStr: String): EdHDKey =
-    derivation.EdHDKey.Companion.initFromSeed(seed).derive(pathStr)
+    EdHDKey.Companion.initFromSeed(seed).derive(pathStr)

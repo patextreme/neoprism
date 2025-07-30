@@ -43,7 +43,7 @@ impl OperationRepo for PostgresDb {
             .db_ctx
             .list::<entity::RawOperation>(
                 &mut tx,
-                Filter::empty(),
+                Filter::all([entity::RawOperationFilter::is_indexed().eq(true)]),
                 Sort::new([entity::RawOperationSort::slot().desc()]),
                 Some(PaginationInput { page: 0, limit: 1 }),
             )

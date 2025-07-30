@@ -35,17 +35,16 @@ object NodeClient:
         .map(GrpcNodeClient(_))
     )
 
-  def neoprism(neoprismHost: String, neoprismPort: Int)(
-      cardanoWalletHost: String,
-      cardanoWalletPort: Int,
-      confirmationBlocks: Int = 0
-  ): RLayer[Client, NodeClient] =
+  def neoprism(
+      neoprismHost: String,
+      neoprismPort: Int
+  )(cardanoWalletHost: String, cardanoWalletPort: Int): RLayer[Client, NodeClient] =
     ZLayer
       .fromZIO {
         for
           neoprismClient <- ZIO.serviceWith[Client](_.url(url"http://$neoprismHost:$neoprismPort"))
           cardanoWalletClient <- ZIO.serviceWith[Client](_.url(url"http://$cardanoWalletHost:$cardanoWalletPort"))
-        yield NeoprismNodeClient(neoprismClient, cardanoWalletClient, confirmationBlocks)
+        yield NeoprismNodeClient(neoprismClient, cardanoWalletClient)
       }
 
 private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, CryptoUtils, ProtoUtils:
@@ -76,9 +75,7 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
       .orDie
       .map(_.document)
 
-private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Client, confirmationBlocks: Int)
-    extends NodeClient,
-      CryptoUtils:
+private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Client) extends NodeClient, CryptoUtils:
 
   import NeoprismNodeClient.*
 
@@ -97,11 +94,17 @@ private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Cl
         .flatMap(_.body.to[List[Wallet]])
         .orDie
       wallet <- ZIO.succeed(wallets.headOption).someOrFailException.orDie
-      tx <- cardanoWalletClient.batched
+      txSlotNo <- cardanoWalletClient.batched
         .get(url"/v2/wallets/${wallet.id}/transactions/$ref".toString)
         .flatMap(_.body.to[TransactionResponse])
+        .map(_.inserted_at.map(_.absolute_slot_number))
         .orDie
-    yield tx.depth.exists(_.quantity >= confirmationBlocks)
+      indexerSlotNo <- neoprismClient.batched
+        .get(url"/api/indexer-stats".toString)
+        .flatMap(_.body.to[IndexerStatsResponse])
+        .map(_.last_prism_slot_number)
+        .orDie
+    yield indexerSlotNo.exists(indexerSlot => txSlotNo.exists(txSlot => indexerSlot >= txSlot))
 
   override def getDidDocument(did: String): UIO[Option[DIDData]] =
     for
@@ -136,16 +139,23 @@ private object NeoprismNodeClient:
     given enc: JsonEncoder[Wallet] = JsonEncoder.derived
     given JsonCodec[Wallet] = JsonCodec.fromEncoderDecoder(enc, dec)
 
-  case class TransactionResponse(depth: Option[TransactionDepth])
+  case class TransactionResponse(inserted_at: Option[LedgerTimestamp])
 
   object TransactionResponse:
     given dec: JsonDecoder[TransactionResponse] = JsonDecoder.derived
     given enc: JsonEncoder[TransactionResponse] = JsonEncoder.derived
     given JsonCodec[TransactionResponse] = JsonCodec.fromEncoderDecoder(enc, dec)
 
-  case class TransactionDepth(quantity: Int)
+  case class LedgerTimestamp(absolute_slot_number: Int)
 
-  object TransactionDepth:
-    given dec: JsonDecoder[TransactionDepth] = JsonDecoder.derived
-    given enc: JsonEncoder[TransactionDepth] = JsonEncoder.derived
-    given JsonCodec[TransactionDepth] = JsonCodec.fromEncoderDecoder(enc, dec)
+  object LedgerTimestamp:
+    given dec: JsonDecoder[LedgerTimestamp] = JsonDecoder.derived
+    given enc: JsonEncoder[LedgerTimestamp] = JsonEncoder.derived
+    given JsonCodec[LedgerTimestamp] = JsonCodec.fromEncoderDecoder(enc, dec)
+
+  case class IndexerStatsResponse(last_prism_block_number: Option[Int], last_prism_slot_number: Option[Int])
+
+  object IndexerStatsResponse:
+    given dec: JsonDecoder[IndexerStatsResponse] = JsonDecoder.derived
+    given enc: JsonEncoder[IndexerStatsResponse] = JsonEncoder.derived
+    given JsonCodec[IndexerStatsResponse] = JsonCodec.fromEncoderDecoder(enc, dec)

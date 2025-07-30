@@ -20,11 +20,11 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
 
   override def spec =
     createOperationSuite
-      .provide(NodeClient.grpc("localhost", 50053))
-      // .provide(
-      //   NodeClient.neoprism("localhost", 8080)("localhost", 8090),
-      //   Client.default
-      // )
+      // .provide(NodeClient.grpc("localhost", 50053))
+      .provide(
+        NodeClient.neoprism("localhost", 8080)("localhost", 8090),
+        Client.default
+      )
       .provide(Runtime.removeDefaultLoggers)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment
