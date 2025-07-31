@@ -62,5 +62,3 @@ message PrismOperation {
     ProtoDeactivateStorageEntry deactivate_storage_entry = 9;
   };
 }
-
-

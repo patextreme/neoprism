@@ -11,18 +11,6 @@ typed_uri!(AssetStyleSheet, "assets" / "styles.css");
 typed_uri!(Home, "");
 typed_uri!(Swagger, "swagger-ui");
 
-// system
-typed_uri!(ApiHealth, "api" / "_system" / "health");
-typed_uri!(ApiAppMeta, "api" / "_system" / "metadata");
-
-// indexer
-typed_uri!(ApiDid, "api" / "dids" / (did: String));
-typed_uri!(ApiDidData, "api" / "did-data" / (did: String));
-typed_uri!(ApiIndexerStats, "api" / "indexer-stats");
-
-// submitter
-typed_uri!(ApiSignedOpSubmissions, "api" / "signed-operation-submissions");
-
 // UI resolver
 typed_uri!(Resolver, "resolver" ? Option<DidQuery>);
 
@@ -30,3 +18,15 @@ typed_uri!(Resolver, "resolver" ? Option<DidQuery>);
 typed_uri!(Explorer, "explorer" ? Option<PageQuery>);
 typed_uri!(ExplorerDltCursor, "explorer" / "dlt-cursor");
 typed_uri!(ExplorerDidList, "explorer" / "did-list" ? Option<PageQuery>);
+
+// API system
+typed_uri!(ApiHealth, "api" / "_system" / "health");
+typed_uri!(ApiAppMeta, "api" / "_system" / "metadata");
+
+// API submitter
+typed_uri!(ApiSignedOpSubmissions, "api" / "signed-operation-submissions");
+
+// API indexer
+typed_uri!(ApiDid, "api" / "dids" / (did: String));
+typed_uri!(ApiDidData, "api" / "did-data" / (did: String));
+typed_uri!(ApiIndexerStats, "api" / "indexer-stats");

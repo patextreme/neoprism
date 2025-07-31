@@ -2,7 +2,7 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use identus_apollo::hex::HexStr;
-use identus_did_core::DidDocument;
+use identus_did_core::{Did, DidDocument};
 use identus_did_prism::did::PrismDidOps;
 use identus_did_prism::proto::MessageExt;
 use identus_did_prism::proto::node_api::DIDData;
@@ -41,9 +41,7 @@ mod models {
         (status = NOT_FOUND, description = "DID not found"),
         (status = INTERNAL_SERVER_ERROR, description = "Internal server error"),
     ),
-    params(
-        ("did" = String, Path, description = "The DID to resolve", example = "did:prism:b02cc5ce2300b3c6d38496fbc2762eaf07a51cabc8708e8f1eb114d0f14398c5"),
-    )
+    params(("did" = Did, Path, description = "The DID to resolve"))
 )]
 pub async fn resolve_did(
     Path(did): Path<String>,
@@ -69,9 +67,7 @@ pub async fn resolve_did(
         (status = NOT_FOUND, description = "DID not found"),
         (status = INTERNAL_SERVER_ERROR, description = "Internal server error"),
     ),
-    params(
-        ("did" = String, Path, description = "The DID to resolve", example = "did:prism:b02cc5ce2300b3c6d38496fbc2762eaf07a51cabc8708e8f1eb114d0f14398c5"),
-    )
+    params(("did" = Did, Path, description = "The DID to resolve"))
 )]
 pub async fn did_data(Path(did): Path<String>, State(state): State<AppState>) -> Result<String, StatusCode> {
     let (result, _) = state.did_service.resolve_did(&did).await;

@@ -37,7 +37,7 @@ services:
         - "-f"
         - http://localhost:8080/api/_system/health
       timeout: "5s"
-    image: identus-neoprism:0.2.0
+    image: hyperledgeridentus/identus-neoprism:0.2.0
     ports:
       - "8080:8080"
     restart: always
