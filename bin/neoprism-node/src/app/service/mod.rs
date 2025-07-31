@@ -1,5 +1,6 @@
 use error::{InvalidDid, ResolutionError};
 use identus_did_prism::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidOps};
+use identus_did_prism::dlt::{BlockNo, SlotNo};
 use identus_did_prism::protocol::resolver::{ResolutionDebug, resolve_published, resolve_unpublished};
 use identus_did_prism::utils::paging::Paginated;
 use identus_did_prism_indexer::repo::OperationRepo;
@@ -15,6 +16,11 @@ pub struct DidService {
 impl DidService {
     pub fn new(db: &PostgresDb) -> Self {
         Self { db: db.clone() }
+    }
+
+    pub async fn get_indexer_stats(&self) -> anyhow::Result<Option<(SlotNo, BlockNo)>> {
+        let result = self.db.get_last_indexed_block().await?;
+        Ok(result)
     }
 
     pub async fn resolve_did(&self, did: &str) -> (Result<(PrismDid, DidState), ResolutionError>, ResolutionDebug) {

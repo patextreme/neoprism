@@ -7,10 +7,23 @@ let CloudAgentService =
           , ports : List Text
           , depends_on : Prelude.Map.Type Text { condition : Text }
           , environment : Prelude.Map.Type Text Text
+          , healthcheck :
+              { test : List Text
+              , interval : Text
+              , timeout : Text
+              , retries : Natural
+              }
           }
       , default =
         { image = "hyperledgeridentus/identus-cloud-agent:2.0.0"
         , restart = "always"
+        , healthcheck =
+          { test =
+            [ "CMD", "curl", "-f", "http://localhost:8085/_system/health" ]
+          , interval = "2s"
+          , timeout = "5s"
+          , retries = 30
+          }
         }
       }
 

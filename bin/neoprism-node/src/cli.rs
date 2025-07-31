@@ -94,9 +94,15 @@ pub struct DltSourceArgs {
     /// (e.g. postgres://user:pass@host:5432/db)
     #[arg(long, env = "NPRISM_CARDANO_DBSYNC_URL", group = "dlt-source")]
     pub cardano_dbsync_url: Option<String>,
+    /// Number of sesconds to wait before polling DB Sync for next update.
+    #[arg(long, env = "NPRISM_CARDANO_DBSYNC_POLL_INTERVAL", default_value_t = 10)]
+    pub cardano_dbsync_poll_interval: u64,
+    /// Number of seconds to wait before checking for unindexed operations.
+    #[arg(long, env = "NPRISM_INDEX_INTERVAL", default_value_t = 10)]
+    pub index_interval: u64,
     /// Number of confirmation blocks to wait before considering the block valid.
     #[arg(long, env = "NPRISM_CONFIRMATION_BLOCKS", default_value_t = 112)]
-    pub confirmation_blocks: usize,
+    pub confirmation_blocks: u16,
 }
 
 #[derive(Args)]

@@ -31,7 +31,7 @@ pkgs.mkShell {
       cardano-wallet
       cardano-testnet
       cardano-db-sync
-      prism-cli
+      pkgsInternal.prism-cli
     ]
     ++ (builtins.attrValues scripts);
 

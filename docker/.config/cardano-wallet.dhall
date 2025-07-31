@@ -9,6 +9,12 @@ let CardanoWalletService =
           , entrypoint : List Text
           , command : List Text
           , depends_on : Prelude.Map.Type Text { condition : Text }
+          , healthcheck :
+              { test : List Text
+              , interval : Text
+              , timeout : Text
+              , retries : Natural
+              }
           }
       , default =
         { image = "cardanofoundation/cardano-wallet:2025.3.31"
@@ -25,6 +31,12 @@ let CardanoWalletService =
               --listen-address 0.0.0.0
             ''
           ]
+        , healthcheck =
+          { test = [ "CMD-SHELL", "cardano-wallet network information" ]
+          , interval = "2s"
+          , timeout = "5s"
+          , retries = 30
+          }
         }
       }
 
@@ -45,7 +57,7 @@ let makeWalletService =
             Prelude.Optional.map
               Natural
               (List Text)
-              (\(n : Natural) -> [ Prelude.Natural.show n ])
+              (\(n : Natural) -> [ "${Prelude.Natural.show n}:8090" ])
               options.hostPort
         , depends_on =
           [ { mapKey = options.cardanoNodeHost

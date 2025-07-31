@@ -27,11 +27,12 @@ where
 
 pub struct DltIndexWorker {
     store: PostgresDb,
+    index_interval: u64,
 }
 
 impl DltIndexWorker {
-    pub fn new(store: PostgresDb) -> Self {
-        Self { store }
+    pub fn new(store: PostgresDb, index_interval: u64) -> Self {
+        Self { store, index_interval }
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
@@ -40,7 +41,7 @@ impl DltIndexWorker {
             if let Err(e) = result {
                 tracing::error!("{:?}", e);
             }
-            tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(self.index_interval)).await;
         }
     }
 }

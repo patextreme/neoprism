@@ -21,7 +21,6 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       rust-overlay,
       sbt,
@@ -47,7 +46,9 @@
               cardano-testnet = cardano-node.packages.${system}.cardano-testnet;
               cardano-wallet = cardano-wallet.packages.${system}.cardano-wallet;
               cardano-db-sync = cardano-db-sync.packages.${system}.default;
-              prism-cli = self.packages.${system}.prism-cli;
+            })
+            (_: prev: {
+              pkgsInternal = import ./nix/pkgsInternal { pkgs = prev; };
             })
           ];
         };

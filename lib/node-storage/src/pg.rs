@@ -1,5 +1,5 @@
 use identus_apollo::hash::Sha256Digest;
-use identus_did_prism::dlt::{BlockMetadata, DltCursor, OperationMetadata};
+use identus_did_prism::dlt::{BlockMetadata, BlockNo, DltCursor, OperationMetadata, SlotNo};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
 use identus_did_prism_indexer::repo::{DltCursorRepo, IndexedOperation, OperationRepo, RawOperationId};
@@ -36,6 +36,29 @@ impl PostgresDb {
 #[async_trait::async_trait]
 impl OperationRepo for PostgresDb {
     type Error = Error;
+
+    async fn get_last_indexed_block(&self) -> Result<Option<(SlotNo, BlockNo)>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+        let ops_page = self
+            .db_ctx
+            .list::<entity::RawOperation>(
+                &mut tx,
+                Filter::all([entity::RawOperationFilter::is_indexed().eq(true)]),
+                Sort::new([entity::RawOperationSort::slot().desc()]),
+                Some(PaginationInput { page: 0, limit: 1 }),
+            )
+            .await?;
+        tx.commit().await?;
+
+        let last_op = ops_page.data.into_iter().next();
+        Ok(last_op.map(|op| {
+            let slot: SlotNo = u64::try_from(op.slot).expect("slot_number does not fit in u64").into();
+            let block: BlockNo = u64::try_from(op.block_number)
+                .expect("block_number does not fit in u64")
+                .into();
+            (slot, block)
+        }))
+    }
 
     async fn get_all_dids(&self, page: u32, page_size: u32) -> Result<Paginated<CanonicalPrismDid>, Self::Error> {
         let mut tx = self.pool.begin().await?;
@@ -158,11 +181,13 @@ impl OperationRepo for PostgresDb {
                 slot: metadata
                     .block_metadata
                     .slot_number
+                    .inner()
                     .try_into()
                     .expect("slot_number does not fit in i64"),
                 block_number: metadata
                     .block_metadata
                     .block_number
+                    .inner()
                     .try_into()
                     .expect("block_number does not fit in i64"),
                 cbt: metadata.block_metadata.cbt,
@@ -287,11 +312,12 @@ fn parse_raw_operation(
 ) -> Result<(RawOperationId, OperationMetadata, SignedPrismOperation), Error> {
     let metadata = OperationMetadata {
         block_metadata: BlockMetadata {
-            slot_number: value.slot.try_into().expect("slot value does not fit in u64"),
-            block_number: value
-                .block_number
-                .try_into()
-                .expect("block_number value does not fit in u64"),
+            slot_number: u64::try_from(value.slot)
+                .expect("slot value does not fit in u64")
+                .into(),
+            block_number: u64::try_from(value.block_number)
+                .expect("block_number value does not fit in u64")
+                .into(),
             cbt: value.cbt,
             absn: value.absn.try_into().expect("absn value does not fit in u32"),
         },

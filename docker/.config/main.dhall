@@ -20,7 +20,9 @@ in  { mainnet-dbsync.services
       , neoprism-indexer =
           neoprism.makeNodeService
             neoprism.Options::{
-            , dltSource = neoprism.DltSource.DbSync "<DBSYNC_URL>"
+            , dltSource =
+                neoprism.DltSource.DbSync
+                  neoprism.DbSyncDltSourceArgs::{ url = "<DBSYNC_URL>" }
             }
       }
     , mainnet-relay.services
@@ -94,18 +96,24 @@ in  { mainnet-dbsync.services
                   neoprism.makeNodeService
                     neoprism.Options::{
                     , dbHost = "db-neoprism"
-                    , confirmationBlocks = Some 1
+                    , confirmationBlocks = Some 0
+                    , indexInterval = Some 1
                     , dltSource =
                         neoprism.DltSource.DbSync
-                          "postgresql://postgres:postgres@db-dbsync:5432/postgres"
+                          neoprism.DbSyncDltSourceArgs::{
+                          , url =
+                              "postgresql://postgres:postgres@db-dbsync:5432/postgres"
+                          , pollInterval = 1
+                          }
                     , dltSink = Some neoprism.DltSink::{
-                      , walletBaseUrl = "http://cardano-wallet:8090/v2"
+                      , walletHost = "cardano-wallet"
+                      , walletPort = 8090
                       , walletId
                       , walletPassphrase
                       , walletPaymentAddress
                       }
                     }
-              , identus-prism-node =
+              , prism-node =
                   prismNode.makePrismNodeService
                     prismNode.Options::{
                     , nodeDbHost = "db-prism-node"
@@ -115,12 +123,14 @@ in  { mainnet-dbsync.services
                     , walletPassphrase
                     , walletId
                     , walletPaymentAddress
+                    , hostPort = Some 50053
+                    , confirmationBlocks = 0
                     }
               , identus-cloud-agent =
                   cloudAgent.makeCloudAgentService
                     cloudAgent.Options::{
                     , dbHost = "db-cloud-agent"
-                    , prismNodeHost = "identus-prism-node"
+                    , prismNodeHost = "prism-node"
                     }
               , db-neoprism =
                   db.makeDbService db.Options::{ hostPort = Some 5432 }

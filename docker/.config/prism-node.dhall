@@ -4,12 +4,14 @@ let PrismNodeService =
       { Type =
           { image : Text
           , restart : Text
+          , ports : Optional (List Text)
           , depends_on : Prelude.Map.Type Text { condition : Text }
           , environment : Prelude.Map.Type Text Text
           }
       , default =
         { image = "ghcr.io/input-output-hk/prism-node:2.6.0"
         , restart = "always"
+        , ports = None (List Text)
         , depends_on = [] : Prelude.Map.Type Text { condition : Text }
         , environment = [] : Prelude.Map.Type Text Text
         }
@@ -25,22 +27,35 @@ let Options =
           , walletPassphrase : Text
           , walletId : Text
           , walletPaymentAddress : Text
+          , hostPort : Optional Natural
+          , confirmationBlocks : Natural
           }
-      , default.walletApiPort = 8090
+      , default =
+        { walletApiPort = 8090
+        , hostPort = None Natural
+        , confirmationBlocks = 112
+        }
       }
 
 let makePrismNodeService =
       \(options : Options.Type) ->
         PrismNodeService::{
+        , ports =
+            Prelude.Optional.map
+              Natural
+              (List Text)
+              (\(p : Natural) -> [ "${Prelude.Natural.show p}:50053" ])
+              options.hostPort
         , environment = toMap
             { NODE_PSQL_HOST = "${options.nodeDbHost}:5432"
             , NODE_PSQL_DATABASE = "postgres"
             , NODE_PSQL_USERNAME = "postgres"
             , NODE_PSQL_PASSWORD = "postgres"
             , NODE_LEDGER = "cardano"
-            , NODE_CARDANO_CONFIRMATION_BLOCKS = "1"
-            , NODE_REFRESH_AND_SUBMIT_PERIOD = "5s"
-            , NODE_MOVE_SCHEDULED_TO_PENDING_PERIOD = "5s"
+            , NODE_CARDANO_CONFIRMATION_BLOCKS =
+                Prelude.Natural.show options.confirmationBlocks
+            , NODE_REFRESH_AND_SUBMIT_PERIOD = "1s"
+            , NODE_MOVE_SCHEDULED_TO_PENDING_PERIOD = "1s"
             , NODE_CARDANO_NETWORK = "testnet"
             , NODE_CARDANO_WALLET_PASSPHRASE = options.walletPassphrase
             , NODE_CARDANO_WALLET_ID = options.walletId
@@ -59,6 +74,9 @@ let makePrismNodeService =
             , mapValue.condition = "service_healthy"
             }
           , { mapKey = options.dbSyncDbHost
+            , mapValue.condition = "service_healthy"
+            }
+          , { mapKey = options.walletApiHost
             , mapValue.condition = "service_healthy"
             }
           , { mapKey = options.bootstrapTestnetHost

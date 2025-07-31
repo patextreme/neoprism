@@ -336,10 +336,11 @@ impl ServiceId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PublicKey {
     pub id: PublicKeyId,
     pub data: PublicKeyData,
+    pub orig: proto::prism_ssi::PublicKey,
 }
 
 impl PublicKey {
@@ -375,7 +376,11 @@ impl PublicKey {
             (usage, pk) => PublicKeyData::Other { data: pk, usage },
         };
 
-        Ok(Self { id, data })
+        Ok(Self {
+            id,
+            data,
+            orig: public_key.clone(),
+        })
     }
 }
 
@@ -495,11 +500,12 @@ impl KeyUsage {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Service {
     pub id: ServiceId,
     pub r#type: ServiceType,
     pub service_endpoint: ServiceEndpoint,
+    pub orig: proto::prism_ssi::Service,
 }
 
 impl Service {
@@ -523,6 +529,7 @@ impl Service {
             id,
             r#type,
             service_endpoint,
+            orig: service.clone(),
         })
     }
 }

@@ -13,6 +13,7 @@ use regex::Regex;
 use self::operation::{PublicKey, Service};
 use crate::did::operation::StorageData;
 use crate::prelude::*;
+use crate::proto::node_api;
 use crate::proto::prism::PrismOperation;
 use crate::proto::prism::prism_operation::Operation;
 
@@ -214,7 +215,7 @@ impl FromStr for PrismDid {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DidState {
     pub did: CanonicalPrismDid,
     pub context: Vec<String>,
@@ -229,4 +230,16 @@ pub struct StorageState {
     pub init_operation_hash: Rc<Sha256Digest>,
     pub last_operation_hash: Rc<Sha256Digest>,
     pub data: Rc<StorageData>,
+}
+
+impl From<DidState> for node_api::DIDData {
+    fn from(value: DidState) -> Self {
+        node_api::DIDData {
+            id: value.did.to_string().replace("did:prism:", ""),
+            public_keys: value.public_keys.into_iter().map(|i| i.orig).collect(),
+            services: value.services.into_iter().map(|i| i.orig).collect(),
+            context: value.context,
+            special_fields: Default::default(),
+        }
+    }
 }

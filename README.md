@@ -105,7 +105,7 @@ Assuming you are in the development shell, these are frequently used commands.
 | `npm install`                    | Install the npm dependencies (first time only) |
 | `cargo build`                    | Build the cargo workspace                      |
 | `cargo clean`                    | Clean the cargo workspace                      |
-| `cargo r -p neoprism-node -- -h` | See `nprism-node` service CLI options          |
+| `cargo r -p neoprism-node -- -h` | See `neoprism-node` service CLI options        |
 | `cargo test --all-features`      | Run tests which enable all crate features      |
 
 And these are some scripts provided by the shell to automate local dev workflow

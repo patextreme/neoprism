@@ -67,16 +67,22 @@ mod models {
                 tx_idx,
                 name: "tx_idx",
             })? as u32,
-            block_number: context.block_number.ok_or(MetadataReadError::MissingBlockProperty {
-                block_hash: block_hash.clone(),
-                tx_idx,
-                name: "block_number",
-            })?,
-            slot_number: context.slot.ok_or(MetadataReadError::MissingBlockProperty {
-                block_hash: block_hash.clone(),
-                tx_idx,
-                name: "slot",
-            })?,
+            block_number: context
+                .block_number
+                .ok_or(MetadataReadError::MissingBlockProperty {
+                    block_hash: block_hash.clone(),
+                    tx_idx,
+                    name: "block_number",
+                })?
+                .into(),
+            slot_number: context
+                .slot
+                .ok_or(MetadataReadError::MissingBlockProperty {
+                    block_hash: block_hash.clone(),
+                    tx_idx,
+                    name: "slot",
+                })?
+                .into(),
         };
 
         // parse prism_block
@@ -148,12 +154,7 @@ pub struct OuraN2NSource<Store: DltCursorRepo + Send + 'static> {
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
-    pub fn since_genesis(
-        store: Store,
-        remote_addr: &str,
-        chain: &NetworkIdentifier,
-        confirmation_blocks: usize,
-    ) -> Self {
+    pub fn since_genesis(store: Store, remote_addr: &str, chain: &NetworkIdentifier, confirmation_blocks: u16) -> Self {
         let intersect = match chain {
             NetworkIdentifier::Mainnet => oura::sources::IntersectArg::Point(PointArg(
                 71482583,
@@ -172,7 +173,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
         store: Store,
         remote_addr: &str,
         chain: &NetworkIdentifier,
-        confirmation_blocks: usize,
+        confirmation_blocks: u16,
     ) -> Result<Self, E> {
         let cursor = store.get_cursor().await?;
         match cursor {
@@ -198,7 +199,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
         remote_addr: &str,
         chain: &NetworkIdentifier,
         intersect: IntersectArg,
-        confirmation_blocks: usize,
+        confirmation_blocks: u16,
     ) -> Self {
         #[allow(deprecated)]
         let config = Config {
@@ -208,7 +209,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
             intersect: Some(intersect),
             well_known: None,
             mapper: Default::default(),
-            min_depth: confirmation_blocks,
+            min_depth: confirmation_blocks.into(),
             retry_policy: Some(oura::sources::RetryPolicy {
                 chainsync_max_retries: 0,
                 chainsync_max_backoff: 60,

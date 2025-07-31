@@ -16,8 +16,7 @@ let
 in
 rec {
   # misc
-  ui-assets = pkgs.callPackage ./ui-assets.nix { };
-  prism-cli = pkgs.callPackage ./prism-cli.nix { };
+  neoprism-ui-assets = pkgs.callPackage ./neoprism-ui-assets.nix { };
 
   # neoprism binaries
   neoprism-bin = pkgs.callPackage ./neoprism-bin.nix {
@@ -33,17 +32,17 @@ rec {
 
   # neoprism image
   neoprism-docker = pkgs.callPackage ./neoprism-docker.nix {
-    inherit version neoprism-bin ui-assets;
+    inherit version neoprism-bin neoprism-ui-assets;
   };
   neoprism-docker-linux-amd64 = pkgs.pkgsCross.gnu64.callPackage ./neoprism-docker.nix {
-    inherit version ui-assets;
+    inherit version neoprism-ui-assets;
     neoprism-bin = neoprism-bin-x86_64-linux;
     tagSuffix = "-amd64";
   };
   neoprism-docker-linux-arm64 =
     pkgs.pkgsCross.aarch64-multiplatform.callPackage ./neoprism-docker.nix
       {
-        inherit version ui-assets;
+        inherit version neoprism-ui-assets;
         neoprism-bin = neoprism-bin-aarch64-linux;
         tagSuffix = "-arm64";
       };

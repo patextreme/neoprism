@@ -21,7 +21,7 @@ let
         cardano-testnet cardano \
           --conway-era \
           --testnet-magic "$CARDANO_NODE_NETWORK_ID" \
-          --slot-length 1 \
+          --active-slots-coeff 0.1 \
           --epoch-length 60 \
           --output-dir testnet
       '';

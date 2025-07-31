@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package io.iohk.atala.prism.protos;
+
+import "prism.proto";
+import "prism-ssi.proto";
+
+service NodeService {
+    rpc GetDidDocument(GetDidDocumentRequest) returns (GetDidDocumentResponse) {}
+    rpc ScheduleOperations(ScheduleOperationsRequest) returns (ScheduleOperationsResponse) {}
+    rpc GetOperationInfo(GetOperationInfoRequest) returns (GetOperationInfoResponse) {}
+}
+
+message GetDidDocumentRequest {
+    string did = 1; // The DID.
+}
+
+message GetDidDocumentResponse {
+    DIDData document = 1; // The DID Document.
+}
+
+message DIDData {
+    string id = 1; // The DID suffix, where DID is in form did:prism:[DID suffix]
+    repeated proto.PublicKey public_keys = 2; // The keys that belong to this DID Document.
+    repeated proto.Service services = 3; // The list of services that belong to this DID Document.
+    repeated string context = 4; // The list of @context values to consider on JSON-LD representations
+}
+
+message ScheduleOperationsRequest {
+    repeated proto.SignedPrismOperation signed_operations = 1; // a list of signed operations
+}
+
+message ScheduleOperationsResponse {
+  repeated OperationOutput outputs = 1;
+}
+
+message OperationOutput {
+  oneof operation_maybe {
+    bytes operation_id = 5; // Operation identifier.
+    string error = 6; // Error description if PRISM Node service haven't scheduled the operation.
+  }
+}
+
+message GetOperationInfoRequest {
+    bytes operation_id = 1; // Operation identifier. The identifier is returned to the corresponding operation request.
+}
+
+message GetOperationInfoResponse {
+    OperationStatus operation_status = 1; // Contains the status of this operation.
+}
+
+enum OperationStatus {
+    UNKNOWN_OPERATION = 0; // The operation hasn't been received by the node service yet.
+    PENDING_SUBMISSION = 1; // The transaction containing this operation hasn't been published to the chain yet.
+    AWAIT_CONFIRMATION = 2; // The transaction containing this operation has been published to the chain, but hasn't been processed by PRISM yet.
+    CONFIRMED_AND_APPLIED = 3; // The operation has been successfully applied to the PRISM.
+    CONFIRMED_AND_REJECTED = 4; // The operation has been processed by PRISM, but rejected because of some error.
+}
