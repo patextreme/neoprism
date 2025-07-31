@@ -1633,7 +1633,7 @@ dependencies = [
 
 [[package]]
 name = "identus-apollo"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "base64",
  "derive_more",
@@ -1648,7 +1648,7 @@ dependencies = [
 
 [[package]]
 name = "identus-did-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "derive_more",
  "identity_did",
@@ -1660,7 +1660,7 @@ dependencies = [
 
 [[package]]
 name = "identus-did-prism"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "derive_more",
@@ -1681,7 +1681,7 @@ dependencies = [
 
 [[package]]
 name = "identus-did-prism-indexer"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1702,7 +1702,7 @@ dependencies = [
 
 [[package]]
 name = "identus-did-prism-submitter"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "derive_more",
@@ -2204,7 +2204,7 @@ dependencies = [
 
 [[package]]
 name = "neoprism-node"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -2244,7 +2244,7 @@ dependencies = [
 
 [[package]]
 name = "node-storage"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "chrono",
