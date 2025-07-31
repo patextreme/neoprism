@@ -1,5 +1,3 @@
 { pkgs }:
 
-{
-  prism-cli = pkgs.callPackage ./prism-cli.nix { };
-}
+pkgs.callPackage ./scala-did { }

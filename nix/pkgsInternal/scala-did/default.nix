@@ -1,0 +1,81 @@
+{
+  lib,
+  mkSbtDerivation,
+  writeShellApplication,
+  fetchFromGitHub,
+  stdenv,
+  yarn,
+  cacert,
+  protobuf,
+  jdk21,
+}:
+
+let
+  jars = mkSbtDerivation rec {
+    pname = "scala-did";
+    version = "v0.1.0-M28";
+    depsSha256 = "sha256-kyvjdyQyNG35D0UwM5XMqhRHjjdF3ocU5H81frYlx1s=";
+    src = fetchFromGitHub {
+      owner = "FabioPinheiro";
+      repo = "scala-did";
+      rev = version;
+      hash = "sha256-NMeiJrxOsa0F9oJqNm85DGtfsstunwWwJUrDZImdJ8w=";
+    };
+    patches = [ ./node_impl.patch ];
+
+    nativeBuildInputs = [
+      cacert
+      protobuf
+    ];
+
+    LANG = "C.utf8";
+    SSL_CERT_FILE = "${cacert}/etc/ssl/certs/ca-bundle.crt";
+
+    depsWarmupCommand = ''
+      export LD_LIBRARY_PATH=${
+        lib.makeLibraryPath [
+          stdenv.cc.cc
+        ]
+      }
+      sbt didResolverPrismJVM/compile
+      sbt didPrismNode/compile
+    '';
+
+    buildPhase = ''
+      export LD_LIBRARY_PATH=${
+        lib.makeLibraryPath [
+          stdenv.cc.cc
+        ]
+      }
+      sbt didResolverPrismJVM/assembly
+      sbt didPrismNode/assembly
+    '';
+
+    installPhase = ''
+      mkdir -p $out/jars
+      cp -r did-method-prism/jvm/target/scala-3.3.6/cardano-prism.jar $out/jars/prism-cli.jar
+      cp -r did-method-prism-node/target/scala-3.3.6/prism-node.jar $out/jars/prism-node.jar
+    '';
+  };
+in
+{
+  prism-cli = writeShellApplication {
+    name = "prism-cli";
+    runtimeInputs = [ jdk21 ];
+    text = ''
+      if [ -z "''${PRISM_HOME:-}" ]; then
+        echo "Error: PRISM_HOME cannot be empty."
+        exit 1
+      fi
+      java -Duser.home="$PRISM_HOME" -jar ${jars}/jars/prism-cli.jar "$@"
+    '';
+  };
+
+  scala-did-prism-node = writeShellApplication {
+    name = "scala-did-prism-node";
+    runtimeInputs = [ jdk21 ];
+    text = ''
+      java -jar ${jars}/jars/prism-node.jar "$@"
+    '';
+  };
+}

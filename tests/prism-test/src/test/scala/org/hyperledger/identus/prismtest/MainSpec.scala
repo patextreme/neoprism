@@ -11,12 +11,15 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
 
   override def spec =
     val prismNodeSpec = suite("PRISM node suite")(createOperationSuite).provide(NodeClient.grpc("localhost", 50053))
+    val scalaDidNodeSpec =
+      suite("scala-did node suite")(createOperationSuite).provide(NodeClient.grpc("localhost", 8980))
     val neoprismSpec = suite("NeoPRISM suite")(createOperationSuite).provide(
       NodeClient.neoprism("localhost", 8080)("localhost", 8090),
       Client.default
     )
 
-    (prismNodeSpec + neoprismSpec).provide(Runtime.removeDefaultLoggers)
+    // (prismNodeSpec + neoprismSpec + scalaDidNodeSpec).provide(Runtime.removeDefaultLoggers)
+    scalaDidNodeSpec.provide(Runtime.removeDefaultLoggers)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment
       @@ TestAspect.parallelN(1)
