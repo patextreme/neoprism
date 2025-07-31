@@ -71,8 +71,8 @@ in
     '';
   };
 
-  scala-did-prism-node = writeShellApplication {
-    name = "scala-did-prism-node";
+  scala-did-node = writeShellApplication {
+    name = "scala-did-node";
     runtimeInputs = [ jdk21 ];
     text = ''
       java -jar ${jars}/jars/prism-node.jar "$@"

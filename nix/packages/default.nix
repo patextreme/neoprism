@@ -15,10 +15,9 @@ let
     );
 in
 rec {
-  inherit (pkgs.pkgsInternal) scala-did-prism-node prism-cli;
-
   # misc
   neoprism-ui-assets = pkgs.callPackage ./neoprism-ui-assets.nix { };
+  scala-did-docker = pkgs.callPackage ./scala-did-docker.nix { };
 
   # neoprism binaries
   neoprism-bin = pkgs.callPackage ./neoprism-bin.nix {
