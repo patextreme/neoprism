@@ -4,10 +4,10 @@
   writeShellApplication,
   fetchFromGitHub,
   stdenv,
-  yarn,
   cacert,
   protobuf,
   jdk21,
+  temurin-jre-bin,
 }:
 
 let
@@ -61,7 +61,7 @@ in
 {
   prism-cli = writeShellApplication {
     name = "prism-cli";
-    runtimeInputs = [ jdk21 ];
+    runtimeInputs = [ temurin-jre-bin ];
     text = ''
       if [ -z "''${PRISM_HOME:-}" ]; then
         echo "Error: PRISM_HOME cannot be empty."
@@ -73,7 +73,7 @@ in
 
   scala-did-node = writeShellApplication {
     name = "scala-did-node";
-    runtimeInputs = [ jdk21 ];
+    runtimeInputs = [ temurin-jre-bin ];
     text = ''
       java -jar ${jars}/jars/prism-node.jar "$@"
     '';
