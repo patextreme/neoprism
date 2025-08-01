@@ -13,7 +13,7 @@ let Options =
       , default.hostPort = None Natural
       }
 
-let makeService =
+let mkService =
       \(options : Options.Type) ->
         docker.Service::{
         , image
@@ -44,4 +44,4 @@ let makeService =
           ]
         }
 
-in  { Options, makeService }
+in  { Options, mkService }

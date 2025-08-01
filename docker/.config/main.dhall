@@ -65,7 +65,7 @@ in  { mainnet-dbsync.services
                   cardanoNode.makeNodeService
                     cardanoNode.Options::{ networkMagic, testnetVolume }
               , cardano-wallet =
-                  cardanoWallet.makeService
+                  cardanoWallet.mkService
                     cardanoWallet.Options::{
                     , testnetVolume
                     , cardanoNodeHost
@@ -83,7 +83,7 @@ in  { mainnet-dbsync.services
                     , initWalletHurlFile = "./init-wallet.hurl"
                     }
               , cardano-dbsync =
-                  dbSync.makeDbSyncService
+                  dbSync.mkService
                     dbSync.Options::{
                     , testnetVolume
                     , cardanoNodeHost
