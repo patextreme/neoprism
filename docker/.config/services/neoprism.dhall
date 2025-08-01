@@ -26,7 +26,7 @@ let DltSink =
 
 let Options =
       { Type =
-          { hostPort : Natural
+          { hostPort : Optional Natural
           , dbHost : Text
           , network : Text
           , dltSource : DltSource
@@ -36,7 +36,7 @@ let Options =
           , extraDependsOn : List Text
           }
       , default =
-        { hostPort = 8080
+        { hostPort = None Natural
         , dbHost = "db"
         , network = "mainnet"
         , dltSink = None DltSink.Type
@@ -123,7 +123,12 @@ let mkService =
 
         in  docker.Service::{
             , image
-            , ports = Some [ "${Prelude.Natural.show options.hostPort}:8080" ]
+            , ports =
+                Prelude.Optional.map
+                  Natural
+                  (List Text)
+                  (\(p : Natural) -> [ "${Prelude.Natural.show p}:8080" ])
+                  options.hostPort
             , environment = Some (mandatoryIndexerNodeEnvs # extraEnvs)
             , command = Some [ command ]
             , depends_on = Some

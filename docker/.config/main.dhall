@@ -18,6 +18,7 @@ in  { mainnet-dbsync.services
       , neoprism-indexer =
           neoprism.mkService
             neoprism.Options::{
+            , hostPort = Some 8080
             , dltSource =
                 neoprism.DltSource.DbSync
                   neoprism.DbSyncDltSourceArgs::{ url = "<DBSYNC_URL>" }
@@ -29,6 +30,7 @@ in  { mainnet-dbsync.services
       , neoprism-indexer =
           neoprism.mkService
             neoprism.Options::{
+            , hostPort = Some 8080
             , dltSource =
                 neoprism.DltSource.Relay
                   "backbone.mainnet.cardanofoundation.org:3001"
@@ -40,6 +42,7 @@ in  { mainnet-dbsync.services
       , neoprism-indexer =
           neoprism.mkService
             neoprism.Options::{
+            , hostPort = Some 8080
             , network = "preprod"
             , dltSource =
                 neoprism.DltSource.Relay
@@ -64,13 +67,6 @@ in  { mainnet-dbsync.services
               { cardano-node =
                   cardanoNode.mkNodeService
                     cardanoNode.NodeOptions::{ networkMagic, testnetVolume }
-              , cardano-wallet =
-                  cardanoWallet.mkService
-                    cardanoWallet.Options::{
-                    , testnetVolume
-                    , cardanoNodeHost
-                    , hostPort = Some 8090
-                    }
               , bootstrap-testnet =
                   cardanoNode.mkBootstrapService
                     cardanoNode.BootstrapOptions::{
@@ -90,9 +86,17 @@ in  { mainnet-dbsync.services
                     , dbHost = "db-dbsync"
                     , configFile = "./dbsync-config.yaml"
                     }
+              , cardano-wallet =
+                  cardanoWallet.mkService
+                    cardanoWallet.Options::{
+                    , testnetVolume
+                    , cardanoNodeHost
+                    , hostPort = Some 8090
+                    }
               , neoprism-standalone =
                   neoprism.mkService
                     neoprism.Options::{
+                    , hostPort = Some 8080
                     , dbHost = "db-neoprism"
                     , confirmationBlocks = Some 0
                     , indexInterval = Some 1
