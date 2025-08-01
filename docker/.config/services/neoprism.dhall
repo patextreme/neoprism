@@ -1,36 +1,10 @@
 let Prelude = (../prelude.dhall).Prelude
 
+let docker = ../docker.dhall
+
 let version = (../prelude.dhall).neoPrismVersion
 
-let NeoprismNodeService =
-      { Type =
-          { image : Text
-          , restart : Text
-          , ports : List Text
-          , command : List Text
-          , depends_on : Prelude.Map.Type Text { condition : Text }
-          , environment : Prelude.Map.Type Text Text
-          , healthcheck :
-              { test : List Text
-              , interval : Text
-              , timeout : Text
-              , retries : Natural
-              }
-          }
-      , default =
-        { image = "hyperledgeridentus/identus-neoprism:${version}"
-        , restart = "always"
-        , depends_on = [] : Prelude.Map.Type Text { condition : Text }
-        , environment = [] : Prelude.Map.Type Text Text
-        , healthcheck =
-          { test =
-            [ "CMD", "curl", "-f", "http://localhost:8080/api/_system/health" ]
-          , interval = "2s"
-          , timeout = "5s"
-          , retries = 30
-          }
-        }
-      }
+let image = "hyperledgeridentus/identus-neoprism:${version}"
 
 let DbSyncDltSourceArgs =
       { Type = { url : Text, pollInterval : Natural }
@@ -147,16 +121,24 @@ let mkService =
               then  "indexer"
               else  "standalone"
 
-        in  NeoprismNodeService::{
-            , ports = [ "${Prelude.Natural.show options.hostPort}:8080" ]
-            , environment = mandatoryIndexerNodeEnvs # extraEnvs
-            , command = [ command ]
-            , depends_on =
-                  [ { mapKey = options.dbHost
-                    , mapValue.condition = "service_healthy"
-                    }
-                  ]
-                # extraDependsOn
+        in  docker.Service::{
+            , image
+            , ports = Some [ "${Prelude.Natural.show options.hostPort}:8080" ]
+            , environment = Some (mandatoryIndexerNodeEnvs # extraEnvs)
+            , command = Some [ command ]
+            , depends_on = Some
+                (   [ docker.mkServiceCondition "service_healthy" options.dbHost
+                    ]
+                  # extraDependsOn
+                )
+            , healthcheck = Some docker.Healthcheck::{
+              , test =
+                [ "CMD"
+                , "curl"
+                , "-f"
+                , "http://localhost:8080/api/_system/health"
+                ]
+              }
             }
 
 in  { Options, mkService, DltSource, DbSyncDltSourceArgs, DltSink }
