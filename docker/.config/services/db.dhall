@@ -1,50 +1,34 @@
 let Prelude = (../prelude.dhall).Prelude
 
-let DbService =
-      { Type =
-          { image : Text
-          , restart : Text
-          , ports : Optional (List Text)
-          , environment : Prelude.Map.Type Text Text
-          , healthcheck :
-              { test : List Text
-              , interval : Text
-              , timeout : Text
-              , retries : Natural
-              }
-          }
-      , default =
-        { image = "postgres:16"
-        , restart = "always"
-        , ports = None (List Text)
-        , healthcheck =
-          { test = [ "CMD", "pg_isready", "-U", "postgres" ]
-          , interval = "2s"
-          , timeout = "5s"
-          , retries = 30
-          }
-        , environment = toMap
-            { POSTGRES_DB = "postgres"
-            , POSTGRES_PASSWORD = "postgres"
-            , POSTGRES_USER = "postgres"
-            }
-        }
-      }
+let docker = ../docker.dhall
+
+let image = "postgres:16"
 
 let Options =
       { Type = { hostPort : Optional Natural }
       , default.hostPort = None Natural
       }
 
-let makeDbService =
+let mkService =
       \(options : Options.Type) ->
-        DbService::{
+        docker.Service::{
+        , image
         , ports =
             Prelude.Optional.map
               Natural
               (List Text)
               (\(p : Natural) -> [ "${Prelude.Natural.show p}:5432" ])
               options.hostPort
+        , environment = Some
+            ( toMap
+                { POSTGRES_DB = "postgres"
+                , POSTGRES_PASSWORD = "postgres"
+                , POSTGRES_USER = "postgres"
+                }
+            )
+        , healthcheck = Some docker.Healthcheck::{
+          , test = [ "CMD", "pg_isready", "-U", "postgres" ]
+          }
         }
 
-in  { makeDbService, Options }
+in  { mkService, Options }

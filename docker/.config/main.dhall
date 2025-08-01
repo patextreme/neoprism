@@ -14,9 +14,9 @@ let prismNode = ./services/prism-node.dhall
 
 in  { mainnet-dbsync.services
       =
-      { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
+      { db = db.mkService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
-          neoprism.makeNodeService
+          neoprism.mkService
             neoprism.Options::{
             , dltSource =
                 neoprism.DltSource.DbSync
@@ -25,9 +25,9 @@ in  { mainnet-dbsync.services
       }
     , mainnet-relay.services
       =
-      { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
+      { db = db.mkService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
-          neoprism.makeNodeService
+          neoprism.mkService
             neoprism.Options::{
             , dltSource =
                 neoprism.DltSource.Relay
@@ -36,9 +36,9 @@ in  { mainnet-dbsync.services
       }
     , preprod-relay.services
       =
-      { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
+      { db = db.mkService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
-          neoprism.makeNodeService
+          neoprism.mkService
             neoprism.Options::{
             , network = "preprod"
             , dltSource =
@@ -91,7 +91,7 @@ in  { mainnet-dbsync.services
                     , configFile = "./dbsync-config.yaml"
                     }
               , neoprism-standalone =
-                  neoprism.makeNodeService
+                  neoprism.mkService
                     neoprism.Options::{
                     , dbHost = "db-neoprism"
                     , confirmationBlocks = Some 0
@@ -124,9 +124,9 @@ in  { mainnet-dbsync.services
                     , hostPort = Some 50053
                     , confirmationBlocks = 0
                     }
-              , db-neoprism = db.makeDbService db.Options::{=}
-              , db-dbsync = db.makeDbService db.Options::{=}
-              , db-prism-node = db.makeDbService db.Options::{=}
+              , db-neoprism = db.mkService db.Options::{=}
+              , db-dbsync = db.mkService db.Options::{=}
+              , db-prism-node = db.mkService db.Options::{=}
               }
             , volumes = toMap { node-testnet = {=} }
             }

@@ -72,7 +72,7 @@ let Options =
         }
       }
 
-let makeNodeService =
+let mkService =
       \(options : Options.Type) ->
         let mandatoryIndexerNodeEnvs =
               toMap
@@ -159,4 +159,4 @@ let makeNodeService =
                 # extraDependsOn
             }
 
-in  { Options, makeNodeService, DltSource, DbSyncDltSourceArgs, DltSink }
+in  { Options, mkService, DltSource, DbSyncDltSourceArgs, DltSink }
