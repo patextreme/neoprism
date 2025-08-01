@@ -1,44 +1,29 @@
 let Prelude = (../prelude.dhall).Prelude
 
-let imageName = "patextreme/cardano-testnet:20250730-211809"
+let docker = ../docker.dhall
 
-let CardanoNodeService =
-      { Type =
-          { image : Text
-          , command : List Text
-          , environment : Prelude.Map.Type Text Text
-          , volumes : List Text
-          , healthcheck :
-              { test : List Text
-              , interval : Text
-              , timeout : Text
-              , retries : Natural
-              }
-          }
-      , default =
-        { image = imageName
-        , command = [ "initTestnet" ]
-        , healthcheck =
-          { test = [ "CMD-SHELL", "cardano-cli query tip" ]
-          , interval = "2s"
-          , timeout = "5s"
-          , retries = 30
-          }
-        }
-      }
+let image = "patextreme/cardano-testnet:20250730-211809"
 
-let Options =
+let NodeOptions =
       { Type = { networkMagic : Natural, testnetVolume : Text }, default = {=} }
 
-let makeNodeService =
-      \(options : Options.Type) ->
-        CardanoNodeService::{
-        , volumes = [ "${options.testnetVolume}:/node/testnet" ]
-        , environment = toMap
-            { CARDANO_NODE_SOCKET_PATH = "/node/testnet/socket/node1/sock"
-            , CARDANO_NODE_NETWORK_ID =
-                Prelude.Natural.show options.networkMagic
-            }
+let mkNodeService =
+      \(options : NodeOptions.Type) ->
+        docker.Service::{
+        , image
+        , restart = None Text
+        , command = Some [ "initTestnet" ]
+        , volumes = Some [ "${options.testnetVolume}:/node/testnet" ]
+        , environment = Some
+            ( toMap
+                { CARDANO_NODE_SOCKET_PATH = "/node/testnet/socket/node1/sock"
+                , CARDANO_NODE_NETWORK_ID =
+                    Prelude.Natural.show options.networkMagic
+                }
+            )
+        , healthcheck = Some docker.Healthcheck::{
+          , test = [ "CMD-SHELL", "cardano-cli query tip" ]
+          }
         }
 
 let BootstrapOptions =
@@ -54,14 +39,16 @@ let BootstrapOptions =
       , default = {=}
       }
 
-let makeBootstrapService =
+let mkBootstrapService =
       \(options : BootstrapOptions.Type) ->
-        { image = imageName
-        , volumes =
+        docker.Service::{
+        , image
+        , restart = None Text
+        , volumes = Some
           [ "${options.testnetVolume}:/node/testnet"
           , "${options.initWalletHurlFile}:/node/init-wallet.hurl"
           ]
-        , command =
+        , command = Some
           [ "bash"
           , "-c"
           , ''
@@ -69,19 +56,19 @@ let makeBootstrapService =
             hurl ./init-wallet.hurl
             ''
           ]
-        , environment = toMap
-            { HURL_WALLET_BASE_URL = options.walletBaseUrl
-            , HURL_WALLET_PASSPHRASE = options.walletPassphrase
-            , GENESIS_PAYMENT_ADDR = options.walletPaymentAddress
-            , CARDANO_NODE_SOCKET_PATH = "/node/testnet/socket/node1/sock"
-            , CARDANO_NODE_NETWORK_ID =
-                Prelude.Natural.show options.networkMagic
-            }
-        , depends_on =
-          [ { mapKey = options.cardanoNodeHost
-            , mapValue.condition = "service_healthy"
-            }
+        , environment = Some
+            ( toMap
+                { HURL_WALLET_BASE_URL = options.walletBaseUrl
+                , HURL_WALLET_PASSPHRASE = options.walletPassphrase
+                , GENESIS_PAYMENT_ADDR = options.walletPaymentAddress
+                , CARDANO_NODE_SOCKET_PATH = "/node/testnet/socket/node1/sock"
+                , CARDANO_NODE_NETWORK_ID =
+                    Prelude.Natural.show options.networkMagic
+                }
+            )
+        , depends_on = Some
+          [ docker.mkServiceCondition "service_healthy" options.cardanoNodeHost
           ]
         }
 
-in  { Options, makeNodeService, BootstrapOptions, makeBootstrapService }
+in  { NodeOptions, mkNodeService, BootstrapOptions, mkBootstrapService }

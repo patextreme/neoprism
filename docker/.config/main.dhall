@@ -62,8 +62,8 @@ in  { mainnet-dbsync.services
 
         in  { services =
               { cardano-node =
-                  cardanoNode.makeNodeService
-                    cardanoNode.Options::{ networkMagic, testnetVolume }
+                  cardanoNode.mkNodeService
+                    cardanoNode.NodeOptions::{ networkMagic, testnetVolume }
               , cardano-wallet =
                   cardanoWallet.mkService
                     cardanoWallet.Options::{
@@ -72,7 +72,7 @@ in  { mainnet-dbsync.services
                     , hostPort = Some 8090
                     }
               , bootstrap-testnet =
-                  cardanoNode.makeBootstrapService
+                  cardanoNode.mkBootstrapService
                     cardanoNode.BootstrapOptions::{
                     , networkMagic
                     , testnetVolume
