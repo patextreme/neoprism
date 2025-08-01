@@ -1,4 +1,4 @@
-let Prelude = (./prelude.dhall).Prelude
+let Prelude = (../prelude.dhall).Prelude
 
 let imageName = "patextreme/cardano-testnet:20250730-211809"
 

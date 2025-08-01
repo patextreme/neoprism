@@ -1,16 +1,16 @@
 let Prelude = (./prelude.dhall).Prelude
 
-let neoprism = ./neoprism.dhall
+let neoprism = ./services/neoprism.dhall
 
-let db = ./db.dhall
+let db = ./services/db.dhall
 
-let dbSync = ./cardano-dbsync.dhall
+let dbSync = ./services/cardano-dbsync.dhall
 
-let cardanoNode = ./cardano-node.dhall
+let cardanoNode = ./services/cardano-node.dhall
 
-let cardanoWallet = ./cardano-wallet.dhall
+let cardanoWallet = ./services/cardano-wallet.dhall
 
-let prismNode = ./prism-node.dhall
+let prismNode = ./services/prism-node.dhall
 
 in  { mainnet-dbsync.services
       =

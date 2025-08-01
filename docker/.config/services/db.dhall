@@ -1,4 +1,4 @@
-let Prelude = (./prelude.dhall).Prelude
+let Prelude = (../prelude.dhall).Prelude
 
 let DbService =
       { Type =

@@ -1,6 +1,6 @@
-let Prelude = (./prelude.dhall).Prelude
+let Prelude = (../prelude.dhall).Prelude
 
-let version = (./prelude.dhall).neoPrismVersion
+let version = (../prelude.dhall).neoPrismVersion
 
 let NeoprismNodeService =
       { Type =

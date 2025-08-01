@@ -18,8 +18,8 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
       Client.default
     )
 
-    // (prismNodeSpec + neoprismSpec + scalaDidNodeSpec).provide(Runtime.removeDefaultLoggers)
-    scalaDidNodeSpec.provide(Runtime.removeDefaultLoggers)
+    (prismNodeSpec + neoprismSpec + scalaDidNodeSpec)
+      .provide(Runtime.removeDefaultLoggers)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment
       @@ TestAspect.parallelN(1)
