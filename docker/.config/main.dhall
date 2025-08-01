@@ -12,8 +12,6 @@ let cardanoWallet = ./cardano-wallet.dhall
 
 let prismNode = ./prism-node.dhall
 
-let cloudAgent = ./cloud-agent.dhall
-
 in  { mainnet-dbsync.services
       =
       { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
@@ -126,30 +124,9 @@ in  { mainnet-dbsync.services
                     , hostPort = Some 50053
                     , confirmationBlocks = 0
                     }
-              , identus-cloud-agent =
-                  cloudAgent.makeCloudAgentService
-                    cloudAgent.Options::{
-                    , dbHost = "db-cloud-agent"
-                    , prismNodeHost = "prism-node"
-                    }
-              , db-neoprism =
-                  db.makeDbService db.Options::{ hostPort = Some 5432 }
-              , db-dbsync =
-                  db.makeDbService db.Options::{ hostPort = Some 5433 }
-              , db-prism-node =
-                  db.makeDbService db.Options::{ hostPort = Some 5434 }
-              , db-cloud-agent =
-                      db.makeDbService db.Options::{ hostPort = Some 5435 }
-                  //  { environment = toMap
-                          { POSTGRES_MULTIPLE_DATABASES = "pollux,connect,agent"
-                          , POSTGRES_USER = "postgres"
-                          , POSTGRES_PASSWORD = "postgres"
-                          }
-                      , volumes =
-                        [ "./postgres/init_script.sh:/docker-entrypoint-initdb.d/init-script.sh"
-                        , "./postgres/max_conns.sql:/docker-entrypoint-initdb.d/max_conns.sql"
-                        ]
-                      }
+              , db-neoprism = db.makeDbService db.Options::{=}
+              , db-dbsync = db.makeDbService db.Options::{=}
+              , db-prism-node = db.makeDbService db.Options::{=}
               }
             , volumes = toMap { node-testnet = {=} }
             }
