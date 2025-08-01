@@ -7,7 +7,7 @@ dockerTools.buildLayeredImage {
   name = "scala-did";
   tag = "latest";
   contents = [
-    pkgsInternal.scala-did-node
+    pkgsInternal.scala-did
   ];
   config = {
     Env = [ ];

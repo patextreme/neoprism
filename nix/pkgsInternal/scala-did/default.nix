@@ -6,8 +6,8 @@
   stdenv,
   cacert,
   protobuf,
-  jdk21,
   temurin-jre-bin,
+  symlinkJoin,
 }:
 
 let
@@ -57,8 +57,6 @@ let
       cp -r did-method-prism-node/target/scala-3.3.6/prism-node.jar $out/jars/prism-node.jar
     '';
   };
-in
-{
   prism-cli = writeShellApplication {
     name = "prism-cli";
     runtimeInputs = [ temurin-jre-bin ];
@@ -78,4 +76,12 @@ in
       java -jar ${jars}/jars/prism-node.jar "$@"
     '';
   };
+in
+symlinkJoin {
+  name = "scala-did";
+  paths = [
+    prism-cli
+    scala-did-node
+    jars
+  ];
 }

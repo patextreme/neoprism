@@ -1,3 +1,5 @@
 { pkgs }:
 
-pkgs.callPackage ./scala-did { }
+{
+  scala-did = pkgs.callPackage ./scala-did { };
+}
