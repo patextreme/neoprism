@@ -65,7 +65,7 @@ in  { mainnet-dbsync.services
                   cardanoNode.makeNodeService
                     cardanoNode.Options::{ networkMagic, testnetVolume }
               , cardano-wallet =
-                  cardanoWallet.makeWalletService
+                  cardanoWallet.makeService
                     cardanoWallet.Options::{
                     , testnetVolume
                     , cardanoNodeHost

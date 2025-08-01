@@ -15,6 +15,11 @@ let ServiceCondition =
       , default.mapValue.condition = "service_healthy"
       }
 
+let mkServiceCondition =
+      \(cond : Text) ->
+      \(name : Text) ->
+        ServiceCondition::{ mapKey = name, mapValue.condition = cond }
+
 let Service =
       { Type =
           { image : Text
@@ -23,6 +28,7 @@ let Service =
           , command : Optional (List Text)
           , entrypoint : Optional (List Text)
           , environment : Optional (Prelude.Map.Type Text Text)
+          , volumes : Optional (List Text)
           , depends_on : Optional (List ServiceCondition.Type)
           , healthcheck : Optional Healthcheck.Type
           }
@@ -32,9 +38,10 @@ let Service =
         , command = None (List Text)
         , entrypoint = None (List Text)
         , environment = None (Prelude.Map.Type Text Text)
+        , volumes = None (List Text)
         , depends_on = None (List ServiceCondition.Type)
         , healthcheck = None Healthcheck.Type
         }
       }
 
-in  { Service, ServiceCondition, Healthcheck }
+in  { Service, ServiceCondition, mkServiceCondition, Healthcheck }
