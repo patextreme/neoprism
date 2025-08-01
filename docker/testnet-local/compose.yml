@@ -200,5 +200,10 @@ services:
     ports:
       - "50053:50053"
     restart: always
+  scala-did:
+    image: scala-did:latest
+    ports:
+      - "8980:8980"
+    restart: always
 volumes:
   node-testnet: {}

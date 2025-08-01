@@ -24,7 +24,7 @@ let Options =
         }
       }
 
-let makePrismNodeService =
+let mkService =
       \(options : Options.Type) ->
         let healthy = docker.mkServiceCondition "service_healthy"
 
@@ -72,4 +72,4 @@ let makePrismNodeService =
               ]
             }
 
-in  { Options, makePrismNodeService }
+in  { Options, mkService }
