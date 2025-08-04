@@ -132,8 +132,7 @@ let mkService =
             , environment = Some (mandatoryIndexerNodeEnvs # extraEnvs)
             , command = Some [ command ]
             , depends_on = Some
-                (   [ docker.mkServiceCondition "service_healthy" options.dbHost
-                    ]
+                (   [ docker.ServiceCondition.healthy options.dbHost ]
                   # extraDependsOn
                 )
             , healthcheck = Some docker.Healthcheck::{

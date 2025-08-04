@@ -16,32 +16,32 @@ let Options =
 
 let mkService =
       \(options : Options.Type) ->
-        let healthy = docker.mkServiceCondition "service_healthy"
-
-        in  docker.Service::{
-            , image
-            , environment = Some
-                ( toMap
-                    { POSTGRES_HOST = options.dbHost
-                    , POSTGRES_DB = "postgres"
-                    , POSTGRES_PORT = "5432"
-                    , POSTGRES_USER = "postgres"
-                    , POSTGRES_PASSWORD = "postgres"
-                    }
-                )
-            , command = Some
-              [ "--config"
-              , "/config/dbsync-config.yaml"
-              , "--socket-path"
-              , "/node/testnet/socket/node1/sock"
-              , "--force-indexes"
-              ]
-            , volumes = Some
-              [ "${options.testnetVolume}:/node/testnet"
-              , "${options.configFile}:/config/dbsync-config.yaml"
-              ]
-            , depends_on = Some
-              [ healthy options.cardanoNodeHost, healthy options.dbHost ]
-            }
+        docker.Service::{
+        , image
+        , environment = Some
+            ( toMap
+                { POSTGRES_HOST = options.dbHost
+                , POSTGRES_DB = "postgres"
+                , POSTGRES_PORT = "5432"
+                , POSTGRES_USER = "postgres"
+                , POSTGRES_PASSWORD = "postgres"
+                }
+            )
+        , command = Some
+          [ "--config"
+          , "/config/dbsync-config.yaml"
+          , "--socket-path"
+          , "/node/testnet/socket/node1/sock"
+          , "--force-indexes"
+          ]
+        , volumes = Some
+          [ "${options.testnetVolume}:/node/testnet"
+          , "${options.configFile}:/config/dbsync-config.yaml"
+          ]
+        , depends_on = Some
+          [ docker.ServiceCondition.healthy options.cardanoNodeHost
+          , docker.ServiceCondition.healthy options.dbHost
+          ]
+        }
 
 in  { Options, mkService }

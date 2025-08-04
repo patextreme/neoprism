@@ -40,8 +40,7 @@ let mkService =
           , test = [ "CMD-SHELL", "cardano-wallet network information" ]
           }
         , depends_on = Some
-          [ docker.mkServiceCondition "service_healthy" options.cardanoNodeHost
-          ]
+          [ docker.ServiceCondition.healthy options.cardanoNodeHost ]
         }
 
 in  { Options, mkService }

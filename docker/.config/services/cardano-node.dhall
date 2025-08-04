@@ -67,8 +67,7 @@ let mkBootstrapService =
                 }
             )
         , depends_on = Some
-          [ docker.mkServiceCondition "service_healthy" options.cardanoNodeHost
-          ]
+          [ docker.ServiceCondition.healthy options.cardanoNodeHost ]
         }
 
 in  { NodeOptions, mkNodeService, BootstrapOptions, mkBootstrapService }

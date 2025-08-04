@@ -12,13 +12,19 @@ let Healthcheck =
 
 let ServiceCondition =
       { Type = { mapKey : Text, mapValue : { condition : Text } }
-      , default.mapValue.condition = "service_healthy"
+      , default = {=}
+      , started =
+          \(name : Text) ->
+            { mapKey = name, mapValue.condition = "service_started" }
+      , healthy =
+          \(name : Text) ->
+            { mapKey = name, mapValue.condition = "service_healthy" }
+      , completed =
+          \(name : Text) ->
+            { mapKey = name
+            , mapValue.condition = "service_completed_successfully"
+            }
       }
-
-let mkServiceCondition =
-      \(cond : Text) ->
-      \(name : Text) ->
-        ServiceCondition::{ mapKey = name, mapValue.condition = cond }
 
 let Service =
       { Type =
@@ -44,4 +50,4 @@ let Service =
         }
       }
 
-in  { Service, ServiceCondition, mkServiceCondition, Healthcheck }
+in  { Service, ServiceCondition, Healthcheck }
