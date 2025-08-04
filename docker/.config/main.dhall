@@ -134,7 +134,8 @@ in  { mainnet-dbsync.services
                   scalaDid.mkService scalaDid.Options::{ hostPort = Some 8980 }
               , db-neoprism = db.mkService db.Options::{=}
               , db-dbsync = db.mkService db.Options::{=}
-              , db-prism-node = db.mkService db.Options::{=}
+              , db-prism-node =
+                  db.mkService db.Options::{ hostPort = Some 5432 }
               }
             , volumes = toMap { node-testnet = {=} }
             }

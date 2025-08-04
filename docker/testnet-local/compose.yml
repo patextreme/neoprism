@@ -132,6 +132,8 @@ services:
         - postgres
       timeout: "5s"
     image: postgres:16
+    ports:
+      - "5432:5432"
     restart: always
   neoprism-standalone:
     command:
