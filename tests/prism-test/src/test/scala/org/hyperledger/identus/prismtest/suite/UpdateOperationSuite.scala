@@ -120,11 +120,11 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("0" * 51)(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/1'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        operationRefs <- scheduleOperations(Seq(spo1, spo2), batch = false)
         _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(1)))
-    } @@ TestAspect.tag("dev")
+    }
   )
 
   private def removePublicKeySpec = suite("RemovePublicKey action")(

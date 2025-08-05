@@ -36,11 +36,12 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
   def newSeed: UIO[Array[Byte]] = Random.nextBytes(64).map(_.toArray)
   def builder(seed: Array[Byte]): OpBuilder = OpBuilder(seed)
 
-  def scheduleOperations(operations: Seq[SignedPrismOperation]): URIO[NodeClient, Seq[OperationRef]] =
+  def scheduleOperations(operations: Seq[SignedPrismOperation], batch: Boolean = true): URIO[NodeClient, Seq[OperationRef]] =
+    val batched = if batch then Seq(operations) else operations.grouped(1).toList
     ZIO
-      .foreach(operations) { op =>
+      .foreach(batched) { ops =>
         ZIO
-          .serviceWithZIO[NodeClient](nodeClient => nodeClient.scheduleOperations(Seq(op)))
+          .serviceWithZIO[NodeClient](nodeClient => nodeClient.scheduleOperations(ops))
           .catchAll {
             // When node respond with BadRequest, we assume it does not return any OperationRef.
             // This is needed to normalize the node behavior to provide uniform API accross all NodeClient
