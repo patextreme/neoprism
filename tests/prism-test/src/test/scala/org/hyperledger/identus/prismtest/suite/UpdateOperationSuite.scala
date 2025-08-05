@@ -14,7 +14,7 @@ object UpdateOperationSuite extends TestUtils:
   ) @@ NodeName.skipIf("scala-did")
 
   private def addPublicKeySpec = suite("AddPublicKey action")(
-    test("update operation with add-key action is indexed successfully") {
+    test("update operation with add-key action should be indexed successfully") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -50,11 +50,83 @@ object UpdateOperationSuite extends TestUtils:
         _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
-    }
+    },
+    test("update operation with add-key action that add until 50 keys should be indexed successfully") {
+      for
+        seed <- newSeed
+        spo1 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        did = spo1.getDid.get
+        spo2 = (1 until 50)
+          .foldLeft(builder(seed).updateDid(spo1.getOperationHash.get, did)) { case (acc, n) =>
+            acc.addKey(s"master-$n")(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/$n'")
+          }
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(did).map(_.get)
+      yield assert(didData.publicKeys)(hasSize(equalTo(50)))
+    },
+    test("update operation with add-key action that add until 51 keys should not be indexed") {
+      for
+        seed <- newSeed
+        spo1 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        did = spo1.getDid.get
+        spo2 = (1 until 51)
+          .foldLeft(builder(seed).updateDid(spo1.getOperationHash.get, did)) { case (acc, n) =>
+            acc.addKey(s"master-$n")(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/$n'")
+          }
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(did).map(_.get)
+      yield assert(didData.publicKeys)(hasSize(equalTo(1)))
+    },
+    test("update operation with add-key action having key-id of 50 chars should be indexed successfully") {
+      for
+        seed <- newSeed
+        spo1 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        did = spo1.getDid.get
+        spo2 = builder(seed).updateDid(spo1.getOperationHash.get, did)
+          .addKey("0" * 50)(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/1'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(did).map(_.get)
+      yield assert(didData.publicKeys)(hasSize(equalTo(2)))
+    },
+    test("update operation with add-key action having key-id of 51 chars should not be indexed") {
+      for
+        seed <- newSeed
+        spo1 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        did = spo1.getDid.get
+        spo2 = builder(seed).updateDid(spo1.getOperationHash.get, did)
+          .addKey("0" * 51)(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/1'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(did).map(_.get)
+      yield assert(didData.publicKeys)(hasSize(equalTo(1)))
+    } @@ TestAspect.tag("dev")
   )
 
   private def removePublicKeySpec = suite("RemovePublicKey action")(
-    test("update operation with remove-key action is indexed successfully") {
+    test("update operation with remove-key action should be indexed successfully") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid

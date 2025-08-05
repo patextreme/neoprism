@@ -38,14 +38,18 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
 
   def scheduleOperations(operations: Seq[SignedPrismOperation]): URIO[NodeClient, Seq[OperationRef]] =
     ZIO
-      .serviceWithZIO[NodeClient](nodeClient => nodeClient.scheduleOperations(operations))
-      .catchAll {
-        // When node respond with BadRequest, we assume it does not return any OperationRef.
-        // This is needed to normalize the node behavior to provide uniform API accross all NodeClient
-        // as some implementation eagerly reject the invalid operation on submission.
-        // TODO: change the write path so that it does not reject so we can test indexing logic better
-        case _: Errors.BadRequest => ZIO.succeed(Nil)
+      .foreach(operations) { op =>
+        ZIO
+          .serviceWithZIO[NodeClient](nodeClient => nodeClient.scheduleOperations(Seq(op)))
+          .catchAll {
+            // When node respond with BadRequest, we assume it does not return any OperationRef.
+            // This is needed to normalize the node behavior to provide uniform API accross all NodeClient
+            // as some implementation eagerly reject the invalid operation on submission.
+            // TODO: change the write path so that it does not reject so we can test indexing logic better
+            case _: Errors.BadRequest => ZIO.succeed(Nil)
+          }
       }
+      .map(_.flatten)
 
   def getDidDocument(did: String): URIO[NodeClient, Option[DIDData]] =
     ZIO.serviceWithZIO[NodeClient](nodeClient => nodeClient.getDidDocument(did))
