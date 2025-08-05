@@ -8,6 +8,7 @@ import org.hyperledger.identus.apollo.derivation.HDKey
 import org.hyperledger.identus.apollo.utils.ByteArrayExtKt
 import org.hyperledger.identus.apollo.utils.KMMEdPrivateKey
 import org.hyperledger.identus.apollo.utils.StringExtKt
+import org.hyperledger.identus.prismtest.Errors
 import org.hyperledger.identus.prismtest.NodeClient
 import org.hyperledger.identus.prismtest.OperationRef
 import proto.prism.PrismOperation
@@ -30,7 +31,15 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
   def builder(seed: Array[Byte]): OpBuilder = OpBuilder(seed)
 
   def scheduleOperations(operations: Seq[SignedPrismOperation]): URIO[NodeClient, Seq[OperationRef]] =
-    ZIO.serviceWithZIO[NodeClient](nodeClient => nodeClient.scheduleOperations(operations))
+    ZIO
+      .serviceWithZIO[NodeClient](nodeClient => nodeClient.scheduleOperations(operations))
+      .catchAll {
+        // When node respond with BadRequest, we assume it does not return any OperationRef.
+        // This is needed to normalize the node behavior to provide uniform API accross all NodeClient
+        // as some implementation eagerly reject the invalid operation on submission.
+        // TODO: change the write path so that it does not reject so we can test indexing logic better
+        case _: Errors.BadRequest => ZIO.succeed(Nil)
+      }
 
   def getDidDocument(did: String): URIO[NodeClient, Option[DIDData]] =
     ZIO.serviceWithZIO[NodeClient](nodeClient => nodeClient.getDidDocument(did))

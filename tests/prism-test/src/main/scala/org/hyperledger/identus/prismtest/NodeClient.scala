@@ -1,6 +1,7 @@
 package org.hyperledger.identus.prismtest
 
 import io.grpc.ManagedChannelBuilder
+import io.grpc.StatusRuntimeException
 import io.iohk.atala.prism.protos.node_api.DIDData
 import io.iohk.atala.prism.protos.node_api.GetDidDocumentRequest
 import io.iohk.atala.prism.protos.node_api.GetOperationInfoRequest
@@ -21,8 +22,11 @@ import scala.language.implicitConversions
 
 type OperationRef = String
 
+object Errors:
+  case class BadRequest()
+
 trait NodeClient:
-  def scheduleOperations(operations: Seq[SignedPrismOperation]): UIO[Seq[OperationRef]]
+  def scheduleOperations(operations: Seq[SignedPrismOperation]): IO[Errors.BadRequest, Seq[OperationRef]]
   def isOperationConfirmed(ref: OperationRef): UIO[Boolean]
   def getDidDocument(did: String): UIO[Option[DIDData]]
 
@@ -52,7 +56,7 @@ object NodeClient:
 
 private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, CryptoUtils, ProtoUtils:
 
-  override def scheduleOperations(operations: Seq[SignedPrismOperation]): UIO[Seq[OperationRef]] =
+  override def scheduleOperations(operations: Seq[SignedPrismOperation]): IO[Errors.BadRequest, Seq[OperationRef]] =
     ZIO
       .fromFuture(_ => nodeService.scheduleOperations(ScheduleOperationsRequest(signedOperations = operations)))
       .flatMap(response =>
@@ -61,7 +65,15 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
           case _                              => ZIO.dieMessage("operation unsuccessful")
         }
       )
-      .orDie
+      .tapError {
+        case s: StatusRuntimeException => ZIO.debug("status: " + s.getStatus().getCode())
+        case _                         => ZIO.unit
+      }
+      .catchAll {
+        case s: StatusRuntimeException if s.getStatus.getCode.toStatus() == io.grpc.Status.INVALID_ARGUMENT =>
+          ZIO.fail(Errors.BadRequest())
+        case e => ZIO.die(e)
+      }
 
   override def isOperationConfirmed(ref: OperationRef): UIO[Boolean] =
     ZIO
@@ -82,7 +94,7 @@ private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Cl
 
   import NeoprismNodeClient.*
 
-  override def scheduleOperations(operations: Seq[SignedPrismOperation]): UIO[Seq[OperationRef]] =
+  override def scheduleOperations(operations: Seq[SignedPrismOperation]): IO[Errors.BadRequest, Seq[OperationRef]] =
     val requestBody = ScheduleOperationRequest(signed_operations = operations.map(_.toByteArray.toHexString))
     neoprismClient.batched
       .post("/api/signed-operation-submissions")(Body.from(requestBody).contentType(MediaType.application.json))

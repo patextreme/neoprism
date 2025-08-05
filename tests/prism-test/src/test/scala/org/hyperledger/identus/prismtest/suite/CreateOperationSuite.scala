@@ -8,7 +8,7 @@ import zio.test.Assertion.*
 
 object CreateOperationSuite extends TestUtils:
   def values = suite("CreateDidOperation spec")(
-    test("create operation with only master key") {
+    test("create operation with only master key is indexed successfully") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -22,7 +22,7 @@ object CreateOperationSuite extends TestUtils:
         assert(didData.services)(isEmpty) &&
         assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
-    test("create operation with all other keys") {
+    test("create operation with all key types is indexed successfully") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -33,6 +33,7 @@ object CreateOperationSuite extends TestUtils:
           .key("revoke-0")(KeyUsage.REVOCATION_KEY secp256k1 "m/0'/5'/0'")
           .key("capinv-0")(KeyUsage.CAPABILITY_INVOCATION_KEY secp256k1 "m/0'/6'/0'")
           .key("capdel-0")(KeyUsage.CAPABILITY_DELEGATION_KEY secp256k1 "m/0'/7'/0'")
+          .key("vdr-0")(KeyUsage.VDR_KEY secp256k1 "m/0'/8'/0'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
@@ -40,9 +41,10 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.context)(isEmpty) &&
         assert(didData.services)(isEmpty) &&
-        assert(didData.publicKeys)(hasSize(equalTo(7)))
-    },
-    test("create operation with master key that is not secp256k1") {
+        assert(didData.publicKeys)(hasSize(equalTo(8))) &&
+        assert(didData.publicKeys.map(_.usage).distinct)(hasSize(equalTo(8)))
+    } @@ NodeName.skipIf("prism-node"),
+    test("create operation with non-secp256k1 master key should not be indexed") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -54,7 +56,7 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
-    test("create operation with non-master signedWith key") {
+    test("create operation with non-master signedWith key should be be indexed") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -65,8 +67,8 @@ object CreateOperationSuite extends TestUtils:
         _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("prism-node"),
-    test("create operation with invalid signedWith key") {
+    },
+    test("create operation with invalid signedWith key should not be indexed") {
       for
         seed <- newSeed
         // key id not exist
@@ -84,5 +86,33 @@ object CreateOperationSuite extends TestUtils:
         didData1 <- getDidDocument(spo1.getDid.get)
         didData2 <- getDidDocument(spo2.getDid.get)
       yield assert(didData1)(isNone) && assert(didData2)(isNone)
-    }
+    },
+    test("create operation with 50 public keys is indexed successfully") {
+      for
+        seed <- newSeed
+        spo = (0 until 50)
+          .foldLeft(builder(seed).createDid) { case (acc, n) =>
+            acc.key(s"master-$n")(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/$n'")
+          }
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get).map(_.get)
+      yield assert(didData.publicKeys.length)(equalTo(50))
+    },
+    test("create operation with 51 public keys should not be indexed") {
+      for
+        seed <- newSeed
+        spo = (0 until 51)
+          .foldLeft(builder(seed).createDid) { case (acc, n) =>
+            acc.key(s"master-$n")(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/$n'")
+          }
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    } @@ NodeName.skipIf("scala-did")
   )

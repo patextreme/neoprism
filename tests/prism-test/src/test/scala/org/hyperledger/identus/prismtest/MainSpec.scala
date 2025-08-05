@@ -2,11 +2,9 @@ package org.hyperledger.identus.prismtest
 
 import org.hyperledger.identus.prismtest.suite.CreateOperationSuite
 import org.hyperledger.identus.prismtest.utils.TestUtils
-import proto.prism_ssi.KeyUsage
 import zio.*
 import zio.http.Client
 import zio.test.*
-import zio.test.Assertion.*
 
 object MainSpec extends ZIOSpecDefault, TestUtils:
 
