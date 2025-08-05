@@ -91,6 +91,11 @@ private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Cl
   import NeoprismNodeClient.*
 
   override def scheduleOperations(operations: Seq[SignedPrismOperation]): IO[Errors.BadRequest, Seq[OperationRef]] =
+    ZIO
+      .foreach(operations.grouped(5).toList)(scheduleOperationsLogic) // limit to 5 ops to avoid large tx
+      .map(_.flatten)
+
+  private def scheduleOperationsLogic(operations: Seq[SignedPrismOperation]): IO[Errors.BadRequest, Seq[OperationRef]] =
     val requestBody = ScheduleOperationRequest(signed_operations = operations.map(_.toByteArray.toHexString))
     neoprismClient.batched
       .post("/api/signed-operation-submissions")(Body.from(requestBody).contentType(MediaType.application.json))
