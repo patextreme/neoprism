@@ -2,7 +2,7 @@ let Prelude = (../prelude.dhall).Prelude
 
 let docker = ../docker.dhall
 
-let image = "ghcr.io/input-output-hk/prism-node:2.6.0"
+let image = "prism-node-all:latest"
 
 let Options =
       { Type =
@@ -34,6 +34,7 @@ let mkService =
               (List Text)
               (\(p : Natural) -> [ "${Prelude.Natural.show p}:50053" ])
               options.hostPort
+        , command = Some [ "/bin/prism-node" ]
         , environment = Some
             ( toMap
                 { NODE_PSQL_HOST = "${options.nodeDbHost}:5432"

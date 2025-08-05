@@ -169,6 +169,8 @@ services:
       - "8080:8080"
     restart: always
   prism-node:
+    command:
+      - /bin/prism-node
     depends_on:
       bootstrap-testnet:
         condition: service_completed_successfully
@@ -198,12 +200,14 @@ services:
       NODE_PSQL_PASSWORD: postgres
       NODE_PSQL_USERNAME: postgres
       NODE_REFRESH_AND_SUBMIT_PERIOD: "1s"
-    image: ghcr.io/input-output-hk/prism-node:2.6.0
+    image: prism-node-all:latest
     ports:
       - "50053:50053"
     restart: always
   scala-did:
-    image: scala-did:latest
+    command:
+      - /bin/scala-did-node
+    image: prism-node-all:latest
     ports:
       - "8980:8980"
     restart: always

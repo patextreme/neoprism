@@ -56,7 +56,6 @@ rec {
         tagSuffix = "-arm64";
       };
 
-  # scala-did
-  scala-did = pkgs.pkgsInternal.scala-did;
-  scala-did-docker = pkgs.callPackage ./scala-did-docker.nix { };
+  # internal
+  prism-node-all-docker = pkgs.callPackage ./scala-did-docker.nix { };
 }

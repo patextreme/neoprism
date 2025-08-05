@@ -2,7 +2,7 @@ let Prelude = (../prelude.dhall).Prelude
 
 let docker = ../docker.dhall
 
-let image = "scala-did:latest"
+let image = "prism-node-all:latest"
 
 let Options =
       { Type = { hostPort : Optional Natural }
@@ -19,6 +19,7 @@ let mkService =
               (List Text)
               (\(p : Natural) -> [ "${Prelude.Natural.show p}:8980" ])
               options.hostPort
+        , command = Some [ "/bin/scala-did-node" ]
         }
 
 in  { Options, mkService }

@@ -4,14 +4,15 @@
 }:
 
 dockerTools.buildLayeredImage {
-  name = "scala-did";
+  name = "prism-node-all";
   tag = "latest";
   contents = [
     pkgsInternal.scala-did
+    pkgsInternal.prism-node
   ];
   config = {
     Env = [ ];
-    Entrypoint = [ "/bin/scala-did-node" ];
+    Entrypoint = [ ];
     Cmd = [ ];
     WorkingDir = "/";
   };
