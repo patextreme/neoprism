@@ -116,6 +116,42 @@ object CreateOperationSuite extends TestUtils:
         _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
+    } @@ NodeName.skipIf("scala-did"),
+    test("create operation with public key id having 50 chars is indexed successfully") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("0" * 50)(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("0" * 50, deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get).map(_.get)
+      yield assert(didData.publicKeys)(hasSize(equalTo(1)))
+    },
+    test("create operation with public key id having 51 chars should not be indexed") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("0" * 51)(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("0" * 51, deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    } @@ NodeName.skipIf("scala-did"),
+    test("create operation with public key id not a URL fragment should not be indexed") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master 0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("master 0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did")
   )
 
@@ -141,6 +177,45 @@ object CreateOperationSuite extends TestUtils:
           .key(s"master-0")(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/0'")
         spo = (0 until 51)
           .foldLeft(opBuider) { case (acc, n) => acc.service(s"service-$n")("LinkedDomains", "https://example.com") }
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    } @@ NodeName.skipIf("scala-did"),
+    test("create operation with service id having 50 chars is indexed successfully") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .service("0" * 50)("LinkedDomains", "https://example.com")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get).map(_.get)
+      yield assert(didData.services)(hasSize(equalTo(1)))
+    },
+    test("create operation with service id having 51 chars should not be indexed") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .service("0" * 51)("LinkedDomains", "https://example.com")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    } @@ NodeName.skipIf("scala-did"),
+    test("create operation with service id not a URL fragment should not be indexed") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .service("service 0")("LinkedDomains", "https://example.com")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
