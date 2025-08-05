@@ -47,7 +47,7 @@ pub enum DidStateConflictError {
     UpdateServiceNotExists { id: ServiceId },
     #[display("cannot update service since service with id {id} is already revoked")]
     UpdateServiceIsRevoked { id: ServiceId },
-    #[display("did state must have at least one master must exist after updated")]
+    #[display("did state must have at least one master key after updated")]
     AfterUpdateMissingMasterKey,
     #[display("did state have {actual} public keys which is greater than the limit {limit}")]
     AfterUpdatePublicKeyExceedLimit { limit: usize, actual: usize },
