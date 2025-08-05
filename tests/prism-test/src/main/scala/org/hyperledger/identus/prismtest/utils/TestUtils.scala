@@ -51,11 +51,12 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
           }
       }
       .map(_.flatten)
+      .tap(waitUntilConfirmed)
 
   def getDidDocument(did: String): URIO[NodeClient, Option[DIDData]] =
     ZIO.serviceWithZIO[NodeClient](nodeClient => nodeClient.getDidDocument(did))
 
-  def waitUntilConfirmed(operationRefs: Seq[OperationRef]): URIO[NodeClient, Unit] =
+  private def waitUntilConfirmed(operationRefs: Seq[OperationRef]): URIO[NodeClient, Unit] =
     ZIO
       .foreach(operationRefs) { operationRef =>
         ZIO.serviceWithZIO[NodeClient](nodeClient =>

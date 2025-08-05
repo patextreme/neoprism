@@ -20,7 +20,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.context)(isEmpty) &&
         assert(didData.services)(isEmpty) &&
@@ -41,7 +40,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.context)(isEmpty) &&
         assert(didData.services)(isEmpty) &&
@@ -56,7 +54,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
@@ -68,7 +65,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("auth-0", deriveSecp256k1(seed)("m/0'/4'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
@@ -86,7 +82,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/1'/1'/1'"))
         operationRefs <- scheduleOperations(Seq(spo1, spo2))
-        _ <- waitUntilConfirmed(operationRefs)
         didData1 <- getDidDocument(spo1.getDid.get)
         didData2 <- getDidDocument(spo2.getDid.get)
       yield assert(didData1)(isNone) && assert(didData2)(isNone)
@@ -101,7 +96,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.publicKeys.length)(equalTo(50))
     },
@@ -115,7 +109,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
@@ -127,7 +120,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("0" * 50, deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
@@ -139,7 +131,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("0" * 51, deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
@@ -151,7 +142,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master 0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did")
@@ -168,7 +158,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services.length)(equalTo(50))
     },
@@ -182,7 +171,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
@@ -195,7 +183,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services)(hasSize(equalTo(1)))
     },
@@ -208,7 +195,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
@@ -221,7 +207,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
@@ -234,7 +219,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services)(hasSize(equalTo(1)))
     },
@@ -247,7 +231,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
@@ -273,7 +256,6 @@ object CreateOperationSuite extends TestUtils:
           buildOperation("[\"Linked@Domains\"]")
         )
         operationRefs <- scheduleOperations(spos)
-        _ <- waitUntilConfirmed(operationRefs)
         didDataList <- ZIO.foreach(spos) { spo => getDidDocument(spo.getDid.get) }
       yield assert(didDataList)(forall(isNone))
     } @@ NodeName.skipIf("scala-did"),
@@ -287,7 +269,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services)(hasSize(equalTo(1)))
     },
@@ -301,7 +282,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
@@ -326,7 +306,6 @@ object CreateOperationSuite extends TestUtils:
           buildOperation("123")
         )
         operationRefs <- scheduleOperations(spos)
-        _ <- waitUntilConfirmed(operationRefs)
         didDataList <- ZIO.foreach(spos) { spo => getDidDocument(spo.getDid.get) }
       yield assert(didDataList)(forall(isNone))
     } @@ NodeName.skipIf("scala-did")
@@ -342,7 +321,6 @@ object CreateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
-        _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("prism-node", "scala-did")
