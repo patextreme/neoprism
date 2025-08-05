@@ -97,7 +97,8 @@ object UpdateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         did = spo1.getDid.get
-        spo2 = builder(seed).updateDid(spo1.getOperationHash.get, did)
+        spo2 = builder(seed)
+          .updateDid(spo1.getOperationHash.get, did)
           .addKey("0" * 50)(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/1'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
@@ -114,7 +115,8 @@ object UpdateOperationSuite extends TestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         did = spo1.getDid.get
-        spo2 = builder(seed).updateDid(spo1.getOperationHash.get, did)
+        spo2 = builder(seed)
+          .updateDid(spo1.getOperationHash.get, did)
           .addKey("0" * 51)(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/1'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
