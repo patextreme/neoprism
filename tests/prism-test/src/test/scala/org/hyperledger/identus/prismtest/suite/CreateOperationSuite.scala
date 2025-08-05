@@ -5,12 +5,13 @@ import org.hyperledger.identus.prismtest.NodeName
 import proto.prism_ssi.KeyUsage
 import zio.test.*
 import zio.test.Assertion.*
+import zio.ZIO
 
 object CreateOperationSuite extends TestUtils:
-  def allSpecs = suite("CreateDidOperation specs")(publicKeySpecs, serviceSpecs)
+  def allSpecs = suite("CreateDidOperation spec")(publicKeySpecs, serviceSpecs)
 
-  private def publicKeySpecs = suite("PublicKey specs")(
-    test("create operation with only master key is indexed successfully") {
+  private def publicKeySpecs = suite("PublicKey spec")(
+    test("create operation with only master-key is indexed successfully") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -46,7 +47,7 @@ object CreateOperationSuite extends TestUtils:
         assert(didData.publicKeys)(hasSize(equalTo(8))) &&
         assert(didData.publicKeys.map(_.usage).distinct)(hasSize(equalTo(8)))
     } @@ NodeName.skipIf("prism-node"),
-    test("create operation with non-secp256k1 master key should not be indexed") {
+    test("create operation with non-secp256k1 master-key should not be indexed") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -58,7 +59,7 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
-    test("create operation without master key should not be be indexed") {
+    test("create operation without master-key should not be be indexed") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -89,7 +90,7 @@ object CreateOperationSuite extends TestUtils:
         didData2 <- getDidDocument(spo2.getDid.get)
       yield assert(didData1)(isNone) && assert(didData2)(isNone)
     },
-    test("create operation with 50 public keys is indexed successfully") {
+    test("create operation with 50 keys is indexed successfully") {
       for
         seed <- newSeed
         spo = (0 until 50)
@@ -103,7 +104,7 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.publicKeys.length)(equalTo(50))
     },
-    test("create operation with 51 public keys should not be indexed") {
+    test("create operation with 51 keys should not be indexed") {
       for
         seed <- newSeed
         spo = (0 until 51)
@@ -117,7 +118,7 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with public key id having 50 chars is indexed successfully") {
+    test("create operation with key-id having 50 chars is indexed successfully") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -129,7 +130,7 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
-    test("create operation with public key id having 51 chars should not be indexed") {
+    test("create operation with key-id having 51 chars should not be indexed") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -141,7 +142,7 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with public key id not a URL fragment should not be indexed") {
+    test("create operation with key-id not a URL fragment should not be indexed") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -155,7 +156,7 @@ object CreateOperationSuite extends TestUtils:
     } @@ NodeName.skipIf("scala-did")
   )
 
-  private def serviceSpecs = suite("Service specs")(
+  private def serviceSpecs = suite("Service spec")(
     test("create operation with 50 services is indexed successfully") {
       for
         seed <- newSeed
@@ -184,7 +185,7 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with service id having 50 chars is indexed successfully") {
+    test("create operation with service-id having 50 chars is indexed successfully") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -197,7 +198,7 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services)(hasSize(equalTo(1)))
     },
-    test("create operation with service id having 51 chars should not be indexed") {
+    test("create operation with service-id having 51 chars should not be indexed") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -210,7 +211,7 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with service id not a URL fragment should not be indexed") {
+    test("create operation with service-id not a URL fragment should not be indexed") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -222,5 +223,57 @@ object CreateOperationSuite extends TestUtils:
         _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
+    } @@ NodeName.skipIf("scala-did"),
+    test("create operation with service-type having 100 chars is indexed successfully") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .service("service-0")("0" * 100, "https://example.com")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get).map(_.get)
+      yield assert(didData.services)(hasSize(equalTo(1)))
+    },
+    test("create operation with service-type having 101 chars is indexed successfully") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .service("service-0")("0" * 101, "https://example.com")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    } @@ NodeName.skipIf("scala-did"),
+    test("create operation with service-type not following ABNF should not be indexed") {
+      for
+        seed <- newSeed
+        buildOperation = (serviceType: String) =>
+          builder(seed).createDid
+            .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+            .service("service-0")(serviceType, "https://example.com")
+            .build
+            .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        spos = Seq(
+          buildOperation(""),
+          buildOperation(" "),
+          buildOperation(" LinkedDomains"),
+          buildOperation("LinkedDomains "),
+          buildOperation("Linked@Domains"),
+          buildOperation("[]"),
+          buildOperation("[LinkedDomains ]"),
+          buildOperation("[\" LinkedDomains\"]"),
+          buildOperation("[\"LinkedDomains \"]"),
+          buildOperation("[\"Linked@Domains\"]")
+        )
+        operationRefs <- scheduleOperations(spos)
+        _ <- waitUntilConfirmed(operationRefs)
+        didDataList <- ZIO.foreach(spos) { spo => getDidDocument(spo.getDid.get) }
+      yield assert(didDataList)(forall(isNone))
     } @@ NodeName.skipIf("scala-did")
   )
