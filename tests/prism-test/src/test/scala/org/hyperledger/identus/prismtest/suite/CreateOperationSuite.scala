@@ -275,5 +275,58 @@ object CreateOperationSuite extends TestUtils:
         _ <- waitUntilConfirmed(operationRefs)
         didDataList <- ZIO.foreach(spos) { spo => getDidDocument(spo.getDid.get) }
       yield assert(didDataList)(forall(isNone))
+    } @@ NodeName.skipIf("scala-did"),
+    test("create operation with service-endpoint having 300 chars is indexed successfully") {
+      for
+        seed <- newSeed
+        serviceEndpoint = s"http://example.com/${"0" * 300}".take(300)
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .service("service-0")("LinkedDomais", serviceEndpoint)
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get).map(_.get)
+      yield assert(didData.services)(hasSize(equalTo(1)))
+    },
+    test("create operation with service-endpoint having 301 chars should not be indexed") {
+      for
+        seed <- newSeed
+        serviceEndpoint = s"http://example.com/${"0" * 300}".take(301)
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .service("service-0")("LinkedDomais", serviceEndpoint)
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    } @@ NodeName.skipIf("scala-did"),
+    test("create operation with service-endpoint not following ABNF should not be indexed") {
+      for
+        seed <- newSeed
+        buildOperation = (serviceEndpoint: String) =>
+          builder(seed).createDid
+            .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+            .service("service-0")("LinkedDomains", serviceEndpoint)
+            .build
+            .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        spos = Seq(
+          buildOperation(""),
+          buildOperation(" "),
+          buildOperation(" http://example.com"),
+          buildOperation("http://example.com "),
+          buildOperation("not a url"),
+          buildOperation("[\"not a url\"]"),
+          buildOperation("[\" http://example.com\"]"),
+          buildOperation("[\"http://example.com \"]"),
+          buildOperation("123")
+        )
+        operationRefs <- scheduleOperations(spos)
+        _ <- waitUntilConfirmed(operationRefs)
+        didDataList <- ZIO.foreach(spos) { spo => getDidDocument(spo.getDid.get) }
+      yield assert(didDataList)(forall(isNone))
     } @@ NodeName.skipIf("scala-did")
   )
