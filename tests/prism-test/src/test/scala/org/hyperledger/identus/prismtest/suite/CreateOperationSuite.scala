@@ -8,9 +8,9 @@ import zio.test.Assertion.*
 import zio.ZIO
 
 object CreateOperationSuite extends TestUtils:
-  def allSpecs = suite("CreateDidOperation spec")(publicKeySpecs, serviceSpecs)
+  def allSpecs = suite("CreateDidOperation")(publicKeySpec, serviceSpec, vdrSpec)
 
-  private def publicKeySpecs = suite("PublicKey spec")(
+  private def publicKeySpec = suite("PublicKey")(
     test("create operation with only master-key is indexed successfully") {
       for
         seed <- newSeed
@@ -156,7 +156,7 @@ object CreateOperationSuite extends TestUtils:
     } @@ NodeName.skipIf("scala-did")
   )
 
-  private def serviceSpecs = suite("Service spec")(
+  private def serviceSpec = suite("Service")(
     test("create operation with 50 services is indexed successfully") {
       for
         seed <- newSeed
@@ -329,4 +329,20 @@ object CreateOperationSuite extends TestUtils:
         didDataList <- ZIO.foreach(spos) { spo => getDidDocument(spo.getDid.get) }
       yield assert(didDataList)(forall(isNone))
     } @@ NodeName.skipIf("scala-did")
+  )
+
+  private def vdrSpec = suite("VDR")(
+    test("create operation with non-secp256k1 vdr key should not be indexed") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .key("vdr-0")(KeyUsage.VDR_KEY ed25519 "m/0'/8'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    } @@ NodeName.skipIf("prism-node", "scala-did")
   )
