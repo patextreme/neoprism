@@ -10,6 +10,7 @@ import io.iohk.atala.prism.protos.node_api.NodeServiceGrpc.NodeService
 import io.iohk.atala.prism.protos.node_api.OperationOutput.OperationMaybe
 import io.iohk.atala.prism.protos.node_api.OperationStatus
 import io.iohk.atala.prism.protos.node_api.ScheduleOperationsRequest
+import monocle.syntax.all.*
 import org.hyperledger.identus.prismtest.utils.CryptoUtils
 import org.hyperledger.identus.prismtest.utils.ProtoUtils
 import proto.prism.SignedPrismOperation
@@ -85,6 +86,15 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
       .fromFuture(_ => nodeService.getDidDocument(GetDidDocumentRequest(did = did)))
       .orDie
       .map(_.document)
+      .map(
+        _.map(didData =>
+          didData
+            .focus(_.publicKeys)
+            .modify(_.filter(_.unknownFields.getField(6).isEmpty)) // remove revoked entry
+            .focus(_.services)
+            .modify(_.filter(_.unknownFields.getField(6).isEmpty)) // remove revoked entry
+        )
+      )
 
 private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Client) extends NodeClient, CryptoUtils:
 

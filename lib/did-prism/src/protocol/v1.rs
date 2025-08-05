@@ -270,7 +270,7 @@ impl Validator for UpdateDidValidator {
         let contains_master_key = state
             .public_keys
             .iter()
-            .any(|(_, pk)| pk.get().data.usage() == KeyUsage::MasterKey);
+            .any(|(_, pk)| !pk.is_revoked() && pk.get().data.usage() == KeyUsage::MasterKey);
         if !contains_master_key {
             Err(DidStateConflictError::AfterUpdateMissingMasterKey)?
         }

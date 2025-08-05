@@ -14,13 +14,18 @@ import org.hyperledger.identus.prismtest.OperationRef
 import proto.prism.PrismOperation
 import proto.prism.PrismOperation.Operation
 import proto.prism.SignedPrismOperation
+import proto.prism_ssi.AddKeyAction
 import proto.prism_ssi.CompressedECKeyData
 import proto.prism_ssi.KeyUsage
 import proto.prism_ssi.ProtoCreateDID
 import proto.prism_ssi.ProtoCreateDID.DIDCreationData
+import proto.prism_ssi.ProtoUpdateDID
 import proto.prism_ssi.PublicKey
 import proto.prism_ssi.PublicKey.KeyData
+import proto.prism_ssi.RemoveKeyAction
 import proto.prism_ssi.Service
+import proto.prism_ssi.UpdateDIDAction
+import proto.prism_ssi.UpdateDIDAction.Action
 import zio.*
 
 import scala.language.implicitConversions
@@ -65,9 +70,13 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
     def ed25519(path: String): Array[Byte] => (KeyUsage, EdHDKey) = (seed: Array[Byte]) =>
       ku -> deriveEd25519(seed)(path)
 
-  extension (op: SignedPrismOperation) def getDid: Option[String] = op.operation.flatMap(_.getDid)
+  extension (op: SignedPrismOperation)
+    def getDid: Option[String] = op.operation.flatMap(_.getDid)
+    def getOperationHash: Option[Array[Byte]] = op.operation.map(_.getOperationHash)
 
   extension (op: PrismOperation)
+    def getOperationHash: Array[Byte] = sha256(op.toByteArray)
+
     def getDid: Option[String] =
       op.operation match
         case Operation.CreateDid(_) =>
@@ -84,7 +93,11 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
       )
 
   case class OpBuilder(seed: Array[Byte]):
-    def createDid: CreateDidOpBuilder = CreateDidOpBuilder(seed, ProtoCreateDID(didData = Some(DIDCreationData())))
+    def createDid: CreateDidOpBuilder =
+      CreateDidOpBuilder(seed, ProtoCreateDID(didData = Some(DIDCreationData())))
+
+    def updateDid(prevOperationHash: Array[Byte], did: String): UpdateDidOpBuilder =
+      UpdateDidOpBuilder(seed, ProtoUpdateDID(prevOperationHash, did.replace("did:prism:", "")))
 
   case class CreateDidOpBuilder(seed: Array[Byte], op: ProtoCreateDID):
     def build: PrismOperation = PrismOperation(Operation.CreateDid(op))
@@ -105,6 +118,24 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
             serviceEndpoint = serviceEndpoint
           )
         )
+
+  case class UpdateDidOpBuilder(seed: Array[Byte], op: ProtoUpdateDID):
+    def build: PrismOperation = PrismOperation(Operation.UpdateDid(op))
+
+    def addKey(keyId: String)(makeKey: Array[Byte] => (KeyUsage, HDKey | EdHDKey)): UpdateDidOpBuilder =
+      val (keyUsage, hdKey) = makeKey(seed)
+      this
+        .focus(_.op.actions)
+        .modify(
+          _ :+ UpdateDIDAction(
+            Action.AddKey(AddKeyAction(Some(PublicKey(id = keyId, usage = keyUsage, keyData = hdKey))))
+          )
+        )
+
+    def removeKey(keyId: String): UpdateDidOpBuilder =
+      this
+        .focus(_.op.actions)
+        .modify(_ :+ UpdateDIDAction(Action.RemoveKey(RemoveKeyAction(keyId))))
 
 trait ProtoUtils extends CryptoUtils:
   given Conversion[Array[Byte], ByteString] = ByteString.copyFrom
