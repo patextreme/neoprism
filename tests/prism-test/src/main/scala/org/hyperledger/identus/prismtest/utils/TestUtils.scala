@@ -20,6 +20,7 @@ import proto.prism_ssi.ProtoCreateDID
 import proto.prism_ssi.ProtoCreateDID.DIDCreationData
 import proto.prism_ssi.PublicKey
 import proto.prism_ssi.PublicKey.KeyData
+import proto.prism_ssi.Service
 import zio.*
 
 import scala.language.implicitConversions
@@ -93,6 +94,17 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
       this
         .focus(_.op.didData.some.publicKeys)
         .modify(_ :+ PublicKey(id = keyId, usage = keyUsage, keyData = hdKey))
+
+    def service(serviceId: String)(serviceType: String, serviceEndpoint: String): CreateDidOpBuilder =
+      this
+        .focus(_.op.didData.some.services)
+        .modify(
+          _ :+ Service(
+            id = serviceId,
+            `type` = serviceType,
+            serviceEndpoint = serviceEndpoint
+          )
+        )
 
 trait ProtoUtils extends CryptoUtils:
   given Conversion[Array[Byte], ByteString] = ByteString.copyFrom

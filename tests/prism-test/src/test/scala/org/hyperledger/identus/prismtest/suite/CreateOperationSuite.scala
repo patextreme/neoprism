@@ -7,7 +7,9 @@ import zio.test.*
 import zio.test.Assertion.*
 
 object CreateOperationSuite extends TestUtils:
-  def values = suite("CreateDidOperation spec")(
+  def allSpecs = suite("CreateDidOperation specs")(publicKeySpecs, serviceSpecs)
+
+  private def publicKeySpecs = suite("PublicKey specs")(
     test("create operation with only master key is indexed successfully") {
       for
         seed <- newSeed
@@ -56,13 +58,13 @@ object CreateOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
-    test("create operation with non-master signedWith key should be be indexed") {
+    test("create operation without master key should not be be indexed") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
-          .key("master-0")(KeyUsage.AUTHENTICATION_KEY secp256k1 "m/0'/4'/0'")
+          .key("auth-0")(KeyUsage.AUTHENTICATION_KEY secp256k1 "m/0'/4'/0'")
           .build
-          .signWith("master-0", deriveSecp256k1(seed)("m/0'/4'/0'"))
+          .signWith("auth-0", deriveSecp256k1(seed)("m/0'/4'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))
         _ <- waitUntilConfirmed(operationRefs)
         didData <- getDidDocument(spo.getDid.get)
@@ -108,6 +110,37 @@ object CreateOperationSuite extends TestUtils:
           .foldLeft(builder(seed).createDid) { case (acc, n) =>
             acc.key(s"master-$n")(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/$n'")
           }
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    } @@ NodeName.skipIf("scala-did")
+  )
+
+  private def serviceSpecs = suite("Service specs")(
+    test("create operation with 50 services is indexed successfully") {
+      for
+        seed <- newSeed
+        opBuider = builder(seed).createDid
+          .key(s"master-0")(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/0'")
+        spo = (0 until 50)
+          .foldLeft(opBuider) { case (acc, n) => acc.service(s"service-$n")("LinkedDomains", "https://example.com") }
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo))
+        _ <- waitUntilConfirmed(operationRefs)
+        didData <- getDidDocument(spo.getDid.get).map(_.get)
+      yield assert(didData.services.length)(equalTo(50))
+    },
+    test("create operation with 51 services should not be indexed") {
+      for
+        seed <- newSeed
+        opBuider = builder(seed).createDid
+          .key(s"master-0")(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/0'")
+        spo = (0 until 51)
+          .foldLeft(opBuider) { case (acc, n) => acc.service(s"service-$n")("LinkedDomains", "https://example.com") }
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         operationRefs <- scheduleOperations(Seq(spo))

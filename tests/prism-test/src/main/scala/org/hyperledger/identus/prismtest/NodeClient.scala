@@ -65,10 +65,6 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
           case _                              => ZIO.dieMessage("operation unsuccessful")
         }
       )
-      .tapError {
-        case s: StatusRuntimeException => ZIO.debug("status: " + s.getStatus().getCode())
-        case _                         => ZIO.unit
-      }
       .catchAll {
         case s: StatusRuntimeException if s.getStatus.getCode.toStatus() == io.grpc.Status.INVALID_ARGUMENT =>
           ZIO.fail(Errors.BadRequest())
