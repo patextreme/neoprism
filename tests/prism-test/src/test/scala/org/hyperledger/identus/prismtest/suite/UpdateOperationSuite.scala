@@ -12,9 +12,52 @@ object UpdateOperationSuite extends TestUtils:
   // TODO: add tests for add / remove / update service action
   def allSpecs = suite("UpdateDidOperation")(
     signatureSpec,
+    prevOperationHashSpec,
     addPublicKeySpec,
     removePublicKeySpec
-  ) @@ NodeName.skipIf("scala-did") @@ TestAspect.tag("dev")
+  ) @@ NodeName.skipIf("scala-did")
+
+  private def prevOperationHashSpec = suite("PreviousOperationHash")(
+    test("update operation with invalid operation hash should not be indexed") {
+      for
+        seed <- newSeed
+        spo1 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        did = spo1.getDid.get
+        spo2 = builder(seed)
+          .updateDid(Array.fill[Byte](32)(0), did)
+          .addKey("master-1")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/1'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        didData <- getDidDocument(did).map(_.get)
+      yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
+    },
+    test("update operation with non-latest operation hash should not be indexed") {
+      for
+        seed <- newSeed
+        spo1 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        did = spo1.getDid.get
+        spo2 = builder(seed)
+          .updateDid(spo1.getOperationHash.get, did)
+          .addKey("master-1")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/1'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        spo3 = builder(seed)
+          .updateDid(spo1.getOperationHash.get, did)
+          .addKey("master-2")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/2'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        didData <- getDidDocument(did).map(_.get)
+      yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0", "master-1")))
+    }
+  )
 
   private def signatureSpec = suite("Signature")(
     test("update operation with signature from non-existing master-key should not be indexed") {
