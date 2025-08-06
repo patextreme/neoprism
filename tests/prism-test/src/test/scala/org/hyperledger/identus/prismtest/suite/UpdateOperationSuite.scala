@@ -31,7 +31,7 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("master-1")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/1'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
@@ -53,7 +53,7 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("master-2")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/2'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0", "master-1")))
     }
@@ -73,7 +73,7 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("master-1")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/1'")
           .build
           .signWith("master-2", deriveSecp256k1(seed)("m/0'/1'/2'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
@@ -91,7 +91,7 @@ object UpdateOperationSuite extends TestUtils:
           .removeKey("master-1")
           .build
           .signWith("master-1", deriveSecp256k1(seed)("m/0'/1'/1'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
@@ -114,7 +114,7 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("master-2")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/2'")
           .build
           .signWith("master-1", deriveSecp256k1(seed)("m/0'/1'/1'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2, spo3))
+        _ <- scheduleOperations(Seq(spo1, spo2, spo3))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     }
@@ -134,7 +134,7 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("master-1")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/1'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0", "master-1")))
     },
@@ -152,7 +152,7 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("master-1")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/2'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
@@ -170,7 +170,7 @@ object UpdateOperationSuite extends TestUtils:
           }
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(50)))
     },
@@ -188,7 +188,7 @@ object UpdateOperationSuite extends TestUtils:
           }
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
@@ -205,7 +205,7 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("0" * 50)(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/1'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(2)))
     },
@@ -222,7 +222,7 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("0" * 51)(KeyUsage.MASTER_KEY secp256k1 s"m/0'/1'/1'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2), batch = false)
+        _ <- scheduleOperations(Seq(spo1, spo2), batch = false)
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
@@ -245,7 +245,7 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("master-1")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/1'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2, spo3))
+        _ <- scheduleOperations(Seq(spo1, spo2, spo3))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     }
@@ -266,7 +266,7 @@ object UpdateOperationSuite extends TestUtils:
           .removeKey("master-1")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
@@ -283,7 +283,7 @@ object UpdateOperationSuite extends TestUtils:
           .removeKey("master-0")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
@@ -302,7 +302,7 @@ object UpdateOperationSuite extends TestUtils:
           .removeKey("master-2")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0", "master-1")))
     },
@@ -326,7 +326,7 @@ object UpdateOperationSuite extends TestUtils:
           .addKey("master-2")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/2'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        operationRefs <- scheduleOperations(Seq(spo1, spo2, spo3))
+        _ <- scheduleOperations(Seq(spo1, spo2, spo3))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     }

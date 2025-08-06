@@ -19,6 +19,7 @@ import proto.prism_ssi.CompressedECKeyData
 import proto.prism_ssi.KeyUsage
 import proto.prism_ssi.ProtoCreateDID
 import proto.prism_ssi.ProtoCreateDID.DIDCreationData
+import proto.prism_ssi.ProtoDeactivateDID
 import proto.prism_ssi.ProtoUpdateDID
 import proto.prism_ssi.PublicKey
 import proto.prism_ssi.PublicKey.KeyData
@@ -39,7 +40,10 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
   def getDidDocument(did: String): URIO[NodeClient, Option[DIDData]] =
     ZIO.serviceWithZIO[NodeClient](_.getDidDocument(did))
 
-  def scheduleOperations(operations: Seq[SignedPrismOperation], batch: Boolean = true): URIO[NodeClient, Seq[OperationRef]] =
+  def scheduleOperations(
+      operations: Seq[SignedPrismOperation],
+      batch: Boolean = true
+  ): URIO[NodeClient, Seq[OperationRef]] =
     val batched = if batch then Seq(operations) else operations.grouped(1).toList
     ZIO
       .foreach(batched) { ops =>
@@ -104,6 +108,10 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
 
     def updateDid(prevOperationHash: Array[Byte], did: String): UpdateDidOpBuilder =
       UpdateDidOpBuilder(seed, ProtoUpdateDID(prevOperationHash, did.replace("did:prism:", "")))
+
+    def deactivateDid(prevOperationHash: Array[Byte], did: String): PrismOperation =
+      val op = ProtoDeactivateDID(prevOperationHash, id = did.replace("did:prism:", ""))
+      PrismOperation(Operation.DeactivateDid(op))
 
   case class CreateDidOpBuilder(seed: Array[Byte], op: ProtoCreateDID):
     def build: PrismOperation = PrismOperation(Operation.CreateDid(op))
