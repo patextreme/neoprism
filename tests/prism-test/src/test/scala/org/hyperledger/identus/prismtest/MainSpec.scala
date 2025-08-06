@@ -4,6 +4,7 @@ import org.hyperledger.identus.prismtest.suite.CreateOperationSuite
 import org.hyperledger.identus.prismtest.suite.CreateStorageOperationSuite
 import org.hyperledger.identus.prismtest.suite.DeactivateOperationSuite
 import org.hyperledger.identus.prismtest.suite.UpdateOperationSuite
+import org.hyperledger.identus.prismtest.suite.UpdateStorageOperationSuite
 import org.hyperledger.identus.prismtest.utils.TestUtils
 import zio.*
 import zio.http.Client
@@ -16,7 +17,8 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
       CreateOperationSuite.allSpecs +
         UpdateOperationSuite.allSpecs +
         DeactivateOperationSuite.allSpecs +
-        CreateStorageOperationSuite.allSpecs
+        CreateStorageOperationSuite.allSpecs +
+        UpdateStorageOperationSuite.allSpecs
 
     val prismNodeSpec = suite("PRISM node suite")(allSpecs)
       .provide(NodeClient.grpc("localhost", 50053), NodeName.layer("prism-node"))

@@ -28,6 +28,7 @@ import proto.prism_ssi.Service
 import proto.prism_ssi.UpdateDIDAction
 import proto.prism_ssi.UpdateDIDAction.Action
 import proto.prism_storage.ProtoCreateStorageEntry
+import proto.prism_storage.ProtoUpdateStorageEntry
 import zio.*
 
 import scala.language.implicitConversions
@@ -120,6 +121,12 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
         ProtoCreateStorageEntry(didPrismHash = did.replace("did:prism:", "").decodeHex, nonce = nonce)
       )
 
+    def updateStorage(prevOperationHash: Array[Byte]): UpdateStorageBuilder =
+      UpdateStorageBuilder(
+        seed,
+        ProtoUpdateStorageEntry(previousEventHash = prevOperationHash)
+      )
+
   case class CreateDidOpBuilder(seed: Array[Byte], op: ProtoCreateDID):
     def build: PrismOperation = PrismOperation(Operation.CreateDid(op))
 
@@ -165,6 +172,14 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
       this
         .focus(_.op.data)
         .modify(_ => ProtoCreateStorageEntry.Data.Bytes(b))
+
+  case class UpdateStorageBuilder(seed: Array[Byte], op: ProtoUpdateStorageEntry):
+    def build: PrismOperation = PrismOperation(Operation.UpdateStorageEntry(op))
+
+    def bytes(b: Array[Byte]): UpdateStorageBuilder =
+      this
+        .focus(_.op.data)
+        .modify(_ => ProtoUpdateStorageEntry.Data.Bytes(b))
 
 trait ProtoUtils extends CryptoUtils:
   given Conversion[Array[Byte], ByteString] = ByteString.copyFrom

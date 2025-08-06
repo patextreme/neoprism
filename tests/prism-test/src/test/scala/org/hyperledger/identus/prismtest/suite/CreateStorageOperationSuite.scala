@@ -1,18 +1,12 @@
 package org.hyperledger.identus.prismtest.suite
 
 import io.iohk.atala.prism.protos.node_api.DIDData
-import org.hyperledger.identus.prismtest.utils.TestUtils
 import org.hyperledger.identus.prismtest.NodeName
 import proto.prism_ssi.KeyUsage
 import zio.test.*
 import zio.test.Assertion.*
 
-object CreateStorageOperationSuite extends TestUtils:
-
-  private def extractStorageHex(didData: DIDData): Seq[String] =
-    didData.storageData
-      .flatMap(_.data.bytes)
-      .map(_.toByteArray().toHexString)
+object CreateStorageOperationSuite extends StorageTestUtils:
 
   def allSpecs = suite("CreateStorageOperation")(
     publicKeySpec,
@@ -134,7 +128,7 @@ object CreateStorageOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(hasSameElements(Seq("00", "01")))
-    },
+    }
   )
 
   private def publicKeySpec = suite("PublicKey")(
