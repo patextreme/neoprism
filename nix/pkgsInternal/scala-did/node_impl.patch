@@ -98,7 +98,7 @@ index e81d4dcf..68f37b3e 100644
 +    _ <- refState.modify { state =>
 +      val (_, b) = state.lastSyncedBlockEpochSecondNano
 +      val newState = request.signedOperations.zipWithIndex.foldLeft(state) { case (acc, (op, idx)) =>
-+        state.addEvent(
++        acc.addEvent(
 +          MySignedPrismOperation(
 +            tx = "",
 +            b = b,
