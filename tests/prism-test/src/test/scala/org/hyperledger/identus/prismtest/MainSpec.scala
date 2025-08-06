@@ -21,15 +21,21 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         UpdateStorageOperationSuite.allSpecs
 
     val prismNodeSpec = suite("PRISM node suite")(allSpecs)
-      .provide(NodeClient.grpc("localhost", 50053), NodeName.layer("prism-node"))
+      .provide(
+        NodeClient.grpc("localhost", 50053),
+        NodeName.layer("prism-node")
+      )
 
     val scalaDidSpec = suite("scala-did node suite")(allSpecs)
-      .provide(NodeClient.grpc("localhost", 8980), NodeName.layer("scala-did"))
+      .provide(
+        NodeClient.grpc("localhost", 8980),
+        NodeName.layer("scala-did")
+      )
 
     val neoprismSpec = suite("NeoPRISM suite")(allSpecs)
       .provide(
-        NodeClient.neoprism("localhost", 8080)("localhost", 8090),
         Client.default,
+        NodeClient.neoprism("localhost", 8080)("localhost", 8090),
         NodeName.layer("neoprism")
       )
 
