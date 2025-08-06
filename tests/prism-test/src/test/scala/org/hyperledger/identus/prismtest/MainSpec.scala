@@ -1,6 +1,7 @@
 package org.hyperledger.identus.prismtest
 
 import org.hyperledger.identus.prismtest.suite.CreateOperationSuite
+import org.hyperledger.identus.prismtest.suite.CreateStorageOperationSuite
 import org.hyperledger.identus.prismtest.suite.DeactivateOperationSuite
 import org.hyperledger.identus.prismtest.suite.UpdateOperationSuite
 import org.hyperledger.identus.prismtest.utils.TestUtils
@@ -14,7 +15,8 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
     val allSpecs =
       CreateOperationSuite.allSpecs +
         UpdateOperationSuite.allSpecs +
-        DeactivateOperationSuite.allSpecs
+        DeactivateOperationSuite.allSpecs +
+        CreateStorageOperationSuite.allSpecs
 
     val prismNodeSpec = suite("PRISM node suite")(allSpecs)
       .provide(NodeClient.grpc("localhost", 50053), NodeName.layer("prism-node"))
@@ -29,7 +31,8 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         NodeName.layer("neoprism")
       )
 
-    (neoprismSpec + scalaDidSpec + prismNodeSpec).provide(Runtime.removeDefaultLoggers)
+    // (neoprismSpec + scalaDidSpec + prismNodeSpec).provide(Runtime.removeDefaultLoggers)
+    (neoprismSpec).provide(Runtime.removeDefaultLoggers)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment
       @@ TestAspect.parallelN(1)
