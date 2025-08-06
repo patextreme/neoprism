@@ -31,8 +31,7 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         NodeName.layer("neoprism")
       )
 
-    // (neoprismSpec + scalaDidSpec + prismNodeSpec).provide(Runtime.removeDefaultLoggers)
-    (neoprismSpec).provide(Runtime.removeDefaultLoggers)
+    (neoprismSpec + scalaDidSpec + prismNodeSpec).provide(Runtime.removeDefaultLoggers)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment
       @@ TestAspect.parallelN(1)
