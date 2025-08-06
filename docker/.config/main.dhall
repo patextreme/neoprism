@@ -51,7 +51,7 @@ in  { mainnet-dbsync.services
                   "preprod-node.play.dev.cardano.org:3001"
             }
       }
-    , testnet-local =
+    , prism-test =
         let networkMagic = 42
 
         let testnetVolume = "node-testnet"
