@@ -36,6 +36,9 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
   def newSeed: UIO[Array[Byte]] = Random.nextBytes(64).map(_.toArray)
   def builder(seed: Array[Byte]): OpBuilder = OpBuilder(seed)
 
+  def getDidDocument(did: String): URIO[NodeClient, Option[DIDData]] =
+    ZIO.serviceWithZIO[NodeClient](_.getDidDocument(did))
+
   def scheduleOperations(operations: Seq[SignedPrismOperation], batch: Boolean = true): URIO[NodeClient, Seq[OperationRef]] =
     val batched = if batch then Seq(operations) else operations.grouped(1).toList
     ZIO
@@ -52,9 +55,6 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
       }
       .map(_.flatten)
       .tap(waitUntilConfirmed)
-
-  def getDidDocument(did: String): URIO[NodeClient, Option[DIDData]] =
-    ZIO.serviceWithZIO[NodeClient](nodeClient => nodeClient.getDidDocument(did))
 
   private def waitUntilConfirmed(operationRefs: Seq[OperationRef]): URIO[NodeClient, Unit] =
     ZIO
