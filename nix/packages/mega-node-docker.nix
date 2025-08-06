@@ -4,7 +4,7 @@
 }:
 
 dockerTools.buildLayeredImage {
-  name = "prism-node-all";
+  name = "mega-node";
   tag = "latest";
   contents = [
     pkgsInternal.scala-did

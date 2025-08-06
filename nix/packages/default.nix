@@ -56,6 +56,6 @@ rec {
         tagSuffix = "-arm64";
       };
 
-  # internal
-  prism-node-all-docker = pkgs.callPackage ./scala-did-docker.nix { };
+  # mega-node
+  mega-node-docker = pkgs.callPackage ./mega-node-docker.nix { };
 }
