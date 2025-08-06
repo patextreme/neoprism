@@ -351,8 +351,7 @@ fn create_storage_entry_with_revoked_key() {
     let operations = test_utils::populate_metadata(vec![create_did_op, revoke_key_op, create_storage_op]);
     let state = resolver::resolve_published(operations).0.unwrap();
 
-    assert_eq!(state.storage.len(), 1);
-    assert_eq!(state.storage[0].data.deref(), &StorageData::Bytes(vec![1, 2, 3]));
+    assert_eq!(state.storage.len(), 0);
 }
 
 #[test]

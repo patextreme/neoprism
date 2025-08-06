@@ -24,10 +24,10 @@ val D = new {
 
   val deps: Seq[ModuleID] = Seq(
     "dev.zio" %% "zio" % V.zio,
-    "dev.optics" %% "monocle-core" % V.monocle,
-    "dev.optics" %% "monocle-macro" % V.monocle,
     "io.grpc" % "grpc-netty-shaded" % V.grpcNetty,
-    "dev.zio" %% "zio-http" % V.zioHttp
+    "dev.zio" %% "zio-http" % V.zioHttp,
+    "dev.optics" %% "monocle-core" % V.monocle,
+    "dev.optics" %% "monocle-macro" % V.monocle
   )
 
   val testDeps: Seq[ModuleID] = Seq(

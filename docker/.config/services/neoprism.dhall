@@ -1,36 +1,10 @@
-let Prelude = (./prelude.dhall).Prelude
+let Prelude = (../prelude.dhall).Prelude
 
-let version = (./prelude.dhall).neoPrismVersion
+let docker = ../docker.dhall
 
-let NeoprismNodeService =
-      { Type =
-          { image : Text
-          , restart : Text
-          , ports : List Text
-          , command : List Text
-          , depends_on : Prelude.Map.Type Text { condition : Text }
-          , environment : Prelude.Map.Type Text Text
-          , healthcheck :
-              { test : List Text
-              , interval : Text
-              , timeout : Text
-              , retries : Natural
-              }
-          }
-      , default =
-        { image = "hyperledgeridentus/identus-neoprism:${version}"
-        , restart = "always"
-        , depends_on = [] : Prelude.Map.Type Text { condition : Text }
-        , environment = [] : Prelude.Map.Type Text Text
-        , healthcheck =
-          { test =
-            [ "CMD", "curl", "-f", "http://localhost:8080/api/_system/health" ]
-          , interval = "2s"
-          , timeout = "5s"
-          , retries = 30
-          }
-        }
-      }
+let version = (../prelude.dhall).neoPrismVersion
+
+let image = "identus-neoprism:${version}"
 
 let DbSyncDltSourceArgs =
       { Type = { url : Text, pollInterval : Natural }
@@ -52,7 +26,7 @@ let DltSink =
 
 let Options =
       { Type =
-          { hostPort : Natural
+          { hostPort : Optional Natural
           , dbHost : Text
           , network : Text
           , dltSource : DltSource
@@ -62,7 +36,7 @@ let Options =
           , extraDependsOn : List Text
           }
       , default =
-        { hostPort = 8080
+        { hostPort = None Natural
         , dbHost = "db"
         , network = "mainnet"
         , dltSink = None DltSink.Type
@@ -72,7 +46,7 @@ let Options =
         }
       }
 
-let makeNodeService =
+let mkService =
       \(options : Options.Type) ->
         let mandatoryIndexerNodeEnvs =
               toMap
@@ -147,16 +121,28 @@ let makeNodeService =
               then  "indexer"
               else  "standalone"
 
-        in  NeoprismNodeService::{
-            , ports = [ "${Prelude.Natural.show options.hostPort}:8080" ]
-            , environment = mandatoryIndexerNodeEnvs # extraEnvs
-            , command = [ command ]
-            , depends_on =
-                  [ { mapKey = options.dbHost
-                    , mapValue.condition = "service_healthy"
-                    }
-                  ]
-                # extraDependsOn
+        in  docker.Service::{
+            , image
+            , ports =
+                Prelude.Optional.map
+                  Natural
+                  (List Text)
+                  (\(p : Natural) -> [ "${Prelude.Natural.show p}:8080" ])
+                  options.hostPort
+            , environment = Some (mandatoryIndexerNodeEnvs # extraEnvs)
+            , command = Some [ command ]
+            , depends_on = Some
+                (   [ docker.ServiceCondition.healthy options.dbHost ]
+                  # extraDependsOn
+                )
+            , healthcheck = Some docker.Healthcheck::{
+              , test =
+                [ "CMD"
+                , "curl"
+                , "-f"
+                , "http://localhost:8080/api/_system/health"
+                ]
+              }
             }
 
-in  { Options, makeNodeService, DltSource, DbSyncDltSourceArgs, DltSink }
+in  { Options, mkService, DltSource, DbSyncDltSourceArgs, DltSink }

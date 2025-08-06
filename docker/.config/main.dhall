@@ -1,25 +1,26 @@
 let Prelude = (./prelude.dhall).Prelude
 
-let neoprism = ./neoprism.dhall
+let neoprism = ./services/neoprism.dhall
 
-let db = ./db.dhall
+let db = ./services/db.dhall
 
-let dbSync = ./cardano-dbsync.dhall
+let dbSync = ./services/cardano-dbsync.dhall
 
-let cardanoNode = ./cardano-node.dhall
+let cardanoNode = ./services/cardano-node.dhall
 
-let cardanoWallet = ./cardano-wallet.dhall
+let cardanoWallet = ./services/cardano-wallet.dhall
 
-let prismNode = ./prism-node.dhall
+let prismNode = ./services/prism-node.dhall
 
-let cloudAgent = ./cloud-agent.dhall
+let scalaDid = ./services/scala-did.dhall
 
 in  { mainnet-dbsync.services
       =
-      { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
+      { db = db.mkService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
-          neoprism.makeNodeService
+          neoprism.mkService
             neoprism.Options::{
+            , hostPort = Some 8080
             , dltSource =
                 neoprism.DltSource.DbSync
                   neoprism.DbSyncDltSourceArgs::{ url = "<DBSYNC_URL>" }
@@ -27,10 +28,11 @@ in  { mainnet-dbsync.services
       }
     , mainnet-relay.services
       =
-      { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
+      { db = db.mkService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
-          neoprism.makeNodeService
+          neoprism.mkService
             neoprism.Options::{
+            , hostPort = Some 8080
             , dltSource =
                 neoprism.DltSource.Relay
                   "backbone.mainnet.cardanofoundation.org:3001"
@@ -38,17 +40,18 @@ in  { mainnet-dbsync.services
       }
     , preprod-relay.services
       =
-      { db = db.makeDbService db.Options::{ hostPort = Some 5432 }
+      { db = db.mkService db.Options::{ hostPort = Some 5432 }
       , neoprism-indexer =
-          neoprism.makeNodeService
+          neoprism.mkService
             neoprism.Options::{
+            , hostPort = Some 8080
             , network = "preprod"
             , dltSource =
                 neoprism.DltSource.Relay
                   "preprod-node.play.dev.cardano.org:3001"
             }
       }
-    , testnet-local =
+    , prism-test =
         let networkMagic = 42
 
         let testnetVolume = "node-testnet"
@@ -64,17 +67,10 @@ in  { mainnet-dbsync.services
 
         in  { services =
               { cardano-node =
-                  cardanoNode.makeNodeService
-                    cardanoNode.Options::{ networkMagic, testnetVolume }
-              , cardano-wallet =
-                  cardanoWallet.makeWalletService
-                    cardanoWallet.Options::{
-                    , testnetVolume
-                    , cardanoNodeHost
-                    , hostPort = Some 8090
-                    }
+                  cardanoNode.mkNodeService
+                    cardanoNode.NodeOptions::{ networkMagic, testnetVolume }
               , bootstrap-testnet =
-                  cardanoNode.makeBootstrapService
+                  cardanoNode.mkBootstrapService
                     cardanoNode.BootstrapOptions::{
                     , networkMagic
                     , testnetVolume
@@ -85,16 +81,24 @@ in  { mainnet-dbsync.services
                     , initWalletHurlFile = "./init-wallet.hurl"
                     }
               , cardano-dbsync =
-                  dbSync.makeDbSyncService
+                  dbSync.mkService
                     dbSync.Options::{
                     , testnetVolume
                     , cardanoNodeHost
                     , dbHost = "db-dbsync"
                     , configFile = "./dbsync-config.yaml"
                     }
+              , cardano-wallet =
+                  cardanoWallet.mkService
+                    cardanoWallet.Options::{
+                    , testnetVolume
+                    , cardanoNodeHost
+                    , hostPort = Some 8090
+                    }
               , neoprism-standalone =
-                  neoprism.makeNodeService
+                  neoprism.mkService
                     neoprism.Options::{
+                    , hostPort = Some 8080
                     , dbHost = "db-neoprism"
                     , confirmationBlocks = Some 0
                     , indexInterval = Some 1
@@ -114,7 +118,7 @@ in  { mainnet-dbsync.services
                       }
                     }
               , prism-node =
-                  prismNode.makePrismNodeService
+                  prismNode.mkService
                     prismNode.Options::{
                     , nodeDbHost = "db-prism-node"
                     , dbSyncDbHost = "db-dbsync"
@@ -126,30 +130,12 @@ in  { mainnet-dbsync.services
                     , hostPort = Some 50053
                     , confirmationBlocks = 0
                     }
-              , identus-cloud-agent =
-                  cloudAgent.makeCloudAgentService
-                    cloudAgent.Options::{
-                    , dbHost = "db-cloud-agent"
-                    , prismNodeHost = "prism-node"
-                    }
-              , db-neoprism =
-                  db.makeDbService db.Options::{ hostPort = Some 5432 }
-              , db-dbsync =
-                  db.makeDbService db.Options::{ hostPort = Some 5433 }
+              , scala-did =
+                  scalaDid.mkService scalaDid.Options::{ hostPort = Some 8980 }
+              , db-neoprism = db.mkService db.Options::{=}
+              , db-dbsync = db.mkService db.Options::{=}
               , db-prism-node =
-                  db.makeDbService db.Options::{ hostPort = Some 5434 }
-              , db-cloud-agent =
-                      db.makeDbService db.Options::{ hostPort = Some 5435 }
-                  //  { environment = toMap
-                          { POSTGRES_MULTIPLE_DATABASES = "pollux,connect,agent"
-                          , POSTGRES_USER = "postgres"
-                          , POSTGRES_PASSWORD = "postgres"
-                          }
-                      , volumes =
-                        [ "./postgres/init_script.sh:/docker-entrypoint-initdb.d/init-script.sh"
-                        , "./postgres/max_conns.sql:/docker-entrypoint-initdb.d/max_conns.sql"
-                        ]
-                      }
+                  db.mkService db.Options::{ hostPort = Some 5432 }
               }
             , volumes = toMap { node-testnet = {=} }
             }

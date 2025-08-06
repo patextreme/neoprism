@@ -18,7 +18,7 @@ rec {
   # misc
   neoprism-ui-assets = pkgs.callPackage ./neoprism-ui-assets.nix { };
 
-  # neoprism binaries
+  # neoprism
   neoprism-bin = pkgs.callPackage ./neoprism-bin.nix {
     rust = pkgs.rustUtils.rustMinimal;
     cargoLock = pkgs.rustUtils.cargoLock;
@@ -29,8 +29,6 @@ rec {
   neoprism-bin-aarch64-linux = callPackageRustCross "aarch64-multiplatform" ./neoprism-bin.nix {
     cargoLock = pkgs.rustUtils.cargoLock;
   };
-
-  # neoprism image
   neoprism-docker = pkgs.callPackage ./neoprism-docker.nix {
     inherit version neoprism-bin neoprism-ui-assets;
   };
@@ -47,7 +45,7 @@ rec {
         tagSuffix = "-arm64";
       };
 
-  # cardano testnet image
+  # cardano-testnet
   cardano-testnet-docker = pkgs.callPackage ./cardano-testnet-docker.nix { };
   cardano-testnet-docker-linux-amd64 = pkgs.pkgsCross.gnu64.callPackage ./cardano-testnet-docker.nix {
     tagSuffix = "-amd64";
@@ -57,4 +55,7 @@ rec {
       {
         tagSuffix = "-arm64";
       };
+
+  # mega-node
+  mega-node-docker = pkgs.callPackage ./mega-node-docker.nix { };
 }

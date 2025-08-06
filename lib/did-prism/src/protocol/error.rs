@@ -18,6 +18,8 @@ pub enum ProcessError {
     SignedPrismOperationInvalidSignedWith { source: PublicKeyIdError },
     #[display("signed_with key id {id} not found")]
     SignedPrismOperationSignedWithKeyNotFound { id: PublicKeyId },
+    #[display("signed_with key id {id} is revoked")]
+    SignedPrismOperationSignedWithRevokedKey { id: PublicKeyId },
     #[display("signed_with key id {id} has usage of {usage:?} which is not a master key")]
     SignedPrismOperationSignedWithInvalidKey { id: PublicKeyId, usage: KeyUsage },
     #[display("signature verification failed for SignedPrismOperation")]
@@ -47,7 +49,7 @@ pub enum DidStateConflictError {
     UpdateServiceNotExists { id: ServiceId },
     #[display("cannot update service since service with id {id} is already revoked")]
     UpdateServiceIsRevoked { id: ServiceId },
-    #[display("did state must have at least one master must exist after updated")]
+    #[display("did state must have at least one master key after updated")]
     AfterUpdateMissingMasterKey,
     #[display("did state have {actual} public keys which is greater than the limit {limit}")]
     AfterUpdatePublicKeyExceedLimit { limit: usize, actual: usize },
