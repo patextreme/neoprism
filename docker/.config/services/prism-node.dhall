@@ -2,7 +2,7 @@ let Prelude = (../prelude.dhall).Prelude
 
 let docker = ../docker.dhall
 
-let image = "prism-node-all:latest"
+let image = "mega-node:latest"
 
 let Options =
       { Type =
