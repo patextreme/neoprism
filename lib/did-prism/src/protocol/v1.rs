@@ -36,6 +36,10 @@ impl OperationProcessorOps for V1Processor {
             Err(ProcessError::SignedPrismOperationSignedWithKeyNotFound { id: key_id })?
         };
 
+        if pk.is_revoked() {
+            Err(ProcessError::SignedPrismOperationSignedWithRevokedKey { id: key_id.clone() })?
+        }
+
         let operation = signed_operation
             .operation
             .as_ref()

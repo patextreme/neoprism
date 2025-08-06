@@ -18,6 +18,8 @@ pub enum ProcessError {
     SignedPrismOperationInvalidSignedWith { source: PublicKeyIdError },
     #[display("signed_with key id {id} not found")]
     SignedPrismOperationSignedWithKeyNotFound { id: PublicKeyId },
+    #[display("signed_with key id {id} is revoked")]
+    SignedPrismOperationSignedWithRevokedKey { id: PublicKeyId },
     #[display("signed_with key id {id} has usage of {usage:?} which is not a master key")]
     SignedPrismOperationSignedWithInvalidKey { id: PublicKeyId, usage: KeyUsage },
     #[display("signature verification failed for SignedPrismOperation")]
