@@ -86,6 +86,10 @@ let mkStack =
               , prism-node =
                   prismNode.mkService
                     prismNode.Options::{
+                    , imageOverride =
+                        if    ci
+                        then  Some "prism-node-fastsync:lastest"
+                        else  None Text
                     , nodeDbHost = "db-prism-node"
                     , dbSyncDbHost = "db-dbsync"
                     , bootstrapTestnetHost = "bootstrap-testnet"

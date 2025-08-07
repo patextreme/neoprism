@@ -56,6 +56,6 @@ rec {
         tagSuffix = "-arm64";
       };
 
-  # mega-node
-  mega-node-docker = pkgs.callPackage ./mega-node-docker.nix { };
+  # prism-node
+  prism-node-docker = pkgs.callPackage ./prism-node-docker.nix { };
 }

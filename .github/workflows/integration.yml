@@ -30,8 +30,11 @@ jobs:
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@v1
 
-      - name: Build image
+      - name: Build neoprism image
         run: nix build .#neoprism-docker
+
+      - name: Build prism-node image (fastsync)
+        run: nix build .#prism-node-docker
 
       - name: Load image into daemon
         run: |
