@@ -129,6 +129,29 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(hasSameElements(Seq("00")))
     },
+    test("update storage with signature signed with non-existing key should not be indexed") {
+      for
+        seed <- newSeed
+        spo1 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .key("vdr-0")(KeyUsage.VDR_KEY secp256k1 "m/0'/8'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        did = spo1.getDid.get
+        spo2 = builder(seed)
+          .createStorage(did, Array(0))
+          .bytes("00".decodeHex)
+          .build
+          .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
+        spo3 = builder(seed)
+          .updateStorage(spo2.getOperationHash.get)
+          .bytes("01".decodeHex)
+          .build
+          .signWith("vdr-1", deriveSecp256k1(seed)("m/0'/8'/1'"))
+        _ <- scheduleOperations(Seq(spo1, spo2, spo3))
+        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
+      yield assert(storage)(hasSameElements(Seq("00")))
+    },
     test("update storage with signature signed with removed VDR key should not be indexed") {
       for
         seed <- newSeed
