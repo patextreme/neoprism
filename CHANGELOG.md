@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2025-08-07
+
+### 🐛 Bug Fixes
+
+- Add test coverage for prism specs and bug fixes (#79)
+- Add VDR tests and expose storage entry in DIDData protobuf (#80)
+
+### ⚙️ Miscellaneous Tasks
+
+- Make docker setup use published image (#81)
+
 ## [0.3.0] - 2025-07-31
 
 ### 🚀 Features
