@@ -21,6 +21,8 @@ let Options =
       , default.enableScalaDid = False
       }
 
+let customNodeImage = "patextreme/prism-node-fastsync:20250808-011426"
+
 let mkStack =
       \(options : Options.Type) ->
         let networkMagic = 42
@@ -100,7 +102,7 @@ let mkStack =
                           prismNode.Options::{
                           , imageOverride =
                               if    options.ci
-                              then  Some "patextreme/prism-node-fastsync:latest"
+                              then  Some customNodeImage
                               else  None Text
                           , nodeDbHost = "db-prism-node"
                           , dbSyncDbHost = "db-dbsync"
@@ -119,7 +121,10 @@ let mkStack =
                 /\  ( if    options.enableScalaDid
                       then  { scala-did = Some
                                 ( scalaDid.mkService
-                                    scalaDid.Options::{ hostPort = Some 8980 }
+                                    scalaDid.Options::{
+                                    , image = customNodeImage
+                                    , hostPort = Some 8980
+                                    }
                                 )
                             }
                       else  { scala-did = None docker.Service.Type }
