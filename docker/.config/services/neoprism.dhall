@@ -4,7 +4,7 @@ let docker = ../docker.dhall
 
 let version = (../prelude.dhall).neoPrismVersion
 
-let image = "identus-neoprism:${version}"
+let image = "hyperledgeridentus/identus-neoprism:${version}"
 
 let DbSyncDltSourceArgs =
       { Type = { url : Text, pollInterval : Natural }

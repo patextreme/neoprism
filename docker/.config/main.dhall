@@ -12,8 +12,6 @@ let cardanoWallet = ./services/cardano-wallet.dhall
 
 let prismNode = ./services/prism-node.dhall
 
-let scalaDid = ./services/scala-did.dhall
-
 in  { mainnet-dbsync.services
       =
       { db = db.mkService db.Options::{ hostPort = Some 5432 }
@@ -130,12 +128,9 @@ in  { mainnet-dbsync.services
                     , hostPort = Some 50053
                     , confirmationBlocks = 0
                     }
-              , scala-did =
-                  scalaDid.mkService scalaDid.Options::{ hostPort = Some 8980 }
               , db-neoprism = db.mkService db.Options::{=}
               , db-dbsync = db.mkService db.Options::{=}
-              , db-prism-node =
-                  db.mkService db.Options::{ hostPort = Some 5432 }
+              , db-prism-node = db.mkService db.Options::{=}
               }
             , volumes = toMap { node-testnet = {=} }
             }

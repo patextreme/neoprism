@@ -1,9 +1,10 @@
 package org.hyperledger.identus.prismtest
 
-import org.hyperledger.identus.prismtest.suite.CreateOperationSuite
+import org.hyperledger.identus.prismtest.suite.CreateDidOperationSuite
 import org.hyperledger.identus.prismtest.suite.CreateStorageOperationSuite
-import org.hyperledger.identus.prismtest.suite.DeactivateOperationSuite
-import org.hyperledger.identus.prismtest.suite.UpdateOperationSuite
+import org.hyperledger.identus.prismtest.suite.DeactivateDidOperationSuite
+import org.hyperledger.identus.prismtest.suite.DeactivateStorageOperationSuite
+import org.hyperledger.identus.prismtest.suite.UpdateDidOperationSuite
 import org.hyperledger.identus.prismtest.suite.UpdateStorageOperationSuite
 import org.hyperledger.identus.prismtest.utils.TestUtils
 import zio.*
@@ -14,11 +15,12 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
 
   override def spec =
     val allSpecs =
-      CreateOperationSuite.allSpecs +
-        UpdateOperationSuite.allSpecs +
-        DeactivateOperationSuite.allSpecs +
+      CreateDidOperationSuite.allSpecs +
+        UpdateDidOperationSuite.allSpecs +
+        DeactivateDidOperationSuite.allSpecs +
         CreateStorageOperationSuite.allSpecs +
-        UpdateStorageOperationSuite.allSpecs
+        UpdateStorageOperationSuite.allSpecs +
+        DeactivateStorageOperationSuite.allSpecs
 
     val prismNodeSpec = suite("PRISM node suite")(allSpecs)
       .provide(

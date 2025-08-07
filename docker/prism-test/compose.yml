@@ -132,8 +132,6 @@ services:
         - postgres
       timeout: "5s"
     image: postgres:16
-    ports:
-      - "5432:5432"
     restart: always
   neoprism-standalone:
     command:
@@ -164,7 +162,7 @@ services:
         - "-f"
         - http://localhost:8080/api/_system/health
       timeout: "5s"
-    image: identus-neoprism:0.3.0
+    image: hyperledgeridentus/identus-neoprism:0.3.0
     ports:
       - "8080:8080"
     restart: always
@@ -200,16 +198,9 @@ services:
       NODE_PSQL_PASSWORD: postgres
       NODE_PSQL_USERNAME: postgres
       NODE_REFRESH_AND_SUBMIT_PERIOD: "1s"
-    image: mega-node:latest
+    image: ghcr.io/input-output-hk/prism-node:2.6.0
     ports:
       - "50053:50053"
-    restart: always
-  scala-did:
-    command:
-      - /bin/scala-did-node
-    image: mega-node:latest
-    ports:
-      - "8980:8980"
     restart: always
 volumes:
   node-testnet: {}

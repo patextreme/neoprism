@@ -28,6 +28,7 @@ import proto.prism_ssi.Service
 import proto.prism_ssi.UpdateDIDAction
 import proto.prism_ssi.UpdateDIDAction.Action
 import proto.prism_storage.ProtoCreateStorageEntry
+import proto.prism_storage.ProtoDeactivateStorageEntry
 import proto.prism_storage.ProtoUpdateStorageEntry
 import zio.*
 
@@ -126,6 +127,10 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
         seed,
         ProtoUpdateStorageEntry(previousEventHash = prevOperationHash)
       )
+
+    def deactivateStorage(prevOperationHash: Array[Byte]): PrismOperation =
+      val op = ProtoDeactivateStorageEntry(prevOperationHash)
+      PrismOperation(Operation.DeactivateStorageEntry(op))
 
   case class CreateDidOpBuilder(seed: Array[Byte], op: ProtoCreateDID):
     def build: PrismOperation = PrismOperation(Operation.CreateDid(op))
