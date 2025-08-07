@@ -1,7 +1,7 @@
-name: PRISM spec test
+name: PRISM specification test
 
 concurrency:
-  group: ${{ github.head_ref }}${{ github.ref }}-performance-tests
+  group: ${{ github.head_ref }}${{ github.ref }}-prism-test
   cancel-in-progress: true
 
 on:
@@ -35,10 +35,10 @@ jobs:
         uses: docker/setup-compose-action@v1
 
       - name: Build neoprism image
-        run: nix build .#neoprism-docker -o result-neoprism
+        run: nix build .#neoprism-docker -L -o result-neoprism
 
       - name: Build prism-node image (fastsync)
-        run: nix build .#prism-node-docker -o result-prism-node
+        run: nix build .#prism-node-docker -L -o result-prism-node
 
       - name: Load image into daemon
         run: |
