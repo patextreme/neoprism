@@ -196,7 +196,7 @@ services:
       NODE_PSQL_PASSWORD: postgres
       NODE_PSQL_USERNAME: postgres
       NODE_REFRESH_AND_SUBMIT_PERIOD: "1s"
-    image: prism-node-fastsync:lastest
+    image: prism-node-fastsync:latest
     ports:
       - "50053:50053"
     restart: always

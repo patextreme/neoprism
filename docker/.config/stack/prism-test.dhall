@@ -88,7 +88,7 @@ let mkStack =
                     prismNode.Options::{
                     , imageOverride =
                         if    ci
-                        then  Some "prism-node-fastsync:lastest"
+                        then  Some "prism-node-fastsync:latest"
                         else  None Text
                     , nodeDbHost = "db-prism-node"
                     , dbSyncDbHost = "db-dbsync"
