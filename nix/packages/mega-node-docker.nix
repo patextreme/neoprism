@@ -12,7 +12,7 @@ dockerTools.buildLayeredImage {
   ];
   config = {
     Env = [ ];
-    Entrypoint = [ ];
+    Entrypoint = [ "/bin/prism-node" ];
     Cmd = [ ];
     WorkingDir = "/";
   };

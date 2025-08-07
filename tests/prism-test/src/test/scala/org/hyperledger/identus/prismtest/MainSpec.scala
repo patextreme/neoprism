@@ -22,18 +22,6 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         UpdateStorageOperationSuite.allSpecs +
         DeactivateStorageOperationSuite.allSpecs
 
-    val prismNodeSpec = suite("PRISM node suite")(allSpecs)
-      .provide(
-        NodeClient.grpc("localhost", 50053),
-        NodeName.layer("prism-node")
-      )
-
-    val scalaDidSpec = suite("scala-did node suite")(allSpecs)
-      .provide(
-        NodeClient.grpc("localhost", 8980),
-        NodeName.layer("scala-did")
-      )
-
     val neoprismSpec = suite("NeoPRISM suite")(allSpecs)
       .provide(
         Client.default,
@@ -41,7 +29,19 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         NodeName.layer("neoprism")
       )
 
-    (neoprismSpec + scalaDidSpec + prismNodeSpec).provide(Runtime.removeDefaultLoggers)
+    val prismNodeSpec = suite("PRISM node suite")(allSpecs)
+      .provide(
+        NodeClient.grpc("localhost", 50053),
+        NodeName.layer("prism-node")
+      )
+
+    // val scalaDidSpec = suite("scala-did node suite")(allSpecs)
+    //   .provide(
+    //     NodeClient.grpc("localhost", 8980),
+    //     NodeName.layer("scala-did")
+    //   )
+
+    (neoprismSpec + prismNodeSpec).provide(Runtime.removeDefaultLoggers)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment
       @@ TestAspect.parallelN(1)

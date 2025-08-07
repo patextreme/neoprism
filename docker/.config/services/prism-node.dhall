@@ -36,7 +36,6 @@ let mkService =
               (List Text)
               (\(p : Natural) -> [ "${Prelude.Natural.show p}:50053" ])
               options.hostPort
-        , command = Some [ "/bin/prism-node" ]
         , environment = Some
             ( toMap
                 { NODE_PSQL_HOST = "${options.nodeDbHost}:5432"

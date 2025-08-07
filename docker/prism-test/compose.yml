@@ -167,8 +167,6 @@ services:
       - "8080:8080"
     restart: always
   prism-node:
-    command:
-      - /bin/prism-node
     depends_on:
       bootstrap-testnet:
         condition: service_completed_successfully
