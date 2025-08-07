@@ -7,7 +7,7 @@ import zio.test.*
 import zio.test.Assertion.*
 import zio.ZIO
 
-object CreateOperationSuite extends TestUtils:
+object CreateDidOperationSuite extends TestUtils:
   // TODO: add tests for context
   def allSpecs = suite("CreateDidOperation")(signatureSpec, publicKeySpec, serviceSpec, vdrSpec)
 

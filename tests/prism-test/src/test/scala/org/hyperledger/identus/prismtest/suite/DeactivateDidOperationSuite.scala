@@ -7,7 +7,7 @@ import proto.prism_ssi.KeyUsage
 import zio.test.*
 import zio.test.Assertion.*
 
-object DeactivateOperationSuite extends TestUtils:
+object DeactivateDidOperationSuite extends TestUtils:
 
   private def assertDidDeactivated(didData: DIDData) =
     assert(didData.publicKeys)(isEmpty) && assert(didData.services)(isEmpty)

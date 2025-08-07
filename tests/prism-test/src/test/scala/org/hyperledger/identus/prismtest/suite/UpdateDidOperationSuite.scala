@@ -6,7 +6,7 @@ import proto.prism_ssi.KeyUsage
 import zio.test.*
 import zio.test.Assertion.*
 
-object UpdateOperationSuite extends TestUtils:
+object UpdateDidOperationSuite extends TestUtils:
   // TODO: check if scala-did is patched correctly
   // TODO: add tests for update context action
   // TODO: add tests for add / remove / update service action
