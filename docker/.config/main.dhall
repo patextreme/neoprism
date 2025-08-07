@@ -43,6 +43,8 @@ in  { mainnet-dbsync.services
                   "preprod-node.play.dev.cardano.org:3001"
             }
       }
-    , prism-test = prismTest.mkStack False
-    , prism-test-ci = prismTest.mkStack True
+    , prism-test = prismTest.mkStack prismTest.Options::{ ci = False }
+    , prism-test-ci =
+        prismTest.mkStack
+          prismTest.Options::{ ci = True, enableScalaDid = True }
     }

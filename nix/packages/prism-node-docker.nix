@@ -7,7 +7,7 @@ dockerTools.buildLayeredImage {
   name = "prism-node-fastsync";
   tag = "latest";
   contents = [
-    # pkgsInternal.scala-did
+    pkgsInternal.scala-did
     pkgsInternal.prism-node
   ];
   config = {
