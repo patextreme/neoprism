@@ -19,7 +19,7 @@ let mkService =
               (List Text)
               (\(p : Natural) -> [ "${Prelude.Natural.show p}:8980" ])
               options.hostPort
-        , command = Some [ "/bin/scala-did-node" ]
+        , entrypoint = Some [ "/bin/scala-did-node" ]
         }
 
 in  { Options, mkService }

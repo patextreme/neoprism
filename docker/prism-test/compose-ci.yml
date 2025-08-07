@@ -201,7 +201,7 @@ services:
       - "50053:50053"
     restart: always
   scala-did:
-    command:
+    entrypoint:
       - /bin/scala-did-node
     image: prism-node-fastsync:latest
     ports:
