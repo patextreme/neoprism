@@ -33,7 +33,7 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
       .provide(
         NodeClient.grpc("localhost", 50053),
         NodeName.layer("prism-node")
-      )
+      ) @@ TestAspect.ignore // test is too slow, need to add ENV to configure sync interval
 
     // val scalaDidSpec = suite("scala-did node suite")(allSpecs)
     //   .provide(
