@@ -2,7 +2,7 @@ let Prelude = (../prelude.dhall).Prelude
 
 let docker = ../docker.dhall
 
-let version = (../prelude.dhall).neoPrismVersion
+let version = (../prelude.dhall).neoprismVersion
 
 let image = "hyperledgeridentus/identus-neoprism:${version}"
 
