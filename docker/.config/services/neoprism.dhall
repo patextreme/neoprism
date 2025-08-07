@@ -26,7 +26,8 @@ let DltSink =
 
 let Options =
       { Type =
-          { hostPort : Optional Natural
+          { imageOverride : Optional Text
+          , hostPort : Optional Natural
           , dbHost : Text
           , network : Text
           , dltSource : DltSource
@@ -36,7 +37,8 @@ let Options =
           , extraDependsOn : List Text
           }
       , default =
-        { hostPort = None Natural
+        { imageOverride = None Text
+        , hostPort = None Natural
         , dbHost = "db"
         , network = "mainnet"
         , dltSink = None DltSink.Type
@@ -122,7 +124,7 @@ let mkService =
               else  "standalone"
 
         in  docker.Service::{
-            , image
+            , image = Prelude.Optional.default Text image options.imageOverride
             , ports =
                 Prelude.Optional.map
                   Natural

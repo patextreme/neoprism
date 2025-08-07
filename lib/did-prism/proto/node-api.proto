@@ -24,6 +24,15 @@ message DIDData {
     repeated proto.PublicKey public_keys = 2; // The keys that belong to this DID Document.
     repeated proto.Service services = 3; // The list of services that belong to this DID Document.
     repeated string context = 4; // The list of @context values to consider on JSON-LD representations
+    repeated StorageData storage_data = 5;
+}
+
+message StorageData {
+    bytes init_operation_hash = 1;
+    bytes prev_operation_hash = 2;
+    oneof data {
+        bytes bytes = 100;
+    }
 }
 
 message ScheduleOperationsRequest {

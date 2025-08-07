@@ -239,7 +239,24 @@ impl From<DidState> for node_api::DIDData {
             public_keys: value.public_keys.into_iter().map(|i| i.orig).collect(),
             services: value.services.into_iter().map(|i| i.orig).collect(),
             context: value.context,
+            storage_data: value.storage.into_iter().flat_map(|i| i.try_into().ok()).collect(),
             special_fields: Default::default(),
+        }
+    }
+}
+
+impl TryFrom<StorageState> for node_api::StorageData {
+    type Error = &'static str;
+
+    fn try_from(value: StorageState) -> Result<Self, Self::Error> {
+        match value.data.as_ref() {
+            StorageData::Bytes(items) => Ok(Self {
+                init_operation_hash: value.init_operation_hash.to_vec(),
+                prev_operation_hash: value.last_operation_hash.to_vec(),
+                data: Some(node_api::storage_data::Data::Bytes(items.clone())),
+                special_fields: Default::default(),
+            }),
+            _ => Err("only bytes is supported in DIDData"),
         }
     }
 }

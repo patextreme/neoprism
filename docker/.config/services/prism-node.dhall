@@ -2,11 +2,12 @@ let Prelude = (../prelude.dhall).Prelude
 
 let docker = ../docker.dhall
 
-let image = "mega-node:latest"
+let image = "ghcr.io/input-output-hk/prism-node:2.6.0"
 
 let Options =
       { Type =
-          { nodeDbHost : Text
+          { imageOverride : Optional Text
+          , nodeDbHost : Text
           , dbSyncDbHost : Text
           , bootstrapTestnetHost : Text
           , walletApiHost : Text
@@ -18,7 +19,8 @@ let Options =
           , confirmationBlocks : Natural
           }
       , default =
-        { walletApiPort = 8090
+        { imageOverride = None Text
+        , walletApiPort = 8090
         , hostPort = None Natural
         , confirmationBlocks = 112
         }
@@ -27,14 +29,13 @@ let Options =
 let mkService =
       \(options : Options.Type) ->
         docker.Service::{
-        , image
+        , image = Prelude.Optional.default Text image options.imageOverride
         , ports =
             Prelude.Optional.map
               Natural
               (List Text)
               (\(p : Natural) -> [ "${Prelude.Natural.show p}:50053" ])
               options.hostPort
-        , command = Some [ "/bin/prism-node" ]
         , environment = Some
             ( toMap
                 { NODE_PSQL_HOST = "${options.nodeDbHost}:5432"
