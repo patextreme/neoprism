@@ -9,7 +9,39 @@ import zio.ZIO
 
 object CreateOperationSuite extends TestUtils:
   // TODO: add tests for context
-  def allSpecs = suite("CreateDidOperation")(publicKeySpec, serviceSpec, vdrSpec)
+  def allSpecs = suite("CreateDidOperation")(signatureSpec, publicKeySpec, serviceSpec, vdrSpec)
+
+  private def signatureSpec = suite("Signature")(
+    test("create operation with non-secp256k1 master-key should not be indexed") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY ed25519 "m/0'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        _ <- scheduleOperations(Seq(spo))
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    },
+    test("create operation with invalid signedWith key should not be indexed") {
+      for
+        seed <- newSeed
+        // key id not exist
+        spo1 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("master-1", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        // same key id with wrong private key
+        spo2 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/1'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/1'/1'/1'"))
+        _ <- scheduleOperations(Seq(spo1, spo2))
+        didData1 <- getDidDocument(spo1.getDid.get)
+        didData2 <- getDidDocument(spo2.getDid.get)
+      yield assert(didData1)(isNone) && assert(didData2)(isNone)
+    }
+  )
 
   private def publicKeySpec = suite("PublicKey")(
     test("create operation with only master-key should be indexed successfully") {
@@ -46,17 +78,6 @@ object CreateOperationSuite extends TestUtils:
         assert(didData.publicKeys)(hasSize(equalTo(8))) &&
         assert(didData.publicKeys.map(_.usage).distinct)(hasSize(equalTo(8)))
     } @@ NodeName.skipIf("prism-node"),
-    test("create operation with non-secp256k1 master-key should not be indexed") {
-      for
-        seed <- newSeed
-        spo = builder(seed).createDid
-          .key("master-0")(KeyUsage.MASTER_KEY ed25519 "m/0'/1'/0'")
-          .build
-          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        _ <- scheduleOperations(Seq(spo))
-        didData <- getDidDocument(spo.getDid.get)
-      yield assert(didData)(isNone)
-    },
     test("create operation without master-key should not be be indexed") {
       for
         seed <- newSeed
@@ -67,24 +88,6 @@ object CreateOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    },
-    test("create operation with invalid signedWith key should not be indexed") {
-      for
-        seed <- newSeed
-        // key id not exist
-        spo1 = builder(seed).createDid
-          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
-          .build
-          .signWith("master-1", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        // same key id with wrong private key
-        spo2 = builder(seed).createDid
-          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/1'/1'/0'")
-          .build
-          .signWith("master-0", deriveSecp256k1(seed)("m/1'/1'/1'"))
-        _ <- scheduleOperations(Seq(spo1, spo2))
-        didData1 <- getDidDocument(spo1.getDid.get)
-        didData2 <- getDidDocument(spo2.getDid.get)
-      yield assert(didData1)(isNone) && assert(didData2)(isNone)
     },
     test("create operation with 50 keys should be indexed successfully") {
       for

@@ -9,7 +9,7 @@ import zio.test.Assertion.*
 object CreateStorageOperationSuite extends StorageTestUtils:
 
   def allSpecs = suite("CreateStorageOperation")(
-    publicKeySpec,
+    signatureSpec,
     deactivatedSpec,
     nonceSpec
   ) @@ NodeName.skipIf("prism-node", "scala-did")
@@ -131,7 +131,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
     }
   )
 
-  private def publicKeySpec = suite("PublicKey")(
+  private def signatureSpec = suite("Signature")(
     test("create storage with valid VDR key should be indexed successfully") {
       for
         seed <- newSeed

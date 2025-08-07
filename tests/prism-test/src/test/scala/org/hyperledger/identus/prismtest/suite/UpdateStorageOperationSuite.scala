@@ -9,8 +9,9 @@ import zio.test.Assertion.*
 
 object UpdateStorageOperationSuite extends StorageTestUtils:
 
+  // TODO: add unknown fields spec
   def allSpecs = suite("UpdateStorageOperation")(
-    publicKeySpec,
+    signatureSpec,
     prevOperationHashSpec
   ) @@ NodeName.skipIf("prism-node", "scala-did")
 
@@ -105,7 +106,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
     }
   )
 
-  private def publicKeySpec = suite("Publickey")(
+  private def signatureSpec = suite("Signature")(
     test("update storage with signature signed with non-VDR key should not be indexed") {
       for
         seed <- newSeed
