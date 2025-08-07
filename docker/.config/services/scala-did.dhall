@@ -2,7 +2,7 @@ let Prelude = (../prelude.dhall).Prelude
 
 let docker = ../docker.dhall
 
-let image = "pris-node-fastsync:latest"
+let image = "prism-node-fastsync:latest"
 
 let Options =
       { Type = { hostPort : Optional Natural }

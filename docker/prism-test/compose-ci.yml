@@ -203,7 +203,7 @@ services:
   scala-did:
     command:
       - /bin/scala-did-node
-    image: pris-node-fastsync:latest
+    image: prism-node-fastsync:latest
     ports:
       - "8980:8980"
     restart: always
