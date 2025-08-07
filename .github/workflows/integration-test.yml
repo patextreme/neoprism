@@ -1,7 +1,7 @@
-name: PRISM specification test
+name: PRISM spec test
 
 concurrency:
-  group: ${{ github.head_ref }}${{ github.ref }}-prism-test
+  group: ${{ github.head_ref }}${{ github.ref }}-performance-tests
   cancel-in-progress: true
 
 on:
