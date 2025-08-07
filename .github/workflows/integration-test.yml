@@ -1,0 +1,55 @@
+name: PRISM specification test
+
+concurrency:
+  group: ${{ github.head_ref }}${{ github.ref }}-prism-test
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
+
+jobs:
+  run-integration-test:
+    runs-on: ubuntu-latest
+    env:
+      JAVA_TOOL_OPTIONS: -Djava.net.preferIPv4Stack=true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+
+      - name: Build neoprism image
+        run: nix build .#neoprism-docker -L -o result
+
+      - name: Load image into daemon
+        run: |
+          docker load < result
+          docker images
+
+      - name: Start prism-test services
+        uses: hoverkraft-tech/compose-action@v2.3.0
+        with:
+          compose-file: "./docker/prism-test/compose-ci.yml"
+          up-flags: "--wait"
+          down-flags: "--volumes"
+
+      - name: Run test suite
+        working-directory: ./tests/prism-test
+        run:
+          nix develop .#prism-test --command sbt test

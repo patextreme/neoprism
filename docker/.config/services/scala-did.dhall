@@ -2,24 +2,22 @@ let Prelude = (../prelude.dhall).Prelude
 
 let docker = ../docker.dhall
 
-let image = "mega-node:latest"
-
 let Options =
-      { Type = { hostPort : Optional Natural }
+      { Type = { image : Text, hostPort : Optional Natural }
       , default.hostPort = None Natural
       }
 
 let mkService =
       \(options : Options.Type) ->
         docker.Service::{
-        , image
+        , image = options.image
         , ports =
             Prelude.Optional.map
               Natural
               (List Text)
               (\(p : Natural) -> [ "${Prelude.Natural.show p}:8980" ])
               options.hostPort
-        , command = Some [ "/bin/scala-did-node" ]
+        , entrypoint = Some [ "/bin/scala-did-node" ]
         }
 
 in  { Options, mkService }

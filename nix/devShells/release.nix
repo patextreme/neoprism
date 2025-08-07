@@ -65,6 +65,23 @@ let
         docker manifest push "patextreme/cardano-testnet:$TAG"
       '';
     };
+
+    releasePrismNodeImage = pkgs.writeShellApplication {
+      name = "releasePrismNodeImage";
+      runtimeInputs = with pkgs; [
+        nix
+        docker
+      ];
+      text = ''
+        cd "${rootDir}"
+        TAG=$(date +"%Y%m%d-%H%M%S")
+        nix build .#prism-node-docker -o result
+        docker load < ./result
+        rm -rf ./result
+        docker tag prism-node-fastsync:latest "patextreme/prism-node-fastsync:$TAG"
+        docker push "patextreme/prism-node-fastsync:$TAG"
+      '';
+    };
   };
 in
 pkgs.mkShell {

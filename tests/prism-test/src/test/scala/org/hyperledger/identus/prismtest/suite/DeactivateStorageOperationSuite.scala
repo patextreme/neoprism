@@ -39,7 +39,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
     }
   )
 
-  private def prevOperationHashSpec = suite("PreviousOperation")(
+  private def prevOperationHashSpec = suite("PreviousOperationHash")(
     test("deactivate storage with multiple storage entries should be indexed successfully") {
       for
         seed <- newSeed

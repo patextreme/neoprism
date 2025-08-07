@@ -1,5 +1,9 @@
 name: Checks
 
+concurrency:
+  group: ${{ github.head_ref }}${{ github.ref }}-checks
+  cancel-in-progress: true
+
 on:
   pull_request:
     branches:

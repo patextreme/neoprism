@@ -11,6 +11,7 @@ let
       dhall-to-yaml <<< "(./main.dhall).mainnet-relay" > "${rootDir}/docker/mainnet-relay/compose.yml"
       dhall-to-yaml <<< "(./main.dhall).preprod-relay" > "${rootDir}/docker/preprod-relay/compose.yml"
       dhall-to-yaml <<< "(./main.dhall).prism-test" > "${rootDir}/docker/prism-test/compose.yml"
+      dhall-to-yaml <<< "(./main.dhall).prism-test-ci" > "${rootDir}/docker/prism-test/compose-ci.yml"
     '';
   };
 in
