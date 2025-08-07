@@ -1,0 +1,31 @@
+name: PRISM spec test
+
+on:
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  run-integration-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+
+      - name: Build image
+        run: nix build .#neoprism-docker
+
+      - name: Load image into daemon
+        run: |
+          docker load < result
+          docker images
