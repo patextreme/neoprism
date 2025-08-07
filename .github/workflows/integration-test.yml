@@ -28,11 +28,6 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      - name: Setup Java and Scala
-        uses: olafurpg/setup-scala@v14
-        with:
-          java-version: openjdk@1.17.0
-
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
 
@@ -40,15 +35,11 @@ jobs:
         uses: docker/setup-compose-action@v1
 
       - name: Build neoprism image
-        run: nix build .#neoprism-docker -L -o result-neoprism
-
-      - name: Build prism-node image (fastsync)
-        run: nix build .#prism-node-docker -L -o result-prism-node
+        run: nix build .#neoprism-docker -L -o result
 
       - name: Load image into daemon
         run: |
-          docker load < result-neoprism
-          docker load < result-prism-node
+          docker load < result
           docker images
 
       - name: Start prism-test services
@@ -61,4 +52,4 @@ jobs:
       - name: Run test suite
         working-directory: ./tests/prism-test
         run:
-          sbt test
+          nix develop .#prism-test --command "sbt test"
