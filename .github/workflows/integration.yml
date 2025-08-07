@@ -31,14 +31,15 @@ jobs:
         uses: docker/setup-compose-action@v1
 
       - name: Build neoprism image
-        run: nix build .#neoprism-docker
+        run: nix build .#neoprism-docker -o result-neoprism
 
       - name: Build prism-node image (fastsync)
-        run: nix build .#prism-node-docker
+        run: nix build .#prism-node-docker -o result-prism-node
 
       - name: Load image into daemon
         run: |
-          docker load < result
+          docker load < result-neoprism
+          docker load < result-prism-node
           docker images
 
       - name: Start prism-test services
