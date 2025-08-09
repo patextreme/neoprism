@@ -8,7 +8,7 @@ import zio.test.Assertion.*
 import zio.ZIO
 
 object CreateDidOperationSuite extends TestUtils:
-  def allSpecs = suite("CreateDidOperation")(signatureSpec, publicKeySpec, serviceSpec, vdrSpec, contextSpec)
+  def allSpecs = suite("CreateDidOperation")(signatureSpec, publicKeySpec, serviceSpec, vdrSpec, contextSpec) @@ TestAspect.tag("dev")
 
   private def contextSpec = suite("Context")(
     test("create operation should preserve context values") {
@@ -177,7 +177,19 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("scala-did")
+    } @@ NodeName.skipIf("scala-did"),
+    test("should reject create operation with duplicate key IDs") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("duplicate-id")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .key("duplicate-id")(KeyUsage.ISSUING_KEY secp256k1 "m/0'/1'/1'")
+          .build
+          .signWith("duplicate-id", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        _ <- scheduleOperations(Seq(spo))
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    }
   )
 
   private def serviceSpec = suite("Service")(
