@@ -8,8 +8,38 @@ import zio.test.Assertion.*
 import zio.ZIO
 
 object CreateDidOperationSuite extends TestUtils:
-  // TODO: add tests for context
-  def allSpecs = suite("CreateDidOperation")(signatureSpec, publicKeySpec, serviceSpec, vdrSpec)
+  def allSpecs = suite("CreateDidOperation")(signatureSpec, publicKeySpec, serviceSpec, vdrSpec, contextSpec)
+
+  private def contextSpec = suite("Context")(
+    test("create operation should preserve context values") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .context("https://www.w3.org/ns/did/v1")
+          .context("https://example.com/custom-context")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        _ <- scheduleOperations(Seq(spo))
+        didData <- getDidDocument(spo.getDid.get).map(_.get)
+      yield assert(didData.context)(
+        hasSameElements(Seq("https://www.w3.org/ns/did/v1", "https://example.com/custom-context"))
+      )
+    },
+    test("create operation with duplicate context values should not be indexed") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .context("https://example.com/duplicate")
+          .context("https://example.com/duplicate")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        _ <- scheduleOperations(Seq(spo))
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    }
+  )
 
   private def signatureSpec = suite("Signature")(
     test("create operation with non-secp256k1 master-key should not be indexed") {

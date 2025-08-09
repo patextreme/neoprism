@@ -141,6 +141,11 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
         .focus(_.op.didData.some.publicKeys)
         .modify(_ :+ PublicKey(id = keyId, usage = keyUsage, keyData = hdKey))
 
+    def context(value: String): CreateDidOpBuilder =
+      this
+        .focus(_.op.didData.some.context)
+        .modify(_ :+ value)
+
     def service(serviceId: String)(serviceType: String, serviceEndpoint: String): CreateDidOpBuilder =
       this
         .focus(_.op.didData.some.services)
