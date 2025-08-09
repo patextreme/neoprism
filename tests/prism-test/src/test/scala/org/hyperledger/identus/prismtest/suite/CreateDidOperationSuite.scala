@@ -42,7 +42,7 @@ object CreateDidOperationSuite extends TestUtils:
   )
 
   private def signatureSpec = suite("Signature")(
-    test("create operation with non-secp256k1 master-key should not be indexed") {
+    test("should reject create operation with non-secp256k1 master key") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -53,7 +53,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
-    test("create operation with invalid signedWith key should not be indexed") {
+    test("should reject create operations with invalid signing keys") {
       for
         seed <- newSeed
         // key id not exist
@@ -74,7 +74,7 @@ object CreateDidOperationSuite extends TestUtils:
   )
 
   private def publicKeySpec = suite("PublicKey")(
-    test("create operation with only master-key should be indexed successfully") {
+    test("should accept create operation with only master key") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -87,7 +87,7 @@ object CreateDidOperationSuite extends TestUtils:
         assert(didData.services)(isEmpty) &&
         assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
-    test("create operation with all key types should be indexed successfully") {
+    test("should accept create operation with all supported key types") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -108,7 +108,7 @@ object CreateDidOperationSuite extends TestUtils:
         assert(didData.publicKeys)(hasSize(equalTo(8))) &&
         assert(didData.publicKeys.map(_.usage).distinct)(hasSize(equalTo(8)))
     } @@ NodeName.skipIf("prism-node"),
-    test("create operation without master-key should not be be indexed") {
+    test("should reject create operation without master key") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -119,7 +119,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
-    test("create operation with 50 keys should be indexed successfully") {
+    test("should accept create operation with maximum allowed keys (50)") {
       for
         seed <- newSeed
         spo = (0 until 50)
@@ -132,7 +132,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.publicKeys.length)(equalTo(50))
     },
-    test("create operation with 51 keys should not be indexed") {
+    test("should reject create operation exceeding maximum key limit (51)") {
       for
         seed <- newSeed
         spo = (0 until 51)
@@ -145,7 +145,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with key-id of 50 chars should be indexed successfully") {
+    test("should accept create operation with maximum key ID length (50 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -156,7 +156,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
-    test("create operation with key-id of 51 chars should not be indexed") {
+    test("should reject create operation with excessive key ID length (51 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -167,7 +167,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with key-id not a URL fragment should not be indexed") {
+    test("should reject create operation with invalid key ID format") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -181,7 +181,7 @@ object CreateDidOperationSuite extends TestUtils:
   )
 
   private def serviceSpec = suite("Service")(
-    test("create operation with 50 services should be indexed successfully") {
+    test("should accept create operation with maximum allowed services (50)") {
       for
         seed <- newSeed
         opBuider = builder(seed).createDid
@@ -194,7 +194,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services.length)(equalTo(50))
     },
-    test("create operation with 51 services should not be indexed") {
+    test("should reject create operation exceeding maximum service limit (51)") {
       for
         seed <- newSeed
         opBuider = builder(seed).createDid
@@ -207,7 +207,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with service-id of 50 chars should be indexed successfully") {
+    test("should accept create operation with maximum service ID length (50 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -219,7 +219,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services)(hasSize(equalTo(1)))
     },
-    test("create operation with service-id of 51 chars should not be indexed") {
+    test("should reject create operation with excessive service ID length (51 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -231,7 +231,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with service-id not a URL fragment should not be indexed") {
+    test("should reject create operation with invalid service ID format") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -243,7 +243,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with service-type of 100 chars should be indexed successfully") {
+    test("should accept create operation with maximum service type length (100 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -255,7 +255,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services)(hasSize(equalTo(1)))
     },
-    test("create operation with service-type of 101 chars should not be indexed") {
+    test("should reject create operation with excessive service type length (101 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -267,7 +267,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with service-type not following ABNF should not be indexed") {
+    test("should reject create operation with invalid service type format") {
       for
         seed <- newSeed
         buildOperation = (serviceType: String) =>
@@ -292,7 +292,7 @@ object CreateDidOperationSuite extends TestUtils:
         didDataList <- ZIO.foreach(spos) { spo => getDidDocument(spo.getDid.get) }
       yield assert(didDataList)(forall(isNone))
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with service-endpoint of 300 chars should be indexed successfully") {
+    test("should accept create operation with maximum service endpoint length (300 chars)") {
       for
         seed <- newSeed
         serviceEndpoint = s"http://example.com/${"0" * 300}".take(300)
@@ -305,7 +305,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services)(hasSize(equalTo(1)))
     },
-    test("create operation with service-endpoint of 301 chars should not be indexed") {
+    test("should reject create operation with excessive service endpoint length (301 chars)") {
       for
         seed <- newSeed
         serviceEndpoint = s"http://example.com/${"0" * 300}".take(301)
@@ -318,7 +318,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("create operation with service-endpoint not following ABNF should not be indexed") {
+    test("should reject create operation with invalid service endpoint format") {
       for
         seed <- newSeed
         buildOperation = (serviceEndpoint: String) =>
@@ -345,7 +345,7 @@ object CreateDidOperationSuite extends TestUtils:
   )
 
   private def vdrSpec = suite("VDR")(
-    test("create operation with non-secp256k1 vdr key should not be indexed") {
+    test("should reject create operation with invalid VDR key type") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
