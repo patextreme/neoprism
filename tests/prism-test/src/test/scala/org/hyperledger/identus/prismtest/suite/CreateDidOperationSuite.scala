@@ -178,6 +178,17 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
+    test("should reject create operation with empty key ID") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        _ <- scheduleOperations(Seq(spo))
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    },
     test("should reject create operation with duplicate key IDs") {
       for
         seed <- newSeed
@@ -255,6 +266,31 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
+    test("should reject create operation with empty service ID") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .service("")("LinkedDomains", "https://example.com")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        _ <- scheduleOperations(Seq(spo))
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    },
+    test("should reject create operation with duplicate service IDs") {
+      for
+        seed <- newSeed
+        spo = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .service("duplicate-id")("LinkedDomains", "https://example.com/1")
+          .service("duplicate-id")("LinkedDomains", "https://example.com/2")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        _ <- scheduleOperations(Seq(spo))
+        didData <- getDidDocument(spo.getDid.get)
+      yield assert(didData)(isNone)
+    },
     test("should accept create operation with maximum service type length (100 chars)") {
       for
         seed <- newSeed
